@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, RotateCcw, Lightbulb, BookOpen, Dice6, Shuffle, Users, Bot, User } from 'lucide-react';
-import { ConceptModal } from '../ConceptModal';
+import { ArrowLeft, RotateCcw, Shuffle, Users, Bot, Zap, Settings } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface LudoGameProps {
@@ -12,157 +11,351 @@ interface LudoGameProps {
   onStatsUpdate: (stats: any) => void;
 }
 
+type PlayerColor = 'red' | 'blue' | 'yellow' | 'green';
+type GameMode = 'vs-computer' | 'vs-friends' | 'online';
+
 interface Player {
-  id: number;
-  color: string;
+  id: string;
+  color: PlayerColor;
   name: string;
+  isHuman: boolean;
   pieces: number[];
-  isComputer: boolean;
+  homePosition: number;
+  safePositions: number[];
+}
+
+interface GameState {
+  players: Player[];
+  currentPlayerIndex: number;
+  diceValue: number | null;
+  isDiceRolled: boolean;
+  gameStatus: 'waiting' | 'playing' | 'finished';
+  winner: PlayerColor | null;
+  board: (PlayerColor | null)[];
+  moveHistory: string[];
 }
 
 export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => {
-  const [currentPlayer, setCurrentPlayer] = useState(0);
-  const [diceValue, setDiceValue] = useState(1);
-  const [gameMode, setGameMode] = useState('vs-computer');
-  const [playerCount, setPlayerCount] = useState('4');
-  const [difficulty, setDifficulty] = useState('easy');
-  const [showConcepts, setShowConcepts] = useState(false);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [hints, setHints] = useState<string[]>([]);
-  const [currentHint, setCurrentHint] = useState(0);
-  const [isRolling, setIsRolling] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
+  const [gameState, setGameState] = useState<GameState>({
+    players: [],
+    currentPlayerIndex: 0,
+    diceValue: null,
+    isDiceRolled: false,
+    gameStatus: 'waiting',
+    winner: null,
+    board: Array(52).fill(null),
+    moveHistory: []
+  });
 
-  const playerColors = [
-    { color: 'red', bg: 'bg-red-500', light: 'bg-red-200', border: 'border-red-600' },
-    { color: 'blue', bg: 'bg-blue-500', light: 'bg-blue-200', border: 'border-blue-600' },
-    { color: 'green', bg: 'bg-green-500', light: 'bg-green-200', border: 'border-green-600' },
-    { color: 'yellow', bg: 'bg-yellow-500', light: 'bg-yellow-200', border: 'border-yellow-600' }
-  ];
+  const [gameSettings, setGameSettings] = useState({
+    mode: 'vs-computer' as GameMode,
+    numberOfPlayers: 4,
+    difficulty: 'medium',
+    boardTheme: 'classic',
+    enableAnimations: true
+  });
+
+  const [isRollingDice, setIsRollingDice] = useState(false);
+  const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
+
+  const playerColors: PlayerColor[] = ['red', 'blue', 'yellow', 'green'];
+  
+  const boardPositions = {
+    red: { start: 1, home: [1, 2, 3, 4, 5], safe: [9, 22, 35, 48] },
+    blue: { start: 14, home: [14, 15, 16, 17, 18], safe: [22, 35, 48, 9] },
+    yellow: { start: 27, home: [27, 28, 29, 30, 31], safe: [35, 48, 9, 22] },
+    green: { start: 40, home: [40, 41, 42, 43, 44], safe: [48, 9, 22, 35] }
+  };
 
   const gameModes = [
     { value: 'vs-computer', label: 'vs Computer', icon: Bot },
-    { value: 'multiplayer', label: 'Multiplayer', icon: Users },
-    { value: 'single-player', label: 'Practice', icon: User }
+    { value: 'vs-friends', label: 'vs Friends', icon: Users },
+    { value: 'online', label: 'Online Match', icon: Zap }
   ];
 
-  const playerCounts = ['2', '3', '4'];
-  const difficulties = ['easy', 'medium', 'hard'];
+  const difficulties = [
+    { value: 'easy', label: 'Easy' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'hard', label: 'Hard' },
+    { value: 'expert', label: 'Expert' }
+  ];
+
+  const boardThemes = [
+    { value: 'classic', label: 'Classic Board' },
+    { value: 'royal', label: 'Royal Palace' },
+    { value: 'modern', label: 'Modern Design' },
+    { value: 'wooden', label: 'Wooden Classic' }
+  ];
+
+  const initializeGame = () => {
+    const players: Player[] = playerColors.slice(0, gameSettings.numberOfPlayers).map((color, index) => ({
+      id: `player-${index}`,
+      color,
+      name: color.charAt(0).toUpperCase() + color.slice(1),
+      isHuman: gameSettings.mode === 'vs-friends' || index === 0,
+      pieces: [0, 0, 0, 0], // All pieces start at home
+      homePosition: boardPositions[color].start,
+      safePositions: boardPositions[color].safe
+    }));
+
+    setGameState({
+      players,
+      currentPlayerIndex: 0,
+      diceValue: null,
+      isDiceRolled: false,
+      gameStatus: 'playing',
+      winner: null,
+      board: Array(52).fill(null),
+      moveHistory: []
+    });
+  };
 
   useEffect(() => {
     initializeGame();
-    setHints([
-      "Roll a 6 to move pieces out of home",
-      "Capture opponent pieces to send them back home",
-      "Create safe zones by keeping pieces together",
-      "Focus on getting all pieces to the center",
-      "Use strategy to block opponents' paths"
-    ]);
-  }, [playerCount, gameMode]);
-
-  const initializeGame = () => {
-    const count = parseInt(playerCount);
-    const newPlayers: Player[] = [];
-    
-    for (let i = 0; i < count; i++) {
-      newPlayers.push({
-        id: i,
-        color: playerColors[i].color,
-        name: i === 0 ? 'You' : (gameMode === 'vs-computer' ? `Computer ${i}` : `Player ${i + 1}`),
-        pieces: [-1, -1, -1, -1], // -1 means in home
-        isComputer: gameMode === 'vs-computer' && i !== 0
-      });
-    }
-    
-    setPlayers(newPlayers);
-    setCurrentPlayer(0);
-    setDiceValue(1);
-    setGameStarted(false);
-  };
+  }, [gameSettings.numberOfPlayers, gameSettings.mode]);
 
   const rollDice = async () => {
-    if (isRolling) return;
+    if (gameState.isDiceRolled) return;
     
-    setIsRolling(true);
+    setIsRollingDice(true);
     
-    // Animate dice roll
+    // Simulate dice rolling animation
     for (let i = 0; i < 10; i++) {
-      setDiceValue(Math.floor(Math.random() * 6) + 1);
       await new Promise(resolve => setTimeout(resolve, 100));
+      setGameState(prev => ({ ...prev, diceValue: Math.floor(Math.random() * 6) + 1 }));
     }
     
     const finalValue = Math.floor(Math.random() * 6) + 1;
-    setDiceValue(finalValue);
-    setIsRolling(false);
-    setGameStarted(true);
     
-    // Auto-advance turn after a delay
-    setTimeout(() => {
-      if (players[currentPlayer]?.isComputer) {
-        // Computer move logic here
-        makeComputerMove(finalValue);
-      }
-    }, 1000);
-
-    // Update stats
-    onStatsUpdate(prev => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
+    setGameState(prev => ({
+      ...prev,
+      diceValue: finalValue,
+      isDiceRolled: true
+    }));
+    
+    setIsRollingDice(false);
+    
+    // Auto-play for computer players
+    if (!gameState.players[gameState.currentPlayerIndex]?.isHuman) {
+      setTimeout(() => makeComputerMove(finalValue), 1000);
+    }
   };
 
-  const makeComputerMove = (diceVal: number) => {
-    // Simple AI logic for computer moves
-    console.log(`Computer ${currentPlayer} rolled ${diceVal}`);
-    nextTurn();
+  const makeComputerMove = (diceValue: number) => {
+    // Simple AI logic - prioritize getting pieces out, then moving strategically
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const availablePieces = currentPlayer.pieces.map((pos, index) => ({ index, position: pos }));
+    
+    // Prioritize moving pieces that are out of home
+    const movablePieces = availablePieces.filter(piece => 
+      piece.position > 0 || diceValue === 6
+    );
+    
+    if (movablePieces.length > 0) {
+      const randomPiece = movablePieces[Math.floor(Math.random() * movablePieces.length)];
+      movePiece(randomPiece.index, diceValue);
+    } else {
+      nextTurn();
+    }
+  };
+
+  const movePiece = (pieceIndex: number, steps: number) => {
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const currentPosition = currentPlayer.pieces[pieceIndex];
+    
+    let newPosition;
+    if (currentPosition === 0) {
+      // Piece is at home, can only move out with 6
+      if (steps === 6) {
+        newPosition = currentPlayer.homePosition;
+      } else {
+        return; // Can't move
+      }
+    } else {
+      newPosition = (currentPosition + steps) % 52;
+      if (newPosition === 0) newPosition = 52;
+    }
+    
+    // Update game state
+    setGameState(prev => {
+      const newPlayers = [...prev.players];
+      newPlayers[prev.currentPlayerIndex] = {
+        ...currentPlayer,
+        pieces: currentPlayer.pieces.map((pos, idx) => 
+          idx === pieceIndex ? newPosition : pos
+        )
+      };
+      
+      const moveNotation = `${currentPlayer.color} piece ${pieceIndex + 1}: ${currentPosition} → ${newPosition}`;
+      
+      return {
+        ...prev,
+        players: newPlayers,
+        moveHistory: [...prev.moveHistory, moveNotation]
+      };
+    });
+    
+    // Check for win condition
+    if (currentPlayer.pieces.every(pos => pos >= 51)) {
+      setGameState(prev => ({
+        ...prev,
+        gameStatus: 'finished',
+        winner: currentPlayer.color
+      }));
+      onStatsUpdate(prevStats => ({ ...prevStats, gamesPlayed: prevStats.gamesPlayed + 1 }));
+      return;
+    }
+    
+    // Next turn (unless rolled 6)
+    if (steps !== 6) {
+      nextTurn();
+    } else {
+      setGameState(prev => ({ ...prev, isDiceRolled: false, diceValue: null }));
+    }
   };
 
   const nextTurn = () => {
-    setCurrentPlayer((prev) => (prev + 1) % parseInt(playerCount));
+    setGameState(prev => ({
+      ...prev,
+      currentPlayerIndex: (prev.currentPlayerIndex + 1) % prev.players.length,
+      isDiceRolled: false,
+      diceValue: null
+    }));
+    setSelectedPiece(null);
   };
 
-  const randomizeSettings = () => {
-    const randomMode = gameModes[Math.floor(Math.random() * gameModes.length)];
-    setGameMode(randomMode.value);
-    setPlayerCount(playerCounts[Math.floor(Math.random() * playerCounts.length)]);
-    setDifficulty(difficulties[Math.floor(Math.random() * difficulties.length)]);
-  };
-
-  const nextHint = () => {
-    setCurrentHint((prev) => (prev + 1) % hints.length);
-  };
-
-  // Create Ludo board path (simplified for display)
-  const createBoardSquares = () => {
-    const squares = [];
+  const handlePieceClick = (pieceIndex: number) => {
+    if (!gameState.isDiceRolled || !gameState.diceValue) return;
     
-    // Top row (squares 0-5)
-    for (let i = 0; i < 6; i++) {
-      squares.push({ id: i, x: i + 6, y: 0, safe: i === 1 });
-    }
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer.isHuman) return;
     
-    // Right column (squares 6-11)
-    for (let i = 1; i < 6; i++) {
-      squares.push({ id: i + 5, x: 14, y: i, safe: i === 2 });
-    }
-    
-    // Continue around the board...
-    return squares;
+    movePiece(pieceIndex, gameState.diceValue);
   };
 
-  const concepts = [
-    {
-      title: "Ludo Strategy Basics",
-      description: "Master the fundamental strategies of Ludo",
-      example: "1. Roll 6 to get pieces out\n2. Capture opponents when possible\n3. Keep pieces safe in groups\n4. Race to the center finish",
-      animation: "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop",
-      relatedTopics: ["Piece Movement", "Capturing", "Safe Zones", "Endgame Strategy"]
-    },
-    {
-      title: "Advanced Tactics",
-      description: "Learn advanced Ludo techniques",
-      example: "Block opponents' paths, time your captures, manage risk vs reward",
-      animation: "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop",
-      relatedTopics: ["Blocking", "Risk Management", "Timing", "Multi-piece Strategy"]
-    }
-  ];
+  const resetGame = () => {
+    initializeGame();
+    setSelectedPiece(null);
+  };
+
+  const getBoardSquareColor = (index: number) => {
+    if (index % 13 === 0) return '#ff4444'; // Red
+    if (index % 13 === 1) return '#ffffff'; // White
+    if (index % 13 === 6) return playerColors[Math.floor(index / 13)] || '#cccccc';
+    return '#f0f0f0';
+  };
+
+  const renderLudoBoard = () => {
+    return (
+      <div className="relative w-full max-w-lg mx-auto aspect-square bg-white border-4 border-gray-800 rounded-lg overflow-hidden">
+        {/* Center cross pattern */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-full h-1/3 bg-gradient-to-r from-red-400 via-yellow-400 to-blue-400"></div>
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="h-full w-1/3 bg-gradient-to-b from-green-400 via-yellow-400 to-red-400"></div>
+        </div>
+        
+        {/* Home areas */}
+        <div className="absolute top-2 left-2 w-1/3 h-1/3 bg-red-200 border-2 border-red-600 rounded flex items-center justify-center">
+          <div className="text-red-800 font-bold text-lg">RED</div>
+        </div>
+        <div className="absolute top-2 right-2 w-1/3 h-1/3 bg-blue-200 border-2 border-blue-600 rounded flex items-center justify-center">
+          <div className="text-blue-800 font-bold text-lg">BLUE</div>
+        </div>
+        <div className="absolute bottom-2 left-2 w-1/3 h-1/3 bg-green-200 border-2 border-green-600 rounded flex items-center justify-center">
+          <div className="text-green-800 font-bold text-lg">GREEN</div>
+        </div>
+        <div className="absolute bottom-2 right-2 w-1/3 h-1/3 bg-yellow-200 border-2 border-yellow-600 rounded flex items-center justify-center">
+          <div className="text-yellow-800 font-bold text-lg">YELLOW</div>
+        </div>
+        
+        {/* Player pieces */}
+        {gameState.players.map((player, playerIndex) => (
+          <div key={player.id}>
+            {player.pieces.map((position, pieceIndex) => {
+              if (position === 0) {
+                // Piece is at home
+                const homePositions = {
+                  red: { top: '20%', left: '15%' },
+                  blue: { top: '20%', right: '15%' },
+                  green: { bottom: '20%', left: '15%' },
+                  yellow: { bottom: '20%', right: '15%' }
+                };
+                
+                const homePos = homePositions[player.color];
+                return (
+                  <div
+                    key={`${player.id}-${pieceIndex}`}
+                    className={`absolute w-6 h-6 rounded-full border-2 cursor-pointer transition-all hover:scale-110 ${
+                      player.color === 'red' ? 'bg-red-500 border-red-700' :
+                      player.color === 'blue' ? 'bg-blue-500 border-blue-700' :
+                      player.color === 'green' ? 'bg-green-500 border-green-700' :
+                      'bg-yellow-500 border-yellow-700'
+                    }`}
+                    style={{
+                      ...homePos,
+                      transform: `translate(${pieceIndex * 8}px, ${pieceIndex * 8}px)`
+                    }}
+                    onClick={() => handlePieceClick(pieceIndex)}
+                  />
+                );
+              } else {
+                // Piece is on the board
+                const angle = (position - 1) * (360 / 52);
+                const radius = 140;
+                const x = 50 + (radius * Math.cos(angle * Math.PI / 180)) / 3;
+                const y = 50 + (radius * Math.sin(angle * Math.PI / 180)) / 3;
+                
+                return (
+                  <div
+                    key={`${player.id}-${pieceIndex}`}
+                    className={`absolute w-6 h-6 rounded-full border-2 cursor-pointer transition-all hover:scale-110 ${
+                      player.color === 'red' ? 'bg-red-500 border-red-700' :
+                      player.color === 'blue' ? 'bg-blue-500 border-blue-700' :
+                      player.color === 'green' ? 'bg-green-500 border-green-700' :
+                      'bg-yellow-500 border-yellow-700'
+                    }`}
+                    style={{
+                      left: `${x}%`,
+                      top: `${y}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    onClick={() => handlePieceClick(pieceIndex)}
+                  />
+                );
+              }
+            })}
+          </div>
+        ))}
+        
+        {/* Center triangle */}
+        <div className="absolute inset-1/3 bg-white border-4 border-gray-800 flex items-center justify-center">
+          <div className="text-2xl font-bold text-gray-800">🏠</div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDice = () => {
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    
+    return (
+      <div className="text-center space-y-4">
+        <div 
+          className={`w-20 h-20 mx-auto border-4 border-gray-800 rounded-lg flex items-center justify-center text-4xl font-bold cursor-pointer transition-all hover:scale-105 ${
+            isRollingDice ? 'animate-bounce' : ''
+          } ${currentPlayer ? `bg-${currentPlayer.color}-100` : 'bg-gray-100'}`}
+          onClick={rollDice}
+        >
+          {gameState.diceValue || '🎲'}
+        </div>
+        <div className="text-sm font-medium">
+          {gameState.isDiceRolled ? 'Select a piece to move' : 'Click to roll dice'}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
@@ -173,17 +366,17 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Hub</span>
           </Button>
-          <h1 className="text-3xl font-bold text-green-800">Ludo King</h1>
+          <h1 className="text-3xl font-bold text-green-800">Ludo Master</h1>
           <div className="flex space-x-2">
-            <Button onClick={() => setShowConcepts(true)} variant="outline">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Learn Strategy
+            <Button variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Game Controls */}
+          {/* Game Settings */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Game Settings</CardTitle>
@@ -191,7 +384,7 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Game Mode</label>
-                <Select value={gameMode} onValueChange={setGameMode}>
+                <Select value={gameSettings.mode} onValueChange={(value: GameMode) => setGameSettings(prev => ({ ...prev, mode: value }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -213,218 +406,147 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Players</label>
-                <Select value={playerCount} onValueChange={setPlayerCount}>
+                <Select value={gameSettings.numberOfPlayers.toString()} onValueChange={(value) => setGameSettings(prev => ({ ...prev, numberOfPlayers: parseInt(value) }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {playerCounts.map(count => (
-                      <SelectItem key={count} value={count}>
-                        {count} Players
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="2">2 Players</SelectItem>
+                    <SelectItem value="3">3 Players</SelectItem>
+                    <SelectItem value="4">4 Players</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Difficulty</label>
-                <Select value={difficulty} onValueChange={setDifficulty}>
+                <Select value={gameSettings.difficulty} onValueChange={(value) => setGameSettings(prev => ({ ...prev, difficulty: value }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {difficulties.map(diff => (
-                      <SelectItem key={diff} value={diff}>
-                        {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                      <SelectItem key={diff.value} value={diff.value}>
+                        {diff.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <Button onClick={randomizeSettings} className="w-full" variant="outline">
-                <Shuffle className="h-4 w-4 mr-2" />
-                Random Settings
-              </Button>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Board Theme</label>
+                <Select value={gameSettings.boardTheme} onValueChange={(value) => setGameSettings(prev => ({ ...prev, boardTheme: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {boardThemes.map(theme => (
+                      <SelectItem key={theme.value} value={theme.value}>
+                        {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-2">
-                <Button onClick={initializeGame} className="w-full" variant="outline">
+                <Button onClick={resetGame} className="w-full" variant="outline">
                   <RotateCcw className="h-4 w-4 mr-2" />
                   New Game
                 </Button>
-                <Button onClick={nextHint} className="w-full" variant="outline">
-                  <Lightbulb className="h-4 w-4 mr-2" />
-                  Next Hint
-                </Button>
               </div>
 
-              <div className="text-center">
-                <Badge className={`${playerColors[currentPlayer]?.bg} text-white`}>
-                  {players[currentPlayer]?.name}'s Turn
-                </Badge>
-              </div>
+              {gameState.gameStatus === 'playing' && (
+                <div className="text-center">
+                  <Badge className={`${gameState.players[gameState.currentPlayerIndex]?.color === 'red' ? 'bg-red-500' : 
+                                      gameState.players[gameState.currentPlayerIndex]?.color === 'blue' ? 'bg-blue-500' : 
+                                      gameState.players[gameState.currentPlayerIndex]?.color === 'green' ? 'bg-green-500' : 
+                                      'bg-yellow-500'} text-white`}>
+                    {gameState.players[gameState.currentPlayerIndex]?.name || 'Unknown'}'s Turn
+                  </Badge>
+                </div>
+              )}
+
+              {gameState.winner && (
+                <div className="text-center">
+                  <Badge variant="destructive" className="text-lg">
+                    🎉 {gameState.winner} Wins! 🎉
+                  </Badge>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Ludo Board */}
+          {/* Game Board */}
           <Card className="lg:col-span-2">
             <CardContent className="p-6">
-              <div className="aspect-square max-w-lg mx-auto bg-white relative border-4 border-gray-800 rounded-lg">
-                {/* Ludo Board Layout */}
-                <div className="absolute inset-0 grid grid-cols-15 grid-rows-15 gap-0">
-                  
-                  {/* Red Home Area (Top-Left) */}
-                  <div className="col-span-6 row-span-6 bg-red-200 border-4 border-red-600 m-1 rounded-lg relative">
-                    <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
-                      {[0, 1, 2, 3].map(i => (
-                        <div key={`red-${i}`} className="bg-red-500 rounded-full border-2 border-red-700 flex items-center justify-center">
-                          <div className="w-6 h-6 bg-red-600 rounded-full"></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Top Track */}
-                  <div className="col-span-3 row-span-6 grid grid-rows-6 gap-0">
-                    {[0, 1, 2, 3, 4, 5].map(i => (
-                      <div key={`top-${i}`} className={`border border-gray-400 ${i === 1 ? 'bg-red-300' : 'bg-white'} flex items-center justify-center`}>
-                        {i === 1 && <div className="w-4 h-4 bg-red-500 rounded-full"></div>}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Blue Home Area (Top-Right) */}
-                  <div className="col-span-6 row-span-6 bg-blue-200 border-4 border-blue-600 m-1 rounded-lg relative">
-                    <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
-                      {[0, 1, 2, 3].map(i => (
-                        <div key={`blue-${i}`} className="bg-blue-500 rounded-full border-2 border-blue-700 flex items-center justify-center">
-                          <div className="w-6 h-6 bg-blue-600 rounded-full"></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Left Track */}
-                  <div className="col-span-6 row-span-3 grid grid-cols-6 gap-0">
-                    {[0, 1, 2, 3, 4, 5].map(i => (
-                      <div key={`left-${i}`} className={`border border-gray-400 ${i === 4 ? 'bg-green-300' : 'bg-white'} flex items-center justify-center`}>
-                        {i === 4 && <div className="w-4 h-4 bg-green-500 rounded-full"></div>}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Center Victory Area */}
-                  <div className="col-span-3 row-span-3 bg-gradient-to-br from-yellow-300 to-yellow-500 border-4 border-yellow-600 rounded-lg flex items-center justify-center">
-                    <div className="text-2xl">🏆</div>
-                  </div>
-
-                  {/* Right Track */}
-                  <div className="col-span-6 row-span-3 grid grid-cols-6 gap-0">
-                    {[0, 1, 2, 3, 4, 5].map(i => (
-                      <div key={`right-${i}`} className={`border border-gray-400 ${i === 1 ? 'bg-blue-300' : 'bg-white'} flex items-center justify-center`}>
-                        {i === 1 && <div className="w-4 h-4 bg-blue-500 rounded-full"></div>}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Green Home Area (Bottom-Left) */}
-                  <div className="col-span-6 row-span-6 bg-green-200 border-4 border-green-600 m-1 rounded-lg relative">
-                    <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
-                      {[0, 1, 2, 3].map(i => (
-                        <div key={`green-${i}`} className="bg-green-500 rounded-full border-2 border-green-700 flex items-center justify-center">
-                          <div className="w-6 h-6 bg-green-600 rounded-full"></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Bottom Track */}
-                  <div className="col-span-3 row-span-6 grid grid-rows-6 gap-0">
-                    {[0, 1, 2, 3, 4, 5].map(i => (
-                      <div key={`bottom-${i}`} className={`border border-gray-400 ${i === 4 ? 'bg-yellow-300' : 'bg-white'} flex items-center justify-center`}>
-                        {i === 4 && <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Yellow Home Area (Bottom-Right) */}
-                  <div className="col-span-6 row-span-6 bg-yellow-200 border-4 border-yellow-600 m-1 rounded-lg relative">
-                    <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
-                      {[0, 1, 2, 3].map(i => (
-                        <div key={`yellow-${i}`} className="bg-yellow-500 rounded-full border-2 border-yellow-700 flex items-center justify-center">
-                          <div className="w-6 h-6 bg-yellow-600 rounded-full"></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {renderLudoBoard()}
             </CardContent>
           </Card>
 
-          {/* Game Info */}
+          {/* Game Controls & Info */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Game Controls</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center">
-                <Button 
-                  onClick={rollDice} 
-                  disabled={isRolling}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white mb-4"
-                >
-                  <Dice6 className="h-4 w-4 mr-2" />
-                  {isRolling ? 'Rolling...' : 'Roll Dice'}
-                </Button>
-                <div className={`text-6xl transition-transform duration-200 ${isRolling ? 'animate-spin' : ''}`}>
-                  🎲
-                </div>
-                <div className="text-3xl font-bold mt-2">{diceValue}</div>
-              </div>
+              {/* Dice */}
+              {renderDice()}
 
-              <div>
-                <h4 className="font-semibold mb-2">Current Hint:</h4>
-                <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
-                  {hints[currentHint]}
-                </p>
-              </div>
-
+              {/* Player Status */}
               <div>
                 <h4 className="font-semibold mb-2">Players:</h4>
                 <div className="space-y-2">
-                  {players.map((player, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 rounded bg-gray-50">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-4 h-4 rounded-full ${playerColors[index]?.bg}`}></div>
-                        <span className="text-sm font-medium">{player.name}</span>
+                  {gameState.players.map((player, index) => (
+                    <div key={player.id} className={`p-2 rounded ${index === gameState.currentPlayerIndex ? 'bg-blue-50 border-2 border-blue-300' : 'bg-gray-50'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`font-medium text-${player.color}-600`}>
+                          {player.name}
+                        </span>
+                        <Badge variant="outline">
+                          {player.pieces.filter(pos => pos > 0).length}/4 out
+                        </Badge>
                       </div>
-                      {index === currentPlayer && <Badge>Active</Badge>}
+                      <div className="text-xs text-gray-500 mt-1">
+                        Home: {4 - player.pieces.filter(pos => pos > 0).length} | 
+                        Finished: {player.pieces.filter(pos => pos >= 51).length}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* Move History */}
               <div>
-                <h4 className="font-semibold mb-2">Game Settings:</h4>
-                <div className="space-y-1 text-sm">
-                  <div>Mode: <Badge variant="secondary">{gameMode.replace('-', ' ')}</Badge></div>
-                  <div>Players: <Badge variant="secondary">{playerCount}</Badge></div>
-                  <div>Difficulty: <Badge variant="secondary">{difficulty}</Badge></div>
+                <h4 className="font-semibold mb-2">Recent Moves:</h4>
+                <div className="max-h-32 overflow-y-auto text-sm bg-gray-50 p-2 rounded">
+                  {gameState.moveHistory.length === 0 ? (
+                    <p className="text-gray-500 italic">No moves yet</p>
+                  ) : (
+                    gameState.moveHistory.slice(-5).map((move, index) => (
+                      <div key={index} className="py-1 border-b border-gray-200 last:border-0">
+                        {move}
+                      </div>
+                    ))
+                  )}
                 </div>
+              </div>
+
+              {/* Game Rules */}
+              <div>
+                <h4 className="font-semibold mb-2">Quick Rules:</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Roll 6 to get pieces out</li>
+                  <li>• Roll 6 to get extra turn</li>
+                  <li>• Capture opponents by landing on them</li>
+                  <li>• Get all 4 pieces home to win</li>
+                </ul>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-
-      <ConceptModal
-        isOpen={showConcepts}
-        onClose={() => setShowConcepts(false)}
-        concepts={concepts}
-        gameTitle="Ludo"
-      />
     </div>
   );
 };

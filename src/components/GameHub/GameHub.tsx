@@ -2,12 +2,11 @@
 import React, { useState } from 'react';
 import { GameCard } from './GameCard';
 import { ChessGame } from './Games/ChessGame';
-import { LudoGame } from './Games/LudoGame';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
 
-export type GameType = 'chess' | 'ludo' | null;
+export type GameType = 'chess' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -21,20 +20,11 @@ export const GameHub: React.FC = () => {
     {
       id: 'chess' as const,
       title: 'Master Chess',
-      description: 'Play chess like a master with AI opponents and multiplayer modes',
+      description: 'Play chess with extensive customization, multiple AI opponents, and advanced features',
       image: 'https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=400&h=300&fit=crop',
       difficulty: 'Advanced',
       category: 'Strategy',
       players: '1-2'
-    },
-    {
-      id: 'ludo' as const,
-      title: 'Ludo King',
-      description: 'Classic Ludo board game with friends and family',
-      image: 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop',
-      difficulty: 'Easy',
-      category: 'Board Game',
-      players: '2-4'
     }
   ];
 
@@ -42,8 +32,6 @@ export const GameHub: React.FC = () => {
     switch (currentGame) {
       case 'chess':
         return <ChessGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
-      case 'ludo':
-        return <LudoGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       default:
         return null;
     }
@@ -65,9 +53,9 @@ export const GameHub: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                🎮 Learning Game Hub
+                ♟️ Chess Master Hub
               </h1>
-              <p className="text-gray-600 mt-2">Master Chess and Ludo through interactive gameplay</p>
+              <p className="text-gray-600 mt-2">Master Chess with advanced customization and AI opponents</p>
             </div>
             <div className="flex items-center space-x-4">
               <Card className="px-4 py-2 bg-blue-50">
@@ -79,7 +67,7 @@ export const GameHub: React.FC = () => {
               <Card className="px-4 py-2 bg-purple-50">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">{playerStats.totalScore}</div>
-                  <div className="text-xs text-gray-600">Total Score</div>
+                  <div className="text-xs text-gray-600">Rating</div>
                 </div>
               </Card>
             </div>
@@ -114,11 +102,11 @@ export const GameHub: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Choose Your Game</h2>
-          <p className="text-gray-600 text-lg">Select Chess or Ludo to start playing!</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Start Playing Chess</h2>
+          <p className="text-gray-600 text-lg">Experience chess with professional-grade customization and features!</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 max-w-2xl mx-auto">
           {games.map((game) => (
             <GameCard
               key={game.id}
@@ -130,17 +118,22 @@ export const GameHub: React.FC = () => {
 
         {/* Featured Section */}
         <div className="mt-12">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6">Why Play Our Games?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6">Chess Features</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">♟️</div>
-              <h4 className="text-xl font-bold mb-2">Strategic Thinking</h4>
-              <p className="text-gray-600">Develop advanced strategic thinking and tactical skills</p>
+              <div className="text-4xl mb-4">🎨</div>
+              <h4 className="text-xl font-bold mb-2">Board Customization</h4>
+              <p className="text-gray-600">Multiple themes, colors, and visual effects</p>
             </Card>
             <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">🎲</div>
-              <h4 className="text-xl font-bold mb-2">Fun & Social</h4>
-              <p className="text-gray-600">Enjoy classic games with friends and family</p>
+              <div className="text-4xl mb-4">🤖</div>
+              <h4 className="text-xl font-bold mb-2">AI Opponents</h4>
+              <p className="text-gray-600">Various difficulty levels and playing styles</p>
+            </Card>
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-4">📈</div>
+              <h4 className="text-xl font-bold mb-2">Analysis & Learning</h4>
+              <p className="text-gray-600">Move analysis, puzzles, and improvement tracking</p>
             </Card>
           </div>
         </div>
