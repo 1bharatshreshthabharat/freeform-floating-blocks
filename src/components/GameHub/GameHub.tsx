@@ -3,15 +3,11 @@ import React, { useState } from 'react';
 import { GameCard } from './GameCard';
 import { ChessGame } from './Games/ChessGame';
 import { LudoGame } from './Games/LudoGame';
-import { MemoryGame } from './Games/MemoryGame';
-import { MathGame } from './Games/MathGame';
-import { WordGame } from './Games/WordGame';
-import { LogicGame } from './Games/LogicGame';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
 
-export type GameType = 'chess' | 'ludo' | 'memory' | 'math' | 'word' | 'logic' | null;
+export type GameType = 'chess' | 'ludo' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -24,8 +20,8 @@ export const GameHub: React.FC = () => {
   const games = [
     {
       id: 'chess' as const,
-      title: 'Strategic Chess',
-      description: 'Master chess tactics and strategies with AI opponents',
+      title: 'Master Chess',
+      description: 'Play chess like a master with AI opponents and multiplayer modes',
       image: 'https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=400&h=300&fit=crop',
       difficulty: 'Advanced',
       category: 'Strategy',
@@ -34,47 +30,11 @@ export const GameHub: React.FC = () => {
     {
       id: 'ludo' as const,
       title: 'Ludo King',
-      description: 'Classic board game with friends and family',
+      description: 'Classic Ludo board game with friends and family',
       image: 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop',
       difficulty: 'Easy',
       category: 'Board Game',
       players: '2-4'
-    },
-    {
-      id: 'memory' as const,
-      title: 'Brain Memory',
-      description: 'Enhance memory and cognitive skills',
-      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop',
-      difficulty: 'Medium',
-      category: 'Cognitive',
-      players: '1'
-    },
-    {
-      id: 'math' as const,
-      title: 'Math Master',
-      description: 'Solve mathematical puzzles and improve arithmetic',
-      image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=300&fit=crop',
-      difficulty: 'Variable',
-      category: 'Educational',
-      players: '1'
-    },
-    {
-      id: 'word' as const,
-      title: 'Word Wizard',
-      description: 'Expand vocabulary and language skills',
-      image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
-      difficulty: 'Medium',
-      category: 'Language',
-      players: '1'
-    },
-    {
-      id: 'logic' as const,
-      title: 'Logic Puzzles',
-      description: 'Challenge your reasoning and problem-solving',
-      image: 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop',
-      difficulty: 'Hard',
-      category: 'Logic',
-      players: '1'
     }
   ];
 
@@ -84,14 +44,6 @@ export const GameHub: React.FC = () => {
         return <ChessGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'ludo':
         return <LudoGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
-      case 'memory':
-        return <MemoryGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
-      case 'math':
-        return <MathGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
-      case 'word':
-        return <WordGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
-      case 'logic':
-        return <LogicGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       default:
         return null;
     }
@@ -115,7 +67,7 @@ export const GameHub: React.FC = () => {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 🎮 Learning Game Hub
               </h1>
-              <p className="text-gray-600 mt-2">Master skills through interactive games and challenges</p>
+              <p className="text-gray-600 mt-2">Master Chess and Ludo through interactive gameplay</p>
             </div>
             <div className="flex items-center space-x-4">
               <Card className="px-4 py-2 bg-blue-50">
@@ -162,11 +114,11 @@ export const GameHub: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Choose Your Adventure</h2>
-          <p className="text-gray-600 text-lg">Select a game to start learning and having fun!</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Choose Your Game</h2>
+          <p className="text-gray-600 text-lg">Select Chess or Ludo to start playing!</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {games.map((game) => (
             <GameCard
               key={game.id}
@@ -178,22 +130,17 @@ export const GameHub: React.FC = () => {
 
         {/* Featured Section */}
         <div className="mt-12">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6">Why Choose Our Games?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6">Why Play Our Games?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">🧠</div>
-              <h4 className="text-xl font-bold mb-2">Cognitive Development</h4>
-              <p className="text-gray-600">Enhance memory, attention, and problem-solving skills</p>
+              <div className="text-4xl mb-4">♟️</div>
+              <h4 className="text-xl font-bold mb-2">Strategic Thinking</h4>
+              <p className="text-gray-600">Develop advanced strategic thinking and tactical skills</p>
             </Card>
             <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">📚</div>
-              <h4 className="text-xl font-bold mb-2">Educational Content</h4>
-              <p className="text-gray-600">Learn while playing with curriculum-aligned games</p>
-            </Card>
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">🏆</div>
-              <h4 className="text-xl font-bold mb-2">Progress Tracking</h4>
-              <p className="text-gray-600">Monitor your improvement and unlock achievements</p>
+              <div className="text-4xl mb-4">🎲</div>
+              <h4 className="text-xl font-bold mb-2">Fun & Social</h4>
+              <p className="text-gray-600">Enjoy classic games with friends and family</p>
             </Card>
           </div>
         </div>
