@@ -1,16 +1,12 @@
 
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, ExternalLink, Play, BookOpen, Lightbulb, Target } from 'lucide-react';
 
 interface Concept {
   title: string;
   description: string;
   example: string;
-  animation: string;
+  animation?: string;
   relatedTopics: string[];
 }
 
@@ -27,192 +23,236 @@ export const ConceptModal: React.FC<ConceptModalProps> = ({
   concepts,
   gameTitle
 }) => {
-  const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
-  const [showAnimation, setShowAnimation] = useState(false);
-
-  const currentConcept = concepts[currentConceptIndex];
-
-  const nextConcept = () => {
-    setCurrentConceptIndex((prev) => (prev + 1) % concepts.length);
-    setShowAnimation(false);
+  const [currentConcept, setCurrentConcept] = useState(0);
+  const [currentTab, setCurrentTab] = useState<'learn' | 'howToPlay'>('learn');
+  
+  const handleNextConcept = () => {
+    setCurrentConcept((prev) => (prev + 1) % concepts.length);
   };
-
-  const prevConcept = () => {
-    setCurrentConceptIndex((prev) => (prev - 1 + concepts.length) % concepts.length);
-    setShowAnimation(false);
-  };
-
-  const playAnimation = () => {
-    setShowAnimation(true);
-    setTimeout(() => setShowAnimation(false), 3000);
-  };
-
-  const handleRelatedTopicClick = (topic: string) => {
-    // Show detailed explanation inline instead of alert
-    const explanations = {
-      "Center Control": "Controlling the center squares (e4, e5, d4, d5) gives your pieces more mobility and limits your opponent's options. Place pawns and pieces to influence these key squares.",
-      "Piece Development": "Bring your pieces from their starting squares to more active positions. Develop knights before bishops, and castle early to protect your king.",
-      "King Safety": "Your king is the most important piece. Castle early to move it to safety, and avoid moving pawns in front of your castled king unless necessary.",
-      "Time Management": "Don't waste moves in the opening. Each move should serve a purpose: control center, develop pieces, or improve king safety.",
-      "Pins": "A pin occurs when a piece cannot move without exposing a more valuable piece behind it. Use pins to restrict opponent's mobility.",
-      "Forks": "Attack two enemy pieces simultaneously with one of your pieces. Knights are particularly good at creating forks.",
-      "Skewers": "Force a valuable piece to move, exposing a less valuable piece behind it. Opposite of a pin.",
-      "Discovered Attacks": "Move one piece to reveal an attack from another piece behind it. Very powerful tactical motif.",
-      "Double Attacks": "Attack two targets simultaneously, forcing opponent to choose which one to defend.",
-      "Board Setup": "The chessboard has 64 squares arranged in 8x8 grid. Light square always goes on the right side of each player.",
-      "Piece Movement": "Each piece moves in a unique way: pawns forward, rooks straight lines, bishops diagonally, knights in L-shape, queen combines rook and bishop, king one square any direction.",
-      "Special Moves": "Castling, en passant capture, and pawn promotion are special moves that add strategic depth to the game.",
-      "Check & Checkmate": "Check means the king is under attack. Checkmate means the king is under attack and cannot escape - this ends the game.",
-      "Draw Conditions": "Games can end in a draw through stalemate, insufficient material, 50-move rule, threefold repetition, or mutual agreement."
-    };
-    
-    alert(explanations[topic as keyof typeof explanations] || `Learn more about ${topic} through practice and study.`);
+  
+  const handlePrevConcept = () => {
+    setCurrentConcept((prev) => (prev === 0 ? concepts.length - 1 : prev - 1));
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl w-full max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center space-x-2">
-            <BookOpen className="h-6 w-6" />
-            <span>{gameTitle} Learning Center</span>
+          <DialogTitle className="text-2xl">
+            {gameTitle} Learning Center
           </DialogTitle>
         </DialogHeader>
+        
+        {/* Tab navigation */}
+        <div className="flex border-b mb-4">
+          <button 
+            className={`py-2 px-4 font-medium ${currentTab === 'learn' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+            onClick={() => setCurrentTab('learn')}
+          >
+            Concepts
+          </button>
+          <button 
+            className={`py-2 px-4 font-medium ${currentTab === 'howToPlay' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+            onClick={() => setCurrentTab('howToPlay')}
+          >
+            How to Play
+          </button>
+        </div>
+        
+        {currentTab === 'learn' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1 bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-bold text-lg text-blue-800 mb-3">Concepts</h3>
+                <ul className="space-y-2">
+                  {concepts.map((concept, index) => (
+                    <li 
+                      key={index}
+                      className={`p-2 rounded cursor-pointer ${
+                        currentConcept === index 
+                          ? 'bg-blue-200 font-medium' 
+                          : 'hover:bg-blue-100'
+                      }`}
+                      onClick={() => setCurrentConcept(index)}
+                    >
+                      {concept.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-        {currentConcept && (
-          <div className="space-y-6">
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <Button onClick={prevConcept} variant="outline" disabled={concepts.length <= 1}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Previous
-              </Button>
-              <Badge variant="secondary" className="text-lg px-4 py-2">
-                {currentConceptIndex + 1} of {concepts.length}
-              </Badge>
-              <Button onClick={nextConcept} variant="outline" disabled={concepts.length <= 1}>
-                Next
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-
-            {/* Main Concept Card */}
-            <Card className="border-2 border-blue-200">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-                <CardTitle className="text-2xl text-blue-800 flex items-center space-x-2">
-                  <Target className="h-6 w-6" />
-                  <span>{currentConcept.title}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <p className="text-gray-700 text-lg leading-relaxed">{currentConcept.description}</p>
-
-                {/* Animation Section */}
-                <div className="bg-gradient-to-br from-gray-50 to-blue-50 p-6 rounded-lg border">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-semibold text-lg flex items-center space-x-2">
-                      <Play className="h-5 w-5" />
-                      <span>Visual Example</span>
-                    </h4>
-                    <Button onClick={playAnimation} size="sm" className="bg-green-500 hover:bg-green-600">
-                      <Play className="h-4 w-4 mr-2" />
-                      {showAnimation ? 'Playing...' : 'Play Animation'}
-                    </Button>
+              <div className="md:col-span-2 bg-gray-50 rounded-lg p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <button 
+                    onClick={handlePrevConcept}
+                    className="text-blue-500 hover:text-blue-700 font-medium"
+                  >
+                    ← Previous
+                  </button>
+                  <h3 className="text-xl font-bold text-center">{concepts[currentConcept].title}</h3>
+                  <button 
+                    onClick={handleNextConcept}
+                    className="text-blue-500 hover:text-blue-700 font-medium"
+                  >
+                    Next →
+                  </button>
+                </div>
+                
+                <div className="mb-4">
+                  <p className="text-gray-700 mb-4">{concepts[currentConcept].description}</p>
+                  
+                  <div className="bg-white p-4 border border-gray-200 rounded-md mb-4 prose max-w-none">
+                    <pre className="whitespace-pre-wrap font-mono text-sm">{concepts[currentConcept].example}</pre>
                   </div>
                   
-                  <div className="relative">
-                    <img
-                      src={currentConcept.animation}
-                      alt={currentConcept.title}
-                      className={`w-full h-64 object-cover rounded transition-all duration-500 ${
-                        showAnimation ? 'scale-105 shadow-lg' : ''
-                      }`}
-                    />
-                    {showAnimation && (
-                      <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded flex items-center justify-center">
-                        <div className="text-white font-bold text-2xl animate-pulse bg-blue-600 px-4 py-2 rounded">
-                          ✨ Animation Playing ✨
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {concepts[currentConcept].animation && (
+                    <div className="flex justify-center my-4">
+                      <img 
+                        src={concepts[currentConcept].animation} 
+                        alt={concepts[currentConcept].title} 
+                        className="rounded-lg shadow-md max-h-48"
+                      />
+                    </div>
+                  )}
                 </div>
-
-                {/* Detailed Example */}
-                <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-lg border border-green-200">
-                  <h4 className="font-semibold mb-3 text-lg flex items-center space-x-2">
-                    <Lightbulb className="h-5 w-5 text-yellow-600" />
-                    <span>Detailed Example:</span>
-                  </h4>
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono bg-white p-4 rounded border leading-relaxed">
-                    {currentConcept.example}
-                  </pre>
-                </div>
-
-                {/* Related Topics with Detailed Explanations */}
+                
                 <div>
-                  <h4 className="font-semibold mb-3 text-lg">Explore Related Topics:</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {currentConcept.relatedTopics.map((topic, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        className="text-sm h-auto py-3 px-4 justify-start hover:bg-blue-50"
-                        onClick={() => handleRelatedTopicClick(topic)}
-                      >
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium">{topic}</span>
-                          <span className="text-xs text-gray-500">Click to learn</span>
-                        </div>
-                        <ExternalLink className="h-3 w-3 ml-auto" />
-                      </Button>
+                  <h4 className="font-semibold text-gray-700 mb-2">Related Topics:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {concepts[currentConcept].relatedTopics.map((topic, index) => (
+                      <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                        {topic}
+                      </span>
                     ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Pro Tips */}
-            <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
-              <CardHeader>
-                <CardTitle className="text-lg text-yellow-800 flex items-center space-x-2">
-                  <Lightbulb className="h-5 w-5" />
-                  <span>💡 Pro Tips for Mastery</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-yellow-700 space-y-2">
-                  <li className="flex items-start space-x-2">
-                    <span>•</span>
-                    <span>Practice regularly with puzzles and games to build pattern recognition</span>
-                  </li>
-                  <li className="flex items-start space-x-2">
-                    <span>•</span>
-                    <span>Apply these concepts during live gameplay for real improvement</span>
-                  </li>
-                  <li className="flex items-start space-x-2">
-                    <span>•</span>
-                    <span>Use the hint system when you're stuck to learn new ideas</span>
-                  </li>
-                  <li className="flex items-start space-x-2">
-                    <span>•</span>
-                    <span>Study master games to see these concepts in action</span>
-                  </li>
-                  <li className="flex items-start space-x-2">
-                    <span>•</span>
-                    <span>Don't be afraid to experiment - mistakes are learning opportunities</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Action Button */}
-            <div className="flex justify-center">
-              <Button onClick={onClose} className="bg-blue-500 hover:bg-blue-600 px-8 py-3">
-                Back to Game
-              </Button>
+              </div>
             </div>
+          </>
+        )}
+        
+        {currentTab === 'howToPlay' && (
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="text-xl font-bold mb-4">How to Play {gameTitle}</h3>
+            
+            {gameTitle === "Enhanced Chess" ? (
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Basic Rules</h4>
+                  <p className="mb-4">Chess is played on an 8x8 grid with alternating light and dark squares. Each player starts with 16 pieces: 1 king, 1 queen, 2 rooks, 2 bishops, 2 knights, and 8 pawns. The goal is to checkmate your opponent's king.</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h5 className="font-medium mb-2">Piece Movement:</h5>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li><strong>King:</strong> One square in any direction</li>
+                        <li><strong>Queen:</strong> Any number of squares diagonally, horizontally, or vertically</li>
+                        <li><strong>Rook:</strong> Any number of squares horizontally or vertically</li>
+                        <li><strong>Bishop:</strong> Any number of squares diagonally</li>
+                        <li><strong>Knight:</strong> L-shape (2 squares in one direction, then 1 square perpendicular)</li>
+                        <li><strong>Pawn:</strong> One square forward (two on first move), captures diagonally</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h5 className="font-medium mb-2">Special Moves:</h5>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li><strong>Castling:</strong> King moves two squares toward rook, and rook moves to opposite side</li>
+                        <li><strong>En Passant:</strong> Pawn captures enemy pawn that moved two squares</li>
+                        <li><strong>Promotion:</strong> Pawn reaching the opposite rank becomes any piece except king</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Check, Checkmate & Draw</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><strong>Check:</strong> When the king is under attack by an enemy piece</li>
+                    <li><strong>Checkmate:</strong> When the king is in check and has no legal move to escape</li>
+                    <li><strong>Stalemate:</strong> When a player has no legal moves but is not in check (draw)</li>
+                    <li><strong>50-Move Rule:</strong> Draw if no captures or pawn moves in 50 consecutive turns</li>
+                    <li><strong>Threefold Repetition:</strong> Draw if the same position occurs three times</li>
+                    <li><strong>Insufficient Material:</strong> Draw if neither player has enough pieces to checkmate</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Game Controls in Enhanced Chess</h4>
+                  <p className="mb-2">Our enhanced interface offers several features to improve your chess experience:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Click on a piece to select it, then click on a valid square to move</li>
+                    <li>Customize board appearance, piece sets, and animation speeds</li>
+                    <li>Get strategic hints and view your move history</li>
+                    <li>Track captured pieces and game stats</li>
+                    <li>Adjust difficulty levels when playing against the computer</li>
+                    <li>Use analysis mode to explore different positions</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-2">Tips for Beginners</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Control the center of the board</li>
+                    <li>Develop your knights and bishops early</li>
+                    <li>Castle your king to safety</li>
+                    <li>Connect your rooks</li>
+                    <li>Look for tactics like forks, pins, and skewers</li>
+                    <li>Always think about what your opponent's next move might be</li>
+                    <li>Practice regularly and analyze your games</li>
+                  </ul>
+                </div>
+              </div>
+            ) : gameTitle === "Ludo King" ? (
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Game Overview</h4>
+                  <p>Ludo is a classic board game where players race their four tokens from start to finish based on dice rolls. The first player to get all four tokens home wins.</p>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Basic Rules</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Each player has 4 tokens that begin in their respective colored home yard</li>
+                    <li>Players take turns rolling a die</li>
+                    <li>Roll a 6 to move a token out of the home yard onto the starting square</li>
+                    <li>After rolling a 6, the player gets an extra turn</li>
+                    <li>Three consecutive 6s forfeit the player's turn</li>
+                    <li>Tokens move clockwise around the board according to the die value</li>
+                    <li>If a token lands on an opponent's token, the opponent's token returns to its home yard</li>
+                    <li>Tokens are safe on colored squares and star squares</li>
+                    <li>To enter the home column, a token must make a precise roll</li>
+                    <li>The first player to get all four tokens to the home triangle wins</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Game Controls</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Click the dice to roll</li>
+                    <li>Click on a token to move it by the dice value</li>
+                    <li>When multiple moves are possible, choose which token to move</li>
+                    <li>Game automatically highlights valid moves</li>
+                    <li>Use settings to adjust game mode and player count</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-2">Strategy Tips</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Get tokens out early when possible</li>
+                    <li>Keep tokens spread apart to reduce the risk of multiple captures</li>
+                    <li>Block opponent pathways when possible</li>
+                    <li>Aim to create "blockers" with two tokens on the same space</li>
+                    <li>Be aggressive with captures when you're behind</li>
+                    <li>Plan your home approach carefully</li>
+                    <li>Prioritize moving tokens that are furthest behind</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-600 py-8">
+                <p>Game-specific instructions will appear here.</p>
+              </div>
+            )}
           </div>
         )}
       </DialogContent>

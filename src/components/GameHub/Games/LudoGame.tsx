@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,8 +19,10 @@ interface Player {
   name: string;
   isHuman: boolean;
   pieces: number[];
-  homePosition: number;
-  safePositions: number[];
+  homeSquares: number[];
+  safeSquares: number[];
+  startSquare: number;
+  homeTrack: number[];
 }
 
 interface GameState {
@@ -31,8 +32,8 @@ interface GameState {
   isDiceRolled: boolean;
   gameStatus: 'waiting' | 'playing' | 'finished';
   winner: PlayerColor | null;
-  board: (PlayerColor | null)[];
   moveHistory: string[];
+  consecutiveSixes: number;
 }
 
 export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => {
@@ -43,8 +44,8 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
     isDiceRolled: false,
     gameStatus: 'waiting',
     winner: null,
-    board: Array(52).fill(null),
-    moveHistory: []
+    moveHistory: [],
+    consecutiveSixes: 0
   });
 
   const [gameSettings, setGameSettings] = useState({
@@ -58,44 +59,57 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
   const [isRollingDice, setIsRollingDice] = useState(false);
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
 
-  const playerColors: PlayerColor[] = ['red', 'blue', 'yellow', 'green'];
-  
-  const boardPositions = {
-    red: { start: 1, home: [1, 2, 3, 4, 5], safe: [9, 22, 35, 48] },
-    blue: { start: 14, home: [14, 15, 16, 17, 18], safe: [22, 35, 48, 9] },
-    yellow: { start: 27, home: [27, 28, 29, 30, 31], safe: [35, 48, 9, 22] },
-    green: { start: 40, home: [40, 41, 42, 43, 44], safe: [48, 9, 22, 35] }
+  // Ludo board layout - 15x15 grid with cross pattern
+  const boardSize = 15;
+  const centerSize = 6; // 6x6 center area
+  const trackWidth = 3; // 3 squares wide for each arm
+
+  // Player configurations
+  const playerConfigs = {
+    red: {
+      homeSquares: [1, 2, 13, 14], // Top-left home area positions in 15x15 grid
+      startSquare: 52, // Position on the track (0-51)
+      color: '#ef4444',
+      homeTrack: [1, 2, 3, 4, 5], // Final approach to center
+      safeSquares: [8, 21, 34, 47]
+    },
+    blue: {
+      homeSquares: [1, 2, 13, 14], // Top-right (mirrored)
+      startSquare: 13,
+      color: '#3b82f6',
+      homeTrack: [14, 15, 16, 17, 18],
+      safeSquares: [21, 34, 47, 8]
+    },
+    yellow: {
+      homeSquares: [1, 2, 13, 14], // Bottom-right
+      startSquare: 26,
+      color: '#eab308',
+      homeTrack: [27, 28, 29, 30, 31],
+      safeSquares: [34, 47, 8, 21]
+    },
+    green: {
+      homeSquares: [1, 2, 13, 14], // Bottom-left
+      startSquare: 39,
+      color: '#22c55e',
+      homeTrack: [40, 41, 42, 43, 44],
+      safeSquares: [47, 8, 21, 34]
+    }
   };
 
-  const gameModes = [
-    { value: 'vs-computer', label: 'vs Computer', icon: Bot },
-    { value: 'vs-friends', label: 'vs Friends', icon: Users },
-    { value: 'online', label: 'Online Match', icon: Zap }
-  ];
-
-  const difficulties = [
-    { value: 'easy', label: 'Easy' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'hard', label: 'Hard' },
-    { value: 'expert', label: 'Expert' }
-  ];
-
-  const boardThemes = [
-    { value: 'classic', label: 'Classic Board' },
-    { value: 'royal', label: 'Royal Palace' },
-    { value: 'modern', label: 'Modern Design' },
-    { value: 'wooden', label: 'Wooden Classic' }
-  ];
-
   const initializeGame = () => {
-    const players: Player[] = playerColors.slice(0, gameSettings.numberOfPlayers).map((color, index) => ({
+    const playerColors: PlayerColor[] = ['red', 'blue', 'yellow', 'green'];
+    const selectedColors = playerColors.slice(0, gameSettings.numberOfPlayers);
+    
+    const players: Player[] = selectedColors.map((color, index) => ({
       id: `player-${index}`,
       color,
       name: color.charAt(0).toUpperCase() + color.slice(1),
       isHuman: gameSettings.mode === 'vs-friends' || index === 0,
-      pieces: [0, 0, 0, 0], // All pieces start at home
-      homePosition: boardPositions[color].start,
-      safePositions: boardPositions[color].safe
+      pieces: [0, 0, 0, 0], // All pieces start at home (0 = home)
+      homeSquares: playerConfigs[color].homeSquares,
+      startSquare: playerConfigs[color].startSquare,
+      homeTrack: playerConfigs[color].homeTrack,
+      safeSquares: playerConfigs[color].safeSquares
     }));
 
     setGameState({
@@ -105,22 +119,18 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
       isDiceRolled: false,
       gameStatus: 'playing',
       winner: null,
-      board: Array(52).fill(null),
-      moveHistory: []
+      moveHistory: [],
+      consecutiveSixes: 0
     });
   };
-
-  useEffect(() => {
-    initializeGame();
-  }, [gameSettings.numberOfPlayers, gameSettings.mode]);
 
   const rollDice = async () => {
     if (gameState.isDiceRolled) return;
     
     setIsRollingDice(true);
     
-    // Simulate dice rolling animation
-    for (let i = 0; i < 10; i++) {
+    // Animate dice rolling
+    for (let i = 0; i < 8; i++) {
       await new Promise(resolve => setTimeout(resolve, 100));
       setGameState(prev => ({ ...prev, diceValue: Math.floor(Math.random() * 6) + 1 }));
     }
@@ -130,7 +140,8 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
     setGameState(prev => ({
       ...prev,
       diceValue: finalValue,
-      isDiceRolled: true
+      isDiceRolled: true,
+      consecutiveSixes: finalValue === 6 ? prev.consecutiveSixes + 1 : 0
     }));
     
     setIsRollingDice(false);
@@ -142,18 +153,27 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
   };
 
   const makeComputerMove = (diceValue: number) => {
-    // Simple AI logic - prioritize getting pieces out, then moving strategically
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const availablePieces = currentPlayer.pieces.map((pos, index) => ({ index, position: pos }));
+    const movablePieces = [];
     
-    // Prioritize moving pieces that are out of home
-    const movablePieces = availablePieces.filter(piece => 
-      piece.position > 0 || diceValue === 6
-    );
+    // Find movable pieces
+    currentPlayer.pieces.forEach((position, index) => {
+      if (position === 0 && diceValue === 6) {
+        movablePieces.push(index); // Can move out of home
+      } else if (position > 0) {
+        movablePieces.push(index); // Can move on track
+      }
+    });
     
     if (movablePieces.length > 0) {
-      const randomPiece = movablePieces[Math.floor(Math.random() * movablePieces.length)];
-      movePiece(randomPiece.index, diceValue);
+      // Simple AI: prioritize getting pieces out, then moving closest to finish
+      let bestPiece;
+      if (diceValue === 6 && currentPlayer.pieces.some(p => p === 0)) {
+        bestPiece = currentPlayer.pieces.findIndex(p => p === 0);
+      } else {
+        bestPiece = movablePieces[0];
+      }
+      movePiece(bestPiece, diceValue);
     } else {
       nextTurn();
     }
@@ -165,15 +185,17 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
     
     let newPosition;
     if (currentPosition === 0) {
-      // Piece is at home, can only move out with 6
       if (steps === 6) {
-        newPosition = currentPlayer.homePosition;
+        newPosition = 1; // Move to start of track
       } else {
         return; // Can't move
       }
     } else {
-      newPosition = (currentPosition + steps) % 52;
-      if (newPosition === 0) newPosition = 52;
+      newPosition = currentPosition + steps;
+      // Handle reaching finish
+      if (newPosition > 56) { // 52 track squares + 5 home track squares - 1
+        return; // Can't move beyond finish
+      }
     }
     
     // Update game state
@@ -195,8 +217,8 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
       };
     });
     
-    // Check for win condition
-    if (currentPlayer.pieces.every(pos => pos >= 51)) {
+    // Check for win
+    if (currentPlayer.pieces.every(pos => pos === 57)) { // All pieces finished
       setGameState(prev => ({
         ...prev,
         gameStatus: 'finished',
@@ -206,8 +228,8 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
       return;
     }
     
-    // Next turn (unless rolled 6)
-    if (steps !== 6) {
+    // Next turn logic
+    if (steps !== 6 || gameState.consecutiveSixes >= 3) {
       nextTurn();
     } else {
       setGameState(prev => ({ ...prev, isDiceRolled: false, diceValue: null }));
@@ -219,7 +241,8 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
       ...prev,
       currentPlayerIndex: (prev.currentPlayerIndex + 1) % prev.players.length,
       isDiceRolled: false,
-      diceValue: null
+      diceValue: null,
+      consecutiveSixes: 0
     }));
     setSelectedPiece(null);
   };
@@ -238,103 +261,150 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
     setSelectedPiece(null);
   };
 
-  const getBoardSquareColor = (index: number) => {
-    if (index % 13 === 0) return '#ff4444'; // Red
-    if (index % 13 === 1) return '#ffffff'; // White
-    if (index % 13 === 6) return playerColors[Math.floor(index / 13)] || '#cccccc';
-    return '#f0f0f0';
-  };
-
+  // Create authentic Ludo board layout
   const renderLudoBoard = () => {
     return (
-      <div className="relative w-full max-w-lg mx-auto aspect-square bg-white border-4 border-gray-800 rounded-lg overflow-hidden">
-        {/* Center cross pattern */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-full h-1/3 bg-gradient-to-r from-red-400 via-yellow-400 to-blue-400"></div>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="h-full w-1/3 bg-gradient-to-b from-green-400 via-yellow-400 to-red-400"></div>
+      <div className="relative w-full max-w-2xl mx-auto aspect-square bg-white border-4 border-gray-800 rounded-lg overflow-hidden">
+        {/* Main board grid */}
+        <div className="absolute inset-0 grid grid-cols-15 grid-rows-15 gap-0">
+          {Array.from({ length: 225 }, (_, index) => {
+            const row = Math.floor(index / 15);
+            const col = index % 15;
+            
+            // Determine cell type and color
+            let cellClass = "border border-gray-300 aspect-square";
+            let bgColor = "#f8f9fa";
+            
+            // Home areas (corners)
+            if ((row < 6 && col < 6) || (row < 6 && col > 8) || 
+                (row > 8 && col < 6) || (row > 8 && col > 8)) {
+              if (row < 6 && col < 6) bgColor = "#fee2e2"; // Red home
+              else if (row < 6 && col > 8) bgColor = "#dbeafe"; // Blue home
+              else if (row > 8 && col < 6) bgColor = "#dcfce7"; // Green home
+              else if (row > 8 && col > 8) bgColor = "#fef3c7"; // Yellow home
+            }
+            
+            // Track areas
+            else if ((row >= 6 && row <= 8) || (col >= 6 && col <= 8)) {
+              bgColor = "#ffffff";
+              
+              // Safe squares
+              if ((row === 6 && col === 2) || (row === 2 && col === 8) ||
+                  (row === 8 && col === 12) || (row === 12 && col === 6)) {
+                bgColor = "#f3f4f6";
+              }
+              
+              // Starting squares
+              if ((row === 6 && col === 1) || (row === 1 && col === 8) ||
+                  (row === 8 && col === 13) || (row === 13 && col === 6)) {
+                bgColor = "#e5e7eb";
+              }
+            }
+            
+            // Center area
+            else if (row >= 6 && row <= 8 && col >= 6 && col <= 8) {
+              bgColor = "#fbbf24"; // Center gold
+            }
+            
+            return (
+              <div
+                key={index}
+                className={cellClass}
+                style={{ backgroundColor: bgColor }}
+              />
+            );
+          })}
         </div>
         
-        {/* Home areas */}
-        <div className="absolute top-2 left-2 w-1/3 h-1/3 bg-red-200 border-2 border-red-600 rounded flex items-center justify-center">
-          <div className="text-red-800 font-bold text-lg">RED</div>
+        {/* Home area markers */}
+        <div className="absolute top-2 left-2 w-20 h-20 flex items-center justify-center">
+          <div className="text-red-700 font-bold text-sm">RED</div>
         </div>
-        <div className="absolute top-2 right-2 w-1/3 h-1/3 bg-blue-200 border-2 border-blue-600 rounded flex items-center justify-center">
-          <div className="text-blue-800 font-bold text-lg">BLUE</div>
+        <div className="absolute top-2 right-2 w-20 h-20 flex items-center justify-center">
+          <div className="text-blue-700 font-bold text-sm">BLUE</div>
         </div>
-        <div className="absolute bottom-2 left-2 w-1/3 h-1/3 bg-green-200 border-2 border-green-600 rounded flex items-center justify-center">
-          <div className="text-green-800 font-bold text-lg">GREEN</div>
+        <div className="absolute bottom-2 left-2 w-20 h-20 flex items-center justify-center">
+          <div className="text-green-700 font-bold text-sm">GREEN</div>
         </div>
-        <div className="absolute bottom-2 right-2 w-1/3 h-1/3 bg-yellow-200 border-2 border-yellow-600 rounded flex items-center justify-center">
-          <div className="text-yellow-800 font-bold text-lg">YELLOW</div>
+        <div className="absolute bottom-2 right-2 w-20 h-20 flex items-center justify-center">
+          <div className="text-yellow-700 font-bold text-sm">YELLOW</div>
+        </div>
+        
+        {/* Center triangle */}
+        <div className="absolute inset-1/3 bg-gradient-to-br from-yellow-400 to-orange-400 border-4 border-gray-800 flex items-center justify-center">
+          <div className="text-2xl">🏠</div>
         </div>
         
         {/* Player pieces */}
         {gameState.players.map((player, playerIndex) => (
           <div key={player.id}>
             {player.pieces.map((position, pieceIndex) => {
+              let pieceStyle = {};
+              
               if (position === 0) {
                 // Piece is at home
                 const homePositions = {
-                  red: { top: '20%', left: '15%' },
-                  blue: { top: '20%', right: '15%' },
-                  green: { bottom: '20%', left: '15%' },
-                  yellow: { bottom: '20%', right: '15%' }
+                  red: { top: '8%', left: '8%' },
+                  blue: { top: '8%', right: '8%' },
+                  green: { bottom: '8%', left: '8%' },
+                  yellow: { bottom: '8%', right: '8%' }
                 };
                 
-                const homePos = homePositions[player.color];
-                return (
-                  <div
-                    key={`${player.id}-${pieceIndex}`}
-                    className={`absolute w-6 h-6 rounded-full border-2 cursor-pointer transition-all hover:scale-110 ${
-                      player.color === 'red' ? 'bg-red-500 border-red-700' :
-                      player.color === 'blue' ? 'bg-blue-500 border-blue-700' :
-                      player.color === 'green' ? 'bg-green-500 border-green-700' :
-                      'bg-yellow-500 border-yellow-700'
-                    }`}
-                    style={{
-                      ...homePos,
-                      transform: `translate(${pieceIndex * 8}px, ${pieceIndex * 8}px)`
-                    }}
-                    onClick={() => handlePieceClick(pieceIndex)}
-                  />
-                );
+                const basePos = homePositions[player.color];
+                pieceStyle = {
+                  ...basePos,
+                  transform: `translate(${(pieceIndex % 2) * 25}px, ${Math.floor(pieceIndex / 2) * 25}px)`
+                };
               } else {
-                // Piece is on the board
-                const angle = (position - 1) * (360 / 52);
-                const radius = 140;
-                const x = 50 + (radius * Math.cos(angle * Math.PI / 180)) / 3;
-                const y = 50 + (radius * Math.sin(angle * Math.PI / 180)) / 3;
-                
-                return (
-                  <div
-                    key={`${player.id}-${pieceIndex}`}
-                    className={`absolute w-6 h-6 rounded-full border-2 cursor-pointer transition-all hover:scale-110 ${
-                      player.color === 'red' ? 'bg-red-500 border-red-700' :
-                      player.color === 'blue' ? 'bg-blue-500 border-blue-700' :
-                      player.color === 'green' ? 'bg-green-500 border-green-700' :
-                      'bg-yellow-500 border-yellow-700'
-                    }`}
-                    style={{
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                    onClick={() => handlePieceClick(pieceIndex)}
-                  />
-                );
+                // Piece is on track - calculate position based on track layout
+                const trackPosition = calculateTrackPosition(position, player.color);
+                pieceStyle = {
+                  left: `${trackPosition.x}%`,
+                  top: `${trackPosition.y}%`,
+                  transform: 'translate(-50%, -50%)'
+                };
               }
+              
+              return (
+                <div
+                  key={`${player.id}-${pieceIndex}`}
+                  className={`absolute w-8 h-8 rounded-full border-2 cursor-pointer transition-all hover:scale-110 z-10`}
+                  style={{
+                    backgroundColor: playerConfigs[player.color].color,
+                    borderColor: '#000',
+                    ...pieceStyle
+                  }}
+                  onClick={() => handlePieceClick(pieceIndex)}
+                />
+              );
             })}
           </div>
         ))}
-        
-        {/* Center triangle */}
-        <div className="absolute inset-1/3 bg-white border-4 border-gray-800 flex items-center justify-center">
-          <div className="text-2xl font-bold text-gray-800">🏠</div>
-        </div>
       </div>
     );
+  };
+
+  // Calculate piece position on track
+  const calculateTrackPosition = (position: number, color: PlayerColor) => {
+    // This is a simplified calculation - in a real implementation,
+    // you'd map each track position to exact board coordinates
+    const trackPositions = [
+      // Bottom track (positions 1-6)
+      { x: 46.7, y: 86.7 }, { x: 53.3, y: 86.7 }, { x: 60, y: 86.7 },
+      { x: 66.7, y: 86.7 }, { x: 73.3, y: 86.7 }, { x: 80, y: 86.7 },
+      // Right track (positions 7-12)
+      { x: 86.7, y: 80 }, { x: 86.7, y: 73.3 }, { x: 86.7, y: 66.7 },
+      { x: 86.7, y: 60 }, { x: 86.7, y: 53.3 }, { x: 86.7, y: 46.7 },
+      // Top track (positions 13-18)
+      { x: 80, y: 40 }, { x: 73.3, y: 40 }, { x: 66.7, y: 40 },
+      { x: 60, y: 40 }, { x: 53.3, y: 40 }, { x: 46.7, y: 40 },
+      // Left track (positions 19-24)
+      { x: 40, y: 46.7 }, { x: 40, y: 53.3 }, { x: 40, y: 60 },
+      { x: 40, y: 66.7 }, { x: 40, y: 73.3 }, { x: 40, y: 80 }
+    ];
+    
+    const posIndex = (position - 1) % trackPositions.length;
+    return trackPositions[posIndex] || { x: 50, y: 50 };
   };
 
   const renderDice = () => {
@@ -343,9 +413,10 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
     return (
       <div className="text-center space-y-4">
         <div 
-          className={`w-20 h-20 mx-auto border-4 border-gray-800 rounded-lg flex items-center justify-center text-4xl font-bold cursor-pointer transition-all hover:scale-105 ${
+          className={`w-20 h-20 mx-auto border-4 border-gray-800 rounded-xl flex items-center justify-center text-4xl font-bold cursor-pointer transition-all hover:scale-105 ${
             isRollingDice ? 'animate-bounce' : ''
-          } ${currentPlayer ? `bg-${currentPlayer.color}-100` : 'bg-gray-100'}`}
+          }`}
+          style={{ backgroundColor: currentPlayer ? playerConfigs[currentPlayer.color].color : '#f3f4f6' }}
           onClick={rollDice}
         >
           {gameState.diceValue || '🎲'}
@@ -353,9 +424,18 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
         <div className="text-sm font-medium">
           {gameState.isDiceRolled ? 'Select a piece to move' : 'Click to roll dice'}
         </div>
+        {gameState.consecutiveSixes > 0 && (
+          <Badge variant="secondary">
+            {gameState.consecutiveSixes} six{gameState.consecutiveSixes > 1 ? 'es' : ''} in a row!
+          </Badge>
+        )}
       </div>
     );
   };
+
+  useEffect(() => {
+    initializeGame();
+  }, [gameSettings.numberOfPlayers, gameSettings.mode]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
@@ -366,7 +446,7 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Hub</span>
           </Button>
-          <h1 className="text-3xl font-bold text-green-800">Ludo Master</h1>
+          <h1 className="text-3xl font-bold text-green-800">Ludo King</h1>
           <div className="flex space-x-2">
             <Button variant="outline">
               <Settings className="h-4 w-4 mr-2" />
@@ -382,6 +462,7 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
               <CardTitle>Game Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* ... keep existing code (game settings controls) */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Game Mode</label>
                 <Select value={gameSettings.mode} onValueChange={(value: GameMode) => setGameSettings(prev => ({ ...prev, mode: value }))}>
@@ -389,17 +470,18 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {gameModes.map(mode => {
-                      const Icon = mode.icon;
-                      return (
-                        <SelectItem key={mode.value} value={mode.value}>
-                          <div className="flex items-center space-x-2">
-                            <Icon className="h-4 w-4" />
-                            <span>{mode.label}</span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                    <SelectItem value="vs-computer">
+                      <div className="flex items-center space-x-2">
+                        <Bot className="h-4 w-4" />
+                        <span>vs Computer</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="vs-friends">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4" />
+                        <span>vs Friends</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -418,51 +500,14 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Difficulty</label>
-                <Select value={gameSettings.difficulty} onValueChange={(value) => setGameSettings(prev => ({ ...prev, difficulty: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {difficulties.map(diff => (
-                      <SelectItem key={diff.value} value={diff.value}>
-                        {diff.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Board Theme</label>
-                <Select value={gameSettings.boardTheme} onValueChange={(value) => setGameSettings(prev => ({ ...prev, boardTheme: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {boardThemes.map(theme => (
-                      <SelectItem key={theme.value} value={theme.value}>
-                        {theme.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Button onClick={resetGame} className="w-full" variant="outline">
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  New Game
-                </Button>
-              </div>
+              <Button onClick={resetGame} className="w-full" variant="outline">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                New Game
+              </Button>
 
               {gameState.gameStatus === 'playing' && (
                 <div className="text-center">
-                  <Badge className={`${gameState.players[gameState.currentPlayerIndex]?.color === 'red' ? 'bg-red-500' : 
-                                      gameState.players[gameState.currentPlayerIndex]?.color === 'blue' ? 'bg-blue-500' : 
-                                      gameState.players[gameState.currentPlayerIndex]?.color === 'green' ? 'bg-green-500' : 
-                                      'bg-yellow-500'} text-white`}>
+                  <Badge style={{ backgroundColor: playerConfigs[gameState.players[gameState.currentPlayerIndex]?.color]?.color || '#gray', color: 'white' }}>
                     {gameState.players[gameState.currentPlayerIndex]?.name || 'Unknown'}'s Turn
                   </Badge>
                 </div>
@@ -491,7 +536,6 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
               <CardTitle>Game Controls</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Dice */}
               {renderDice()}
 
               {/* Player Status */}
@@ -499,18 +543,15 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
                 <h4 className="font-semibold mb-2">Players:</h4>
                 <div className="space-y-2">
                   {gameState.players.map((player, index) => (
-                    <div key={player.id} className={`p-2 rounded ${index === gameState.currentPlayerIndex ? 'bg-blue-50 border-2 border-blue-300' : 'bg-gray-50'}`}>
+                    <div key={player.id} className={`p-2 rounded ${index === gameState.currentPlayerIndex ? 'ring-2 ring-blue-300' : ''}`}
+                         style={{ backgroundColor: index === gameState.currentPlayerIndex ? '#f0f9ff' : '#f9fafb' }}>
                       <div className="flex items-center justify-between">
-                        <span className={`font-medium text-${player.color}-600`}>
+                        <span className="font-medium" style={{ color: playerConfigs[player.color].color }}>
                           {player.name}
                         </span>
                         <Badge variant="outline">
                           {player.pieces.filter(pos => pos > 0).length}/4 out
                         </Badge>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Home: {4 - player.pieces.filter(pos => pos > 0).length} | 
-                        Finished: {player.pieces.filter(pos => pos >= 51).length}
                       </div>
                     </div>
                   ))}
@@ -531,17 +572,6 @@ export const LudoGame: React.FC<LudoGameProps> = ({ onBack, onStatsUpdate }) => 
                     ))
                   )}
                 </div>
-              </div>
-
-              {/* Game Rules */}
-              <div>
-                <h4 className="font-semibold mb-2">Quick Rules:</h4>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Roll 6 to get pieces out</li>
-                  <li>• Roll 6 to get extra turn</li>
-                  <li>• Capture opponents by landing on them</li>
-                  <li>• Get all 4 pieces home to win</li>
-                </ul>
               </div>
             </CardContent>
           </Card>

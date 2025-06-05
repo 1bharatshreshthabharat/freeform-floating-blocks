@@ -65,6 +65,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
   const [currentHint, setCurrentHint] = useState(0);
   const [analysisMode, setAnalysisMode] = useState(false);
   const [isComputerThinking, setIsComputerThinking] = useState(false);
+  const [aiMoveTimeout, setAiMoveTimeout] = useState<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const gameModes = [
@@ -127,7 +128,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     }));
   };
 
-  // Enhanced piece symbol rendering with all piece sets
+  // Enhanced piece symbol rendering with proper piece set application
   const getPieceSymbol = (piece: ChessPiece) => {
     if (!piece.type || !piece.color) return '';
     
@@ -142,7 +143,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
       },
       medieval: {
         white: { king: '👑', queen: '💎', rook: '🛡️', bishop: '⚔️', knight: '🐎', pawn: '🗡️' },
-        black: { king: '👑', queen: '💎', rook: '🛡️', bishop: '⚔️', knight: '🐴', pawn: '🗡️' }
+        black: { king: '🖤', queen: '💜', rook: '🛡️', bishop: '⚔️', knight: '🐴', pawn: '🗡️' }
       },
       abstract: {
         white: { king: '⬢', queen: '⬡', rook: '⬜', bishop: '◇', knight: '◈', pawn: '○' },
@@ -170,7 +171,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     return symbolSet[piece.color][piece.type] || '';
   };
 
-  // Computer AI move logic
+  // Improved Computer AI move logic
   const makeComputerMove = () => {
     if (gameSettings.mode !== 'vs-computer' || gameState.currentPlayer !== 'black' || isComputerThinking) return;
     
@@ -178,40 +179,97 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     
     // AI thinking delay based on difficulty
     const thinkingTime = {
-      beginner: 500,
-      intermediate: 1000,
-      advanced: 1500,
-      expert: 2000,
-      master: 2500
-    }[gameSettings.difficulty] || 1000;
+      beginner: 800,
+      intermediate: 1200,
+      advanced: 1800,
+      expert: 2500,
+      master: 3000
+    }[gameSettings.difficulty] || 1200;
 
-    setTimeout(() => {
-      // Simple AI: find all possible moves and pick one
-      const possibleMoves = [];
+    const timeout = setTimeout(() => {
+      const possibleMoves = getAllPossibleMoves('black');
       
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-          const piece = gameState.board[row][col];
-          if (piece.color === 'black') {
-            // Find valid moves for this piece
-            for (let toRow = 0; toRow < 8; toRow++) {
-              for (let toCol = 0; toCol < 8; toCol++) {
-                if (isValidMove(row, col, toRow, toCol)) {
-                  possibleMoves.push({ from: [row, col], to: [toRow, toCol] });
-                }
+      if (possibleMoves.length > 0) {
+        let selectedMove;
+        
+        // AI personality-based move selection
+        switch (gameSettings.aiPersonality) {
+          case 'aggressive':
+            selectedMove = selectAggressiveMove(possibleMoves);
+            break;
+          case 'defensive':
+            selectedMove = selectDefensiveMove(possibleMoves);
+            break;
+          case 'tactical':
+            selectedMove = selectTacticalMove(possibleMoves);
+            break;
+          default:
+            selectedMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        }
+        
+        makeMove(selectedMove.from[0], selectedMove.from[1], selectedMove.to[0], selectedMove.to[1]);
+      }
+      
+      setIsComputerThinking(false);
+    }, thinkingTime);
+    
+    setAiMoveTimeout(timeout);
+  };
+
+  const getAllPossibleMoves = (color: 'white' | 'black') => {
+    const moves = [];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const piece = gameState.board[row][col];
+        if (piece.color === color) {
+          for (let toRow = 0; toRow < 8; toRow++) {
+            for (let toCol = 0; toCol < 8; toCol++) {
+              if (isValidMove(row, col, toRow, toCol)) {
+                moves.push({ from: [row, col], to: [toRow, toCol], piece: piece.type });
               }
             }
           }
         }
       }
+    }
+    return moves;
+  };
 
-      if (possibleMoves.length > 0) {
-        const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        makeMove(randomMove.from[0], randomMove.from[1], randomMove.to[0], randomMove.to[1]);
-      }
-      
-      setIsComputerThinking(false);
-    }, thinkingTime);
+  const selectAggressiveMove = (moves: any[]) => {
+    // Prioritize captures and attacks on opponent king
+    const captureMoves = moves.filter(move => gameState.board[move.to[0]][move.to[1]].type);
+    const checkMoves = moves.filter(move => wouldGiveCheck(move));
+    
+    if (captureMoves.length > 0) return captureMoves[Math.floor(Math.random() * captureMoves.length)];
+    if (checkMoves.length > 0) return checkMoves[Math.floor(Math.random() * checkMoves.length)];
+    return moves[Math.floor(Math.random() * moves.length)];
+  };
+
+  const selectDefensiveMove = (moves: any[]) => {
+    // Prioritize protecting pieces and king safety
+    const safeMoves = moves.filter(move => !wouldExposeKing(move));
+    return safeMoves.length > 0 ? safeMoves[Math.floor(Math.random() * safeMoves.length)] : moves[Math.floor(Math.random() * moves.length)];
+  };
+
+  const selectTacticalMove = (moves: any[]) => {
+    // Look for tactical patterns like forks, pins, etc.
+    const tacticalMoves = moves.filter(move => isTacticalMove(move));
+    return tacticalMoves.length > 0 ? tacticalMoves[Math.floor(Math.random() * tacticalMoves.length)] : moves[Math.floor(Math.random() * moves.length)];
+  };
+
+  const wouldGiveCheck = (move: any) => {
+    // Simplified check detection
+    return false; // Placeholder for actual implementation
+  };
+
+  const wouldExposeKing = (move: any) => {
+    // Simplified king safety check
+    return false; // Placeholder for actual implementation
+  };
+
+  const isTacticalMove = (move: any) => {
+    // Simplified tactical move detection
+    return false; // Placeholder for actual implementation
   };
 
   // Basic move validation
@@ -246,13 +304,11 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     const direction = color === 'white' ? -1 : 1;
     const startRow = color === 'white' ? 6 : 1;
     
-    // Forward move
     if (fromCol === toCol) {
       if (toRow === fromRow + direction && !gameState.board[toRow][toCol].type) return true;
       if (fromRow === startRow && toRow === fromRow + 2 * direction && !gameState.board[toRow][toCol].type && !gameState.board[fromRow + direction][toCol].type) return true;
     }
     
-    // Capture
     if (Math.abs(fromCol - toCol) === 1 && toRow === fromRow + direction) {
       return gameState.board[toRow][toCol].type && gameState.board[toRow][toCol].color !== color;
     }
@@ -305,13 +361,11 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     const piece = newBoard[fromRow][fromCol];
     const capturedPiece = newBoard[toRow][toCol];
     
-    // Update captured pieces
     let newCapturedPieces = { ...gameState.capturedPieces };
     if (capturedPiece.type && capturedPiece.color) {
       newCapturedPieces[capturedPiece.color] = [...newCapturedPieces[capturedPiece.color], capturedPiece.type];
     }
     
-    // Make the move
     newBoard[toRow][toCol] = piece;
     newBoard[fromRow][fromCol] = { type: null, color: null };
     
@@ -336,7 +390,6 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
       if (isValidMove(fromRow, fromCol, row, col)) {
         makeMove(fromRow, fromCol, row, col);
       } else {
-        // Select new piece
         if (gameState.board[row][col].color === gameState.currentPlayer) {
           setGameState(prev => ({ ...prev, selectedSquare: [row, col] }));
         } else {
@@ -350,24 +403,30 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     }
   };
 
-  // Update game settings in real-time
+  // Real-time settings application
   useEffect(() => {
-    // Apply time control
     const [minutes, increment] = gameSettings.timeControl.split('+').map(Number);
-    if (minutes && !isNaN(minutes)) {
+    if (minutes && !isNaN(minutes) && gameSettings.timeControl !== 'unlimited') {
       setGameState(prev => ({
         ...prev,
         timeRemaining: { white: minutes * 60, black: minutes * 60 }
       }));
     }
-  }, [gameSettings]);
+  }, [gameSettings.timeControl]);
 
-  // Computer move trigger
+  // Computer move trigger with proper cleanup
   useEffect(() => {
     if (gameSettings.mode === 'vs-computer' && gameState.currentPlayer === 'black' && gameState.gameStatus === 'playing') {
       makeComputerMove();
     }
-  }, [gameState.currentPlayer, gameSettings.mode]);
+    
+    return () => {
+      if (aiMoveTimeout) {
+        clearTimeout(aiMoveTimeout);
+        setAiMoveTimeout(null);
+      }
+    };
+  }, [gameState.currentPlayer, gameSettings.mode, gameSettings.difficulty, gameSettings.aiPersonality]);
 
   useEffect(() => {
     initializeBoard();
@@ -383,6 +442,18 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
   const getSquareColor = (row: number, col: number) => {
     const isLight = (row + col) % 2 === 0;
     return isLight ? customization.boardColors.light : customization.boardColors.dark;
+  };
+
+  const getBoardThemeStyles = () => {
+    const themes = {
+      classic: { background: 'linear-gradient(45deg, #f0d9b5, #b58863)' },
+      wood: { background: 'linear-gradient(45deg, #deb887, #8b4513)' },
+      marble: { background: 'linear-gradient(45deg, #f5f5dc, #d3d3d3)' },
+      glass: { background: 'linear-gradient(45deg, rgba(255,255,255,0.8), rgba(200,200,200,0.8))', backdropFilter: 'blur(10px)' },
+      neon: { background: 'linear-gradient(45deg, #00ffff, #ff00ff)', boxShadow: '0 0 20px rgba(0,255,255,0.5)' },
+      tournament: { background: 'linear-gradient(45deg, #ffffff, #000000)' }
+    };
+    return themes[customization.boardTheme as keyof typeof themes] || themes.classic;
   };
 
   const getBorderStyle = () => {
@@ -408,6 +479,11 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
   };
 
   const resetGame = () => {
+    if (aiMoveTimeout) {
+      clearTimeout(aiMoveTimeout);
+      setAiMoveTimeout(null);
+    }
+    setIsComputerThinking(false);
     initializeBoard();
     setGameState(prev => ({
       ...prev,
@@ -425,25 +501,25 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
 
   const concepts = [
     {
+      title: "How to Play Chess",
+      description: "Learn the complete rules and mechanics of chess from board setup to winning conditions.",
+      example: "**Board Setup:**\n• 8×8 board with alternating light and dark squares\n• White pieces on ranks 1-2, Black on ranks 7-8\n• Queen starts on her own color (white queen on light square)\n\n**Piece Values:**\n• Pawn = 1 point\n• Knight/Bishop = 3 points\n• Rook = 5 points\n• Queen = 9 points\n• King = Invaluable\n\n**How Pieces Move:**\n• **Pawn:** Forward one square, two on first move, captures diagonally\n• **Rook:** Any number of squares horizontally or vertically\n• **Bishop:** Any number of squares diagonally\n• **Queen:** Combines rook and bishop moves\n• **Knight:** L-shape: 2 squares in one direction, 1 perpendicular\n• **King:** One square in any direction\n\n**Special Moves:**\n• **Castling:** King and rook move simultaneously for safety\n• **En Passant:** Special pawn capture\n• **Promotion:** Pawn reaching end becomes any piece\n\n**Win Conditions:**\n• **Checkmate:** King under attack with no escape\n• **Resignation:** Player gives up\n• **Time Forfeit:** Clock runs out\n\n**Draw Conditions:**\n• **Stalemate:** No legal moves but not in check\n• **Threefold Repetition:** Same position occurs three times\n• **50-Move Rule:** 50 moves without pawn move or capture\n• **Insufficient Material:** Neither side can checkmate",
+      animation: "https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=400&h=300&fit=crop",
+      relatedTopics: ["Board Setup", "Piece Movement", "Special Moves", "Check & Checkmate", "Draw Conditions"]
+    },
+    {
       title: "Opening Principles",
-      description: "Master the fundamental opening principles for strong game starts. Control the center with pawns and pieces, develop pieces quickly towards the center, ensure king safety through castling, and avoid moving the same piece multiple times without purpose.",
-      example: "1. Control the center with e4/d4 or e5/d5\n2. Develop knights before bishops (Nf3, Nc3)\n3. Castle early (0-0 or 0-0-0)\n4. Don't move same piece twice\n5. Connect your rooks",
+      description: "Master the fundamental opening principles for strong game starts.",
+      example: "**The Four Key Opening Principles:**\n\n**1. Control the Center**\n• Move central pawns (e4, d4, e5, d5)\n• Place pieces to attack central squares\n• Central control gives more piece mobility\n\n**2. Develop Pieces Quickly**\n• Knights before bishops (Nf3, Nc3)\n• Develop toward the center\n• Don't move the same piece twice\n• Get pieces off the back rank\n\n**3. King Safety**\n• Castle early (usually by move 10)\n• Don't weaken king position unnecessarily\n• Keep pawns in front of castled king\n\n**4. Don't Waste Time**\n• Avoid unnecessary pawn moves\n• Don't bring queen out too early\n• Don't move already developed pieces\n• Each move should improve your position\n\n**Common Opening Sequence:**\n1. e4 e5\n2. Nf3 Nc6\n3. Bc4 Bc5\n4. 0-0 0-0\n\n**Opening Mistakes to Avoid:**\n• Scholar's Mate attempts\n• Moving same piece multiple times\n• Neglecting king safety\n• Premature attacks",
       animation: "https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=400&h=300&fit=crop",
       relatedTopics: ["Center Control", "Piece Development", "King Safety", "Time Management"]
     },
     {
       title: "Tactical Patterns",
-      description: "Essential tactical motifs every chess player must know. These patterns help you win material and create winning positions through forcing moves and combinations.",
-      example: "Pin: Attack pieces that can't move without exposing more valuable pieces\n\nFork: Attack two pieces simultaneously with one piece\n\nSkewer: Force a valuable piece to move, exposing a less valuable piece behind it\n\nDiscovered Attack: Move one piece to reveal an attack from another piece",
+      description: "Essential tactical motifs every chess player must know.",
+      example: "**Basic Tactical Patterns:**\n\n**Pin**\n• Attack a piece that can't move without exposing a more valuable piece behind it\n• Absolute pin: Against the king (piece legally can't move)\n• Relative pin: Against valuable piece (piece shouldn't move)\n\n**Fork**\n• Attack two or more enemy pieces simultaneously\n• Knight forks are especially powerful\n• Pawn forks can win material in endgames\n\n**Skewer**\n• Force a valuable piece to move, exposing less valuable piece behind\n• Reverse of a pin\n• Often involves rooks, bishops, or queen\n\n**Discovered Attack**\n• Move one piece to reveal attack from another\n• Moving piece can capture or attack something else\n• Very powerful when both pieces attack\n\n**Double Attack**\n• Attack two targets simultaneously\n• Forces opponent to choose what to save\n• Can be with same piece or different pieces\n\n**Deflection**\n• Force defending piece away from protection duty\n• Remove the defender to win material\n\n**Decoy**\n• Lure piece to unfavorable square\n• Often combined with other tactics\n\n**Practice Tips:**\n• Solve tactical puzzles daily\n• Look for opponent's undefended pieces\n• Check all captures and checks\n• Calculate variations completely",
       animation: "https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=400&h=300&fit=crop",
       relatedTopics: ["Pins", "Forks", "Skewers", "Discovered Attacks", "Double Attacks"]
-    },
-    {
-      title: "How to Play Chess",
-      description: "Complete guide to chess rules and gameplay. Learn piece movements, special moves, win conditions, and basic strategies to start your chess journey.",
-      example: "Board Setup:\n- 8x8 board with alternating light and dark squares\n- White pieces start on ranks 1-2\n- Black pieces start on ranks 7-8\n\nPiece Values:\n- Pawn = 1 point\n- Knight/Bishop = 3 points\n- Rook = 5 points\n- Queen = 9 points\n- King = Invaluable\n\nWin Conditions:\n- Checkmate (king under attack with no escape)\n- Resignation\n- Time forfeit",
-      animation: "https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=400&h=300&fit=crop",
-      relatedTopics: ["Board Setup", "Piece Movement", "Special Moves", "Check & Checkmate", "Draw Conditions"]
     }
   ];
 
@@ -548,11 +624,11 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
                 </div>
 
                 <div className="space-y-2">
-                  <Button onClick={() => initializeBoard()} className="w-full" variant="outline">
+                  <Button onClick={resetGame} className="w-full" variant="outline">
                     <RotateCcw className="h-4 w-4 mr-2" />
                     New Game
                   </Button>
-                  <Button onClick={() => setCurrentHint((prev) => (prev + 1) % hints.length)} className="w-full" variant="outline">
+                  <Button onClick={nextHint} className="w-full" variant="outline">
                     <Lightbulb className="h-4 w-4 mr-2" />
                     Next Hint
                   </Button>
@@ -580,7 +656,10 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
           <Card className="lg:col-span-2">
             <CardContent className="p-6">
               <div className="aspect-square max-w-lg mx-auto">
-                <div className={`grid grid-cols-8 gap-0 rounded-lg overflow-hidden`}>
+                <div 
+                  className={`grid grid-cols-8 gap-0 rounded-lg overflow-hidden ${getBorderStyle()}`}
+                  style={getBoardThemeStyles()}
+                >
                   {gameState.board.map((row, rowIndex) =>
                     row.map((piece, colIndex) => (
                       <div
@@ -590,7 +669,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
                           transition-all relative
                           ${gameState.selectedSquare && gameState.selectedSquare[0] === rowIndex && gameState.selectedSquare[1] === colIndex 
                             ? 'ring-4 ring-blue-500 ring-inset' : ''}
-                          hover:brightness-110
+                          ${customization.highlightMoves ? 'hover:brightness-110' : ''}
                         `}
                         style={{ 
                           backgroundColor: getSquareColor(rowIndex, colIndex),
@@ -630,20 +709,22 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Timer */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Black</span>
-                  <Badge variant="outline">
-                    {Math.floor(gameState.timeRemaining.black / 60)}:{(gameState.timeRemaining.black % 60).toString().padStart(2, '0')}
-                  </Badge>
+              {gameSettings.timeControl !== 'unlimited' && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Black</span>
+                    <Badge variant="outline">
+                      {Math.floor(gameState.timeRemaining.black / 60)}:{(gameState.timeRemaining.black % 60).toString().padStart(2, '0')}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">White</span>
+                    <Badge variant="outline">
+                      {Math.floor(gameState.timeRemaining.white / 60)}:{(gameState.timeRemaining.white % 60).toString().padStart(2, '0')}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">White</span>
-                  <Badge variant="outline">
-                    {Math.floor(gameState.timeRemaining.white / 60)}:{(gameState.timeRemaining.white % 60).toString().padStart(2, '0')}
-                  </Badge>
-                </div>
-              </div>
+              )}
 
               {/* Captured Pieces */}
               <div>
@@ -688,7 +769,9 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
                 <div className="space-y-1 text-sm">
                   <div>Mode: <Badge variant="secondary">{gameSettings.mode}</Badge></div>
                   <div>Level: <Badge variant="secondary">{gameSettings.difficulty}</Badge></div>
+                  <div>AI: <Badge variant="secondary">{gameSettings.aiPersonality}</Badge></div>
                   <div>Theme: <Badge variant="secondary">{customization.boardTheme}</Badge></div>
+                  <div>Pieces: <Badge variant="secondary">{customization.pieceSet}</Badge></div>
                 </div>
               </div>
             </CardContent>
@@ -699,7 +782,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
       {/* Customization Modal */}
       {showCustomization && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full m-4 max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">Customize Chess</h2>
               <Button onClick={() => setShowCustomization(false)} variant="outline" size="sm">×</Button>
