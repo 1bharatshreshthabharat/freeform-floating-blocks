@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Play, Pause, RotateCcw, Settings, Lightbulb, Eye, Brain, Trophy, Clock, Target, Users } from 'lucide-react';
-import { ChessCustomization } from './ChessCustomization';
 import { ConceptModal } from '../ConceptModal';
 
 interface SquareProps {
@@ -47,6 +46,148 @@ interface DragState {
   dragPosition: { x: number; y: number };
 }
 
+interface ChessCustomizationProps {
+  isOpen: boolean;
+  onClose: () => void;
+  customization: any;
+  onCustomizationChange: (customization: any) => void;
+}
+
+// Chess Customization Component
+const ChessCustomization: React.FC<ChessCustomizationProps> = ({
+  isOpen,
+  onClose,
+  customization,
+  onCustomizationChange
+}) => {
+  if (!isOpen) return null;
+
+  const piecesets = [
+    { id: 'classic', name: 'Classic', pieces: { white: { king: '♔', queen: '♕', rook: '♖', bishop: '♗', knight: '♘', pawn: '♙' }, black: { king: '♚', queen: '♛', rook: '♜', bishop: '♝', knight: '♞', pawn: '♟' } } },
+    { id: 'modern', name: 'Modern', pieces: { white: { king: '🤴', queen: '👸', rook: '🏰', bishop: '⛪', knight: '🐎', pawn: '👨' }, black: { king: '🖤', queen: '👩‍🦱', rook: '🏚️', bishop: '🕌', knight: '🐴', pawn: '👤' } } },
+    { id: 'fantasy', name: 'Fantasy', pieces: { white: { king: '🦄', queen: '🧚', rook: '🗼', bishop: '⭐', knight: '🦋', pawn: '🌟' }, black: { king: '🐲', queen: '🧙', rook: '🏯', bishop: '💀', knight: '🦇', pawn: '👻' } } }
+  ];
+
+  const boardThemes = [
+    { id: 'classic', name: 'Classic', colors: { light: '#F0D9B5', dark: '#B58863' } },
+    { id: 'blue', name: 'Ocean Blue', colors: { light: '#DEE3E6', dark: '#8CA2AD' } },
+    { id: 'green', name: 'Forest Green', colors: { light: '#EEEED2', dark: '#769656' } },
+    { id: 'purple', name: 'Royal Purple', colors: { light: '#E8E8FF', dark: '#9370DB' } }
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Customize Chess</h2>
+          <Button onClick={onClose} variant="outline" size="sm">×</Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Piece Set</label>
+              <div className="grid grid-cols-1 gap-2">
+                {piecesets.map(set => (
+                  <div
+                    key={set.id}
+                    className={`p-3 border rounded cursor-pointer ${customization.pieceSet === set.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                    onClick={() => onCustomizationChange({ ...customization, pieceSet: set.id, pieces: set.pieces })}
+                  >
+                    <div className="font-medium">{set.name}</div>
+                    <div className="text-xl mt-1">
+                      {set.pieces.white.king}{set.pieces.white.queen}{set.pieces.white.rook} vs {set.pieces.black.king}{set.pieces.black.queen}{set.pieces.black.rook}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Board Theme</label>
+              <div className="grid grid-cols-1 gap-2">
+                {boardThemes.map(theme => (
+                  <div
+                    key={theme.id}
+                    className={`p-3 border rounded cursor-pointer ${customization.boardTheme === theme.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                    onClick={() => onCustomizationChange({ ...customization, boardTheme: theme.id, boardColors: theme.colors })}
+                  >
+                    <div className="font-medium">{theme.name}</div>
+                    <div className="flex space-x-2 mt-1">
+                      <div className="w-6 h-6 rounded" style={{ backgroundColor: theme.colors.light }}></div>
+                      <div className="w-6 h-6 rounded" style={{ backgroundColor: theme.colors.dark }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="coords"
+                  checked={customization.showCoordinates}
+                  onChange={(e) => onCustomizationChange({ ...customization, showCoordinates: e.target.checked })}
+                />
+                <label htmlFor="coords" className="text-sm font-medium">Show Coordinates</label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="lastmove"
+                  checked={customization.highlightLastMove}
+                  onChange={(e) => onCustomizationChange({ ...customization, highlightLastMove: e.target.checked })}
+                />
+                <label htmlFor="lastmove" className="text-sm font-medium">Highlight Last Move</label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="validmoves"
+                  checked={customization.showValidMoves}
+                  onChange={(e) => onCustomizationChange({ ...customization, showValidMoves: e.target.checked })}
+                />
+                <label htmlFor="validmoves" className="text-sm font-medium">Show Valid Moves</label>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Animation Speed</label>
+              <select
+                value={customization.animationSpeed}
+                onChange={(e) => onCustomizationChange({ ...customization, animationSpeed: e.target.value })}
+                className="w-full p-2 border rounded"
+              >
+                <option value="slow">Slow</option>
+                <option value="medium">Medium</option>
+                <option value="fast">Fast</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Square Size</label>
+              <select
+                value={customization.squareSize}
+                onChange={(e) => onCustomizationChange({ ...customization, squareSize: e.target.value })}
+                className="w-full p-2 border rounded"
+              >
+                <option value="small">Small (50px)</option>
+                <option value="medium">Medium (60px)</option>
+                <option value="large">Large (70px)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, onStatsUpdate }) => {
   const boardRef = useRef<HTMLDivElement>(null);
   const [gameState, setGameState] = useState<GameState>({
@@ -84,7 +225,12 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     highlightLastMove: true,
     showValidMoves: true,
     boardBorder: 'wooden',
-    squareSize: 'medium'
+    squareSize: 'medium',
+    pieces: {
+      white: { king: '♔', queen: '♕', rook: '♖', bishop: '♗', knight: '♘', pawn: '♙' },
+      black: { king: '♚', queen: '♛', rook: '♜', bishop: '♝', knight: '♞', pawn: '♟' }
+    },
+    boardColors: { light: '#F0D9B5', dark: '#B58863' }
   });
 
   const isValidPosition = (row: number, col: number): boolean => {
@@ -313,7 +459,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     if (!dragState.isDragging || !dragState.draggedFrom || !boardRef.current) return;
     
     const rect = boardRef.current.getBoundingClientRect();
-    const squareSize = rect.width / 8;
+    const squareSize = customization.squareSize === 'small' ? 50 : customization.squareSize === 'large' ? 70 : 60;
     const col = Math.floor((e.clientX - rect.left) / squareSize);
     const row = Math.floor((e.clientY - rect.top) / squareSize);
     
@@ -331,7 +477,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
       dragPosition: { x: 0, y: 0 }
     });
     setValidMoves([]);
-  }, [dragState, validMoves]);
+  }, [dragState, validMoves, customization.squareSize]);
 
   const makeMove = useCallback((fromRow: number, fromCol: number, toRow: number, toCol: number) => {
     const newBoard = gameState.board.map(row => [...row]);
@@ -398,11 +544,7 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
   }, [gameState.board, getValidMoves, makeMove]);
 
   const getPieceSymbol = (piece: ChessPiece): string => {
-    const symbols = {
-      white: { king: '♔', queen: '♕', rook: '♖', bishop: '♗', knight: '♘', pawn: '♙' },
-      black: { king: '♚', queen: '♛', rook: '♜', bishop: '♝', knight: '♞', pawn: '♟' }
-    };
-    return symbols[piece.color][piece.type];
+    return customization.pieces[piece.color][piece.type];
   };
 
   const resetGame = () => {
@@ -464,18 +606,22 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
     dragState
   }) => {
     const isLight = (row + col) % 2 === 0;
+    const squareSize = customization.squareSize === 'small' ? 50 : customization.squareSize === 'large' ? 70 : 60;
   
     return (
       <div
         key={`${row}-${col}`}
-        className={`absolute w-[60px] h-[60px] flex items-center justify-center text-3xl cursor-pointer transition-all duration-200 ${
-          isLight ? 'bg-amber-100' : 'bg-amber-600'
-        } ${isSelected ? 'ring-4 ring-blue-500' : ''} ${
+        className={`absolute flex items-center justify-center text-3xl cursor-pointer transition-all duration-200 ${
+          isSelected ? 'ring-4 ring-blue-500' : ''
+        } ${
           isValidMove ? 'ring-2 ring-green-400' : ''
         } ${isDraggedFrom && dragState.isDragging ? 'opacity-50' : ''}`}
         style={{
-          left: `${col * 60}px`,
-          top: `${row * 60}px`,
+          left: `${col * squareSize}px`,
+          top: `${row * squareSize}px`,
+          width: `${squareSize}px`,
+          height: `${squareSize}px`,
+          backgroundColor: isLight ? customization.boardColors.light : customization.boardColors.dark,
         }}
         onClick={() => handleSquareClick(row, col)}
         onMouseDown={(e) => handleMouseDown(e, row, col)}
@@ -497,6 +643,9 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
       </div>
     );
   };
+
+  const squareSize = customization.squareSize === 'small' ? 50 : customization.squareSize === 'large' ? 70 : 60;
+  const boardSize = squareSize * 8;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
@@ -532,9 +681,8 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
                   style={{ 
-                    width: '480px', 
-                    height: '480px',
-                    backgroundImage: customization.boardTheme === 'marble' ? 'linear-gradient(45deg, #f0f0f0 25%, #e0e0e0 25%, #e0e0e0 50%, #f0f0f0 50%, #f0f0f0 75%, #e0e0e0 75%, #e0e0e0)' : undefined
+                    width: `${boardSize}px`, 
+                    height: `${boardSize}px`
                   }}
                 >
                   {gameState.board.map((row, rowIndex) =>
@@ -695,14 +843,12 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
         </div>
       </div>
 
-      {showCustomization && (
-        <ChessCustomization
-          isOpen={showCustomization}
-          onClose={() => setShowCustomization(false)}
-          customization={customization}
-          onCustomizationChange={setCustomization}
-        />
-      )}
+      <ChessCustomization
+        isOpen={showCustomization}
+        onClose={() => setShowCustomization(false)}
+        customization={customization}
+        onCustomizationChange={setCustomization}
+      />
 
       <ConceptModal
         isOpen={showLearnModal}

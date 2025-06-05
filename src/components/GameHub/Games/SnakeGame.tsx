@@ -44,7 +44,7 @@ interface GameCustomization {
 
 export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number>();
+  const gameLoopRef = useRef<number | null>(null);
   
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameOver'>('menu');
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
@@ -468,12 +468,12 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     const params = getDifficultyParams();
     const speed = activePowerUps.includes('slow') ? params.speed * 2 : params.speed;
     
-    gameLoopRef.current = setTimeout(gameLoop, speed);
+    gameLoopRef.current = window.setTimeout(gameLoop, speed);
   }, [updateGame, draw, activePowerUps]);
 
   useEffect(() => {
     if (gameState === 'playing') {
-      gameLoopRef.current = setTimeout(gameLoop, getDifficultyParams().speed);
+      gameLoopRef.current = window.setTimeout(gameLoop, getDifficultyParams().speed);
     } else {
       if (gameLoopRef.current) {
         clearTimeout(gameLoopRef.current);
@@ -492,9 +492,9 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     if (gameState === 'gameOver') {
       if (score > highScore) {
         setHighScore(score);
-        onStatsUpdate(prev => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
+        onStatsUpdate((prev: any) => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
       }
-      onStatsUpdate(prev => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
+      onStatsUpdate((prev: any) => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
     }
   }, [gameState, score, highScore, onStatsUpdate]);
 
