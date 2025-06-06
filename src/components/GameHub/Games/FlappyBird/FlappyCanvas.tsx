@@ -108,7 +108,7 @@ export const FlappyCanvas: React.FC = () => {
           }
           return newLives;
         });
-        createParticles(newBird.x || 100, newBird.y, '#FF0000', 10);
+        createParticles(100, newBird.y, '#FF0000', 10);
       }
 
       return newBird;
@@ -323,11 +323,17 @@ export const FlappyCanvas: React.FC = () => {
   const gameLoop = useCallback(() => {
     updateGame();
     draw();
+    if (gameLoopRef.current) {
+      cancelAnimationFrame(gameLoopRef.current);
+    }
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [updateGame, draw]);
+  }, [updateGame, draw, gameLoopRef]);
 
   useEffect(() => {
     if (gameState === 'playing') {
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     } else {
       if (gameLoopRef.current) {

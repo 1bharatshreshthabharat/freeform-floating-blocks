@@ -3,7 +3,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Trophy, Star } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Play, Pause, RotateCcw, Trophy, Zap } from 'lucide-react';
 import { useFlappyGame } from './FlappyGameProvider';
 
 export const FlappyControls: React.FC = () => {
@@ -15,8 +19,13 @@ export const FlappyControls: React.FC = () => {
     lives,
     customization,
     setGameState,
+    setCustomization,
     initializeGame
   } = useFlappyGame();
+
+  const handleCustomizationChange = (key: string, value: any) => {
+    setCustomization(prev => ({ ...prev, [key]: value }));
+  };
 
   return (
     <div className="lg:w-80 space-y-4">
@@ -24,7 +33,7 @@ export const FlappyControls: React.FC = () => {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Star className="h-5 w-5 text-blue-600" />
+            <Zap className="h-5 w-5 text-blue-600" />
             <span>Game Status</span>
           </CardTitle>
         </CardHeader>
@@ -39,10 +48,10 @@ export const FlappyControls: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <Badge variant={lives > 1 ? "secondary" : "destructive"} className="p-2 text-center">
+            <Badge variant="outline" className="p-2 text-center">
               Lives: {lives}
             </Badge>
-            <Badge variant="outline" className="p-2 text-center">
+            <Badge variant="secondary" className="p-2 text-center">
               <Trophy className="h-4 w-4 mr-1" />
               Best: {highScore}
             </Badge>
@@ -69,30 +78,130 @@ export const FlappyControls: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Current Mode */}
+      {/* Bird Settings */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-sm">Current Mode</CardTitle>
+          <CardTitle className="text-sm">Bird Customization</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Difficulty:</span>
-              <Badge variant="outline">{customization.difficulty}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span>Bird Type:</span>
-              <Badge variant="secondary">{customization.birdType}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span>Theme:</span>
-              <Badge variant="outline">{customization.backgroundTheme}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span>Weather:</span>
-              <Badge variant="secondary">{customization.weatherType === 'none' ? 'Clear' : customization.weatherType}</Badge>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Bird Type</Label>
+            <Select value={customization.birdType} onValueChange={(value) => handleCustomizationChange('birdType', value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="classic">🐦 Classic</SelectItem>
+                <SelectItem value="eagle">🦅 Eagle</SelectItem>
+                <SelectItem value="duck">🦆 Duck</SelectItem>
+                <SelectItem value="robin">🐦 Robin</SelectItem>
+                <SelectItem value="parrot">🦜 Parrot</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          <div className="space-y-2">
+            <Label>Bird Size: {customization.birdSize}px</Label>
+            <Slider
+              value={[customization.birdSize]}
+              onValueChange={([value]) => handleCustomizationChange('birdSize', value)}
+              min={15}
+              max={35}
+              step={1}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Gravity: {customization.gravity}</Label>
+            <Slider
+              value={[customization.gravity]}
+              onValueChange={([value]) => handleCustomizationChange('gravity', value)}
+              min={0.3}
+              max={0.8}
+              step={0.1}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Game Settings */}
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-sm">Game Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Difficulty</Label>
+            <Select value={customization.difficulty} onValueChange={(value) => handleCustomizationChange('difficulty', value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="easy">Easy</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="hard">Hard</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Background Theme</Label>
+            <Select value={customization.backgroundTheme} onValueChange={(value) => handleCustomizationChange('backgroundTheme', value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">☀️ Day</SelectItem>
+                <SelectItem value="sunset">🌅 Sunset</SelectItem>
+                <SelectItem value="night">🌙 Night</SelectItem>
+                <SelectItem value="space">🚀 Space</SelectItem>
+                <SelectItem value="underwater">🌊 Underwater</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Obstacle Spacing: {customization.obstacleSpacing}px</Label>
+            <Slider
+              value={[customization.obstacleSpacing]}
+              onValueChange={([value]) => handleCustomizationChange('obstacleSpacing', value)}
+              min={150}
+              max={300}
+              step={10}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label>Particles</Label>
+            <Switch
+              checked={customization.enableParticles}
+              onCheckedChange={(checked) => handleCustomizationChange('enableParticles', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label>Weather Effects</Label>
+            <Switch
+              checked={customization.enableWeather}
+              onCheckedChange={(checked) => handleCustomizationChange('enableWeather', checked)}
+            />
+          </div>
+
+          {customization.enableWeather && (
+            <div className="space-y-2">
+              <Label>Weather Type</Label>
+              <Select value={customization.weatherType} onValueChange={(value) => handleCustomizationChange('weatherType', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="rain">🌧️ Rain</SelectItem>
+                  <SelectItem value="snow">❄️ Snow</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

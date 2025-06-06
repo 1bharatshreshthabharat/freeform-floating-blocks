@@ -147,12 +147,14 @@ export const SnakeCanvas: React.FC = () => {
     powerUpTime,
     canvasRef,
     gameLoopRef,
+    lastMovementTime,
     setDirection,
     setNextDirection,
     setSnake,
     setFood,
     setScore,
     setLevel,
+    setSpeed,
     setGameState,
     setLastMovementTime,
     setPowerUp,
@@ -204,7 +206,7 @@ export const SnakeCanvas: React.FC = () => {
     
     // Check for food
     if (head.x === food.position.x && head.y === food.position.y) {
-      // Don't remove tail if food is eaten
+      // Don't remove tail if food is eaten (snake grows)
       const newSnake = [head, ...snake];
       setSnake(newSnake);
       
@@ -287,24 +289,6 @@ export const SnakeCanvas: React.FC = () => {
     // Draw background
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // Draw grid lines
-    ctx.strokeStyle = theme.gridLines;
-    ctx.lineWidth = 0.5;
-    
-    for (let i = 0; i <= gridSize; i++) {
-      // Draw vertical lines
-      ctx.beginPath();
-      ctx.moveTo(i * cellSize, 0);
-      ctx.lineTo(i * cellSize, CANVAS_HEIGHT);
-      ctx.stroke();
-      
-      // Draw horizontal lines
-      ctx.beginPath();
-      ctx.moveTo(0, i * cellSize);
-      ctx.lineTo(CANVAS_WIDTH, i * cellSize);
-      ctx.stroke();
-    }
 
     if (gameState === 'menu') {
       // Draw start menu
@@ -428,11 +412,17 @@ export const SnakeCanvas: React.FC = () => {
     
     draw();
     
+    if (gameLoopRef.current) {
+      cancelAnimationFrame(gameLoopRef.current);
+    }
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameState, lastMovementTime, speed, moveSnake, draw]);
+  }, [gameState, lastMovementTime, speed, moveSnake, draw, gameLoopRef]);
 
   useEffect(() => {
     if (gameState === 'playing') {
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     } else {
       if (gameLoopRef.current) {

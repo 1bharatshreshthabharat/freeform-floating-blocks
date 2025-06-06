@@ -3,6 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 import { Play, Pause, RotateCcw, Trophy, Zap } from 'lucide-react';
 import { useSnakeGame } from './SnakeGameProvider';
 
@@ -12,13 +15,17 @@ export const SnakeControls: React.FC = () => {
     score,
     highScore,
     level,
-    powerUp,
+    gridSize,
     boardTheme,
     snakeType,
     snakeColor,
+    powerUp,
     setGameState,
-    startGame,
-    initializeGame
+    setGridSize,
+    setBoardTheme,
+    setSnakeType,
+    setSnakeColor,
+    startGame
   } = useSnakeGame();
 
   return (
@@ -77,33 +84,86 @@ export const SnakeControls: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Current Mode */}
+      {/* Snake Customization */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-sm">Current Settings</CardTitle>
+          <CardTitle className="text-sm">Snake Customization</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Board Theme:</span>
-              <Badge variant="outline">{boardTheme}</Badge>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Snake Type</Label>
+            <Select value={snakeType} onValueChange={setSnakeType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="classic">Classic</SelectItem>
+                <SelectItem value="rounded">Rounded</SelectItem>
+                <SelectItem value="gradient">Gradient</SelectItem>
+                <SelectItem value="3">3D Style</SelectItem>
+                <SelectItem value="pixelated">Pixelated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Snake Color</Label>
+            <Select value={snakeColor} onValueChange={setSnakeColor}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="#4CAF50">🟢 Green</SelectItem>
+                <SelectItem value="#FF5722">🔴 Red</SelectItem>
+                <SelectItem value="#2196F3">🔵 Blue</SelectItem>
+                <SelectItem value="#FF9800">🟠 Orange</SelectItem>
+                <SelectItem value="#9C27B0">🟣 Purple</SelectItem>
+                <SelectItem value="#FFD700">🟡 Gold</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Board Settings */}
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-sm">Board Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Board Theme</Label>
+            <Select value={boardTheme} onValueChange={setBoardTheme}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="classic">Classic</SelectItem>
+                <SelectItem value="forest">Forest</SelectItem>
+                <SelectItem value="retro">Retro</SelectItem>
+                <SelectItem value="desert">Desert</SelectItem>
+                <SelectItem value="neon">Neon</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Grid Size: {gridSize}x{gridSize}</Label>
+            <Slider
+              value={[gridSize]}
+              onValueChange={([value]) => setGridSize(value)}
+              min={15}
+              max={30}
+              step={1}
+            />
+          </div>
+
+          <div className="mt-4 pt-4 border-t">
+            <div className="text-xs text-gray-600">
+              Use arrow keys or WASD to change direction
             </div>
-            <div className="flex justify-between">
-              <span>Snake Type:</span>
-              <Badge variant="secondary">{snakeType}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span>Snake Color:</span>
-              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: snakeColor }}></div>
-            </div>
-            
-            <div className="mt-4 pt-4 border-t">
-              <div className="text-xs text-gray-600">
-                Use arrow keys or WASD to change direction
-              </div>
-              <div className="mt-2 text-xs text-gray-600">
-                Collect power-ups for special abilities!
-              </div>
+            <div className="mt-2 text-xs text-gray-600">
+              Collect power-ups for special abilities!
             </div>
           </div>
         </CardContent>

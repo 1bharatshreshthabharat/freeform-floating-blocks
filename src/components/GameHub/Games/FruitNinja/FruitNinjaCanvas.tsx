@@ -381,11 +381,17 @@ export const FruitNinjaCanvas: React.FC = () => {
   const gameLoop = useCallback(() => {
     updateGame();
     draw();
+    if (gameLoopRef.current) {
+      cancelAnimationFrame(gameLoopRef.current);
+    }
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [updateGame, draw]);
+  }, [updateGame, draw, gameLoopRef]);
 
   useEffect(() => {
     if (gameState === 'playing') {
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     } else {
       if (gameLoopRef.current) {
