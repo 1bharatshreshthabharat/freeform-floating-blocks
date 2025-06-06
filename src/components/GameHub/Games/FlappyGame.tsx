@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Pause, RotateCcw, Trophy, Volume2, VolumeX, Settings, Zap, Star } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Trophy, Volume2, VolumeX, Settings, Zap, Star, HelpCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface FlappyGameProps {
@@ -18,15 +18,20 @@ interface Bird {
   type: string;
   animation: number;
   state: 'flying' | 'flapping' | 'hurt' | 'dead';
+  expression: 'normal' | 'happy' | 'scared' | 'dizzy';
 }
 
-interface Pipe {
+interface Obstacle {
   x: number;
-  topHeight: number;
-  bottomY: number;
+  topHeight?: number;
+  bottomY?: number;
+  type: 'pipe' | 'spike' | 'laser' | 'moving-wall';
   passed: boolean;
   isBonus?: boolean;
-  type: string;
+  moving?: boolean;
+  direction?: number;
+  width: number;
+  height?: number;
 }
 
 interface Particle {
@@ -68,12 +73,15 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
     rotation: 0, 
     type: 'classic',
     animation: 0,
-    state: 'flying'
+    state: 'flying',
+    expression: 'normal'
   });
-  const [pipes, setPipes] = useState<Pipe[]>([]);
+  const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showCustomization, setShowCustomization] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [difficulty, setDifficulty] = useState<'beginner' | 'medium' | 'expert'>('medium');
 
   const [customization, setCustomization] = useState<GameCustomization>({
     birdType: 'classic',
@@ -91,55 +99,43 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 500;
-  const PIPE_WIDTH = 60;
   
-  // Dynamic game parameters based on level and difficulty
-  const getLevelParams = () => {
-    const difficultyMultiplier = {
-      beginner: { gap: 1.4, speed: 0.7, obstacles: 0.8 },
-      medium: { gap: 1.0, speed: 1.0, obstacles: 1.0 },
-      expert: { gap: 0.7, speed: 1.3, obstacles: 1.2 }
-    }[customization.difficulty];
-    
-    return {
-      PIPE_GAP: Math.max(120, 180 - (level - 1) * 3) * difficultyMultiplier.gap,
-      GRAVITY: customization.gravity + (level - 1) * 0.02,
-      JUMP_FORCE: customization.jumpForce - (level - 1) * 0.1,
-      PIPE_SPEED: customization.pipeSpeed * difficultyMultiplier.speed + (level - 1) * 0.1,
-      OBSTACLE_FREQUENCY: 0.02 * difficultyMultiplier.obstacles
-    };
-  };
-
   const birdTypes = {
     classic: { 
       idle: '🐦', 
-      flap: '🕊️', 
-      hurt: '😵', 
-      colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57']
+      flap: '🐤', 
+      hurt: '😵‍💫', 
+      expressions: { normal: '🐦', happy: '😊', scared: '😨', dizzy: '😵‍💫' }
     },
     eagle: { 
       idle: '🦅', 
-      flap: '🦅', 
-      hurt: '😵', 
-      colors: ['#8B4513', '#654321', '#D2691E', '#A0522D']
+      flap: '🦆', 
+      hurt: '💀', 
+      expressions: { normal: '🦅', happy: '😎', scared: '😰', dizzy: '💀' }
     },
     parrot: { 
       idle: '🦜', 
-      flap: '🦜', 
-      hurt: '😵', 
-      colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF']
+      flap: '🐥', 
+      hurt: '😖', 
+      expressions: { normal: '🦜', happy: '😄', scared: '😱', dizzy: '😖' }
     },
     owl: { 
       idle: '🦉', 
-      flap: '🦉', 
-      hurt: '😵', 
-      colors: ['#8B4513', '#A0522D', '#CD853F', '#DEB887']
+      flap: '🕊️', 
+      hurt: '😴', 
+      expressions: { normal: '🦉', happy: '🤓', scared: '😧', dizzy: '😴' }
     },
     peacock: { 
       idle: '🦚', 
-      flap: '🦚', 
+      flap: '🪶', 
       hurt: '😵', 
-      colors: ['#4169E1', '#00CED1', '#7FFFD4', '#40E0D0']
+      expressions: { normal: '🦚', happy: '💅', scared: '😲', dizzy: '😵' }
+    },
+    phoenix: { 
+      idle: '🔥', 
+      flap: '⚡', 
+      hurt: '💫', 
+      expressions: { normal: '🔥', happy: '✨', scared: '🌪️', dizzy: '💫' }
     }
   };
 
@@ -148,109 +144,116 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
       sky: ['#87CEEB', '#98FB98'],
       clouds: 'rgba(255, 255, 255, 0.8)',
       ground: '#8FBC8F',
-      buildings: '#D3D3D3'
+      buildings: '#D3D3D3',
+      stars: false
     },
     sunset: {
       sky: ['#FF6B6B', '#FFA500'],
       clouds: 'rgba(255, 215, 0, 0.7)',
       ground: '#CD853F',
-      buildings: '#8B4513'
+      buildings: '#8B4513',
+      stars: false
     },
     night: {
       sky: ['#191970', '#483D8B'],
       clouds: 'rgba(200, 200, 200, 0.6)',
       ground: '#2F4F4F',
-      buildings: '#1C1C1C'
+      buildings: '#1C1C1C',
+      stars: true
     },
     space: {
       sky: ['#000000', '#191970'],
       clouds: 'rgba(255, 255, 255, 0.3)',
       ground: '#2F2F2F',
-      buildings: '#4B0082'
+      buildings: '#4B0082',
+      stars: true,
+      nebula: true
     },
     underwater: {
       sky: ['#006994', '#4682B4'],
       clouds: 'rgba(100, 200, 255, 0.5)',
       ground: '#4682B4',
-      buildings: '#5F9EA0'
+      buildings: '#5F9EA0',
+      bubbles: true
     }
   };
 
-  const pipeThemes = {
-    classic: { color: '#228B22', capColor: '#32CD32', texture: 'solid' },
-    metal: { color: '#708090', capColor: '#C0C0C0', texture: 'metallic' },
-    bamboo: { color: '#9ACD32', capColor: '#8FBC8F', texture: 'striped' },
-    crystal: { color: '#E6E6FA', capColor: '#DDA0DD', texture: 'glowing' },
-    lava: { color: '#FF4500', capColor: '#FF6347', texture: 'pulsing' }
-  };
-
-  const initializeGame = useCallback(() => {
-    setBird({ 
-      x: 100, 
-      y: 250, 
-      velocity: 0, 
-      rotation: 0, 
-      type: customization.birdType,
-      animation: 0,
-      state: 'flying'
-    });
-    setPipes([]);
-    setParticles([]);
-    setScore(0);
-    setLevel(1);
-    setGameState('playing');
-  }, [customization.birdType]);
-
-  const jump = useCallback(() => {
-    const params = getLevelParams();
-    if (gameState === 'playing') {
-      setBird(prev => ({ 
-        ...prev, 
-        velocity: params.JUMP_FORCE,
-        state: 'flapping',
-        animation: 0
-      }));
-      
-      // Create jump particles
-      if (customization.enableParticles) {
-        const newParticles: Particle[] = [];
-        for (let i = 0; i < 5; i++) {
-          newParticles.push({
-            x: bird.x,
-            y: bird.y + 10,
-            vx: (Math.random() - 0.5) * 4,
-            vy: Math.random() * 2 + 1,
-            life: 20,
-            color: customization.birdColor,
-            size: Math.random() * 3 + 1
-          });
-        }
-        setParticles(prev => [...prev, ...newParticles]);
-      }
-    } else if (gameState === 'menu' || gameState === 'gameOver') {
-      initializeGame();
-    }
-  }, [gameState, bird, customization, initializeGame]);
-
-  const createPipe = useCallback((x: number): Pipe => {
-    const params = getLevelParams();
-    const topHeight = Math.random() * (CANVAS_HEIGHT - params.PIPE_GAP - 100) + 50;
-    const isBonus = Math.random() < 0.1;
+  const getDifficultyParams = () => {
+    const difficultyMultiplier = {
+      beginner: { gap: 1.4, speed: 0.7, obstacles: 0.8 },
+      medium: { gap: 1.0, speed: 1.0, obstacles: 1.0 },
+      expert: { gap: 0.7, speed: 1.3, obstacles: 1.2 }
+    }[difficulty];
     
     return {
-      x,
-      topHeight,
-      bottomY: topHeight + params.PIPE_GAP,
-      passed: false,
-      isBonus,
-      type: customization.pipeTheme
+      OBSTACLE_GAP: Math.max(120, 180 - (level - 1) * 3) * difficultyMultiplier.gap,
+      GRAVITY: customization.gravity + (level - 1) * 0.02,
+      JUMP_FORCE: customization.jumpForce - (level - 1) * 0.1,
+      OBSTACLE_SPEED: customization.pipeSpeed * difficultyMultiplier.speed + (level - 1) * 0.1,
+      OBSTACLE_FREQUENCY: 0.02 * difficultyMultiplier.obstacles
     };
-  }, [level, customization]);
+  };
+
+  const createObstacle = useCallback((x: number): Obstacle => {
+    const params = getDifficultyParams();
+    const obstacleTypes = ['pipe', 'spike', 'laser', 'moving-wall'];
+    const type = obstacleTypes[Math.floor(Math.random() * (Math.min(2 + level, obstacleTypes.length)))] as any;
+    
+    const isBonus = Math.random() < 0.1;
+    
+    switch (type) {
+      case 'pipe':
+        const topHeight = Math.random() * (CANVAS_HEIGHT - params.OBSTACLE_GAP - 100) + 50;
+        return {
+          x,
+          topHeight,
+          bottomY: topHeight + params.OBSTACLE_GAP,
+          type: 'pipe',
+          passed: false,
+          isBonus,
+          width: 60
+        };
+      case 'spike':
+        return {
+          x,
+          topHeight: Math.random() * 150 + 50,
+          bottomY: CANVAS_HEIGHT - (Math.random() * 150 + 50),
+          type: 'spike',
+          passed: false,
+          isBonus,
+          width: 40
+        };
+      case 'laser':
+        return {
+          x,
+          topHeight: Math.random() * 200 + 100,
+          bottomY: Math.random() * 200 + 200,
+          type: 'laser',
+          passed: false,
+          isBonus,
+          width: 20
+        };
+      case 'moving-wall':
+        return {
+          x,
+          topHeight: 100,
+          bottomY: CANVAS_HEIGHT - 100,
+          type: 'moving-wall',
+          passed: false,
+          isBonus,
+          width: 80,
+          moving: true,
+          direction: Math.random() > 0.5 ? 1 : -1
+        };
+      default:
+        return createObstacle(x);
+    }
+  }, [level, difficulty, customization]);
 
   const updateGame = useCallback(() => {
     if (gameState !== 'playing') return;
 
-    const params = getLevelParams();
+    const params = getDifficultyParams();
 
     setBird(prev => {
       let newY = prev.y + prev.velocity;
@@ -258,36 +261,24 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
       let newRotation = Math.max(-0.5, Math.min(0.5, prev.velocity * 0.1));
       let newAnimation = (prev.animation + 1) % 30;
       let newState = prev.state;
+      let newExpression = prev.expression;
 
-      // Update bird state based on velocity
+      // Update bird state and expression based on velocity and surroundings
       if (prev.velocity < -2) {
         newState = 'flapping';
-      } else if (prev.velocity > 2) {
+        newExpression = 'happy';
+      } else if (prev.velocity > 4) {
         newState = 'flying';
+        newExpression = 'scared';
+      } else {
+        newExpression = 'normal';
       }
 
       // Ground and ceiling collision
       if (newY <= 0 || newY >= CANVAS_HEIGHT - 30) {
         setGameState('gameOver');
         newState = 'hurt';
-        
-        // Create crash particles
-        if (customization.enableParticles) {
-          const crashParticles: Particle[] = [];
-          for (let i = 0; i < 15; i++) {
-            crashParticles.push({
-              x: prev.x,
-              y: prev.y,
-              vx: (Math.random() - 0.5) * 8,
-              vy: (Math.random() - 0.5) * 8,
-              life: 30,
-              color: ['#FF0000', '#FFA500', '#FFFF00'][Math.floor(Math.random() * 3)],
-              size: Math.random() * 4 + 2
-            });
-          }
-          setParticles(prev => [...prev, ...crashParticles]);
-        }
-        
+        newExpression = 'dizzy';
         return prev;
       }
 
@@ -297,28 +288,42 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
         velocity: newVelocity, 
         rotation: newRotation,
         animation: newAnimation,
-        state: newState
+        state: newState,
+        expression: newExpression
       };
     });
 
-    setPipes(prev => {
-      let newPipes = prev.map(pipe => ({ ...pipe, x: pipe.x - params.PIPE_SPEED }));
+    // Update obstacles with advanced movement
+    setObstacles(prev => {
+      let newObstacles = prev.map(obstacle => {
+        const newObstacle = { ...obstacle, x: obstacle.x - params.OBSTACLE_SPEED };
+        
+        // Moving walls
+        if (obstacle.type === 'moving-wall' && obstacle.moving) {
+          if (obstacle.topHeight! <= 50 || obstacle.topHeight! >= CANVAS_HEIGHT - 150) {
+            newObstacle.direction = -obstacle.direction!;
+          }
+          newObstacle.topHeight = obstacle.topHeight! + obstacle.direction! * 2;
+          newObstacle.bottomY = newObstacle.topHeight + 100;
+        }
+        
+        return newObstacle;
+      });
       
-      // Remove off-screen pipes
-      newPipes = newPipes.filter(pipe => pipe.x > -PIPE_WIDTH);
+      // Remove off-screen obstacles
+      newObstacles = newObstacles.filter(obstacle => obstacle.x > -obstacle.width);
       
-      // Add new pipes
-      const lastPipe = newPipes[newPipes.length - 1];
-      if (!lastPipe || lastPipe.x < CANVAS_WIDTH - 250) {
-        newPipes.push(createPipe(CANVAS_WIDTH));
+      // Add new obstacles
+      const lastObstacle = newObstacles[newObstacles.length - 1];
+      if (!lastObstacle || lastObstacle.x < CANVAS_WIDTH - 250) {
+        newObstacles.push(createObstacle(CANVAS_WIDTH));
       }
 
-      // Check scoring and level progression
-      newPipes.forEach(pipe => {
-        if (!pipe.passed && pipe.x + PIPE_WIDTH < bird.x) {
-          pipe.passed = true;
-          const scoreIncrease = pipe.isBonus ? 5 : 1;
-          
+      // Check scoring and collisions
+      newObstacles.forEach(obstacle => {
+        if (!obstacle.passed && obstacle.x + obstacle.width < bird.x) {
+          obstacle.passed = true;
+          const scoreIncrease = obstacle.isBonus ? 5 : 1;
           setScore(prev => prev + scoreIncrease);
           
           // Level up every 15 points
@@ -326,38 +331,37 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
             setLevel(prev => prev + 1);
           }
         }
-      });
 
-      // Collision detection
-      newPipes.forEach(pipe => {
+        // Enhanced collision detection for different obstacle types
         if (
-          bird.x < pipe.x + PIPE_WIDTH &&
-          bird.x + 30 > pipe.x &&
-          (bird.y < pipe.topHeight || bird.y + 30 > pipe.bottomY)
+          bird.x < obstacle.x + obstacle.width &&
+          bird.x + 30 > obstacle.x
         ) {
-          setGameState('gameOver');
-          setBird(prev => ({ ...prev, state: 'hurt' }));
+          let collision = false;
           
-          // Create collision particles
-          if (customization.enableParticles) {
-            const collisionParticles: Particle[] = [];
-            for (let i = 0; i < 20; i++) {
-              collisionParticles.push({
-                x: bird.x,
-                y: bird.y,
-                vx: (Math.random() - 0.5) * 10,
-                vy: (Math.random() - 0.5) * 10,
-                life: 40,
-                color: ['#FF0000', '#FFA500', '#FFFF00', '#FF69B4'][Math.floor(Math.random() * 4)],
-                size: Math.random() * 5 + 2
-              });
-            }
-            setParticles(prev => [...prev, ...collisionParticles]);
+          switch (obstacle.type) {
+            case 'pipe':
+              collision = bird.y < obstacle.topHeight! || bird.y + 30 > obstacle.bottomY!;
+              break;
+            case 'spike':
+              collision = bird.y < obstacle.topHeight! || bird.y + 30 > obstacle.bottomY!;
+              break;
+            case 'laser':
+              collision = bird.y > obstacle.topHeight! && bird.y < obstacle.bottomY!;
+              break;
+            case 'moving-wall':
+              collision = bird.y < obstacle.topHeight! || bird.y + 30 > obstacle.bottomY!;
+              break;
+          }
+          
+          if (collision) {
+            setGameState('gameOver');
+            setBird(prev => ({ ...prev, state: 'hurt', expression: 'dizzy' }));
           }
         }
       });
 
-      return newPipes;
+      return newObstacles;
     });
 
     // Update particles
@@ -374,7 +378,7 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
           .filter(particle => particle.life > 0)
       );
     }
-  }, [gameState, bird, score, level, customization, createPipe]);
+  }, [gameState, bird, score, level, customization, createObstacle]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -383,43 +387,40 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const params = getLevelParams();
     const theme = backgroundThemes[customization.backgroundTheme as keyof typeof backgroundThemes];
-    const pipeTheme = pipeThemes[customization.pipeTheme as keyof typeof pipeThemes];
 
-    // Clear canvas with themed background
+    // Enhanced background with animations
     const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
     gradient.addColorStop(0, theme.sky[0]);
     gradient.addColorStop(1, theme.sky[1]);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw background elements
-    if (customization.backgroundTheme === 'space') {
-      // Draw stars
+    // Advanced background effects
+    if (theme.stars) {
       ctx.fillStyle = 'white';
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 150; i++) {
         const x = (Date.now() * 0.001 * 10 + i * 50) % CANVAS_WIDTH;
         const y = (i * 37) % CANVAS_HEIGHT;
-        ctx.fillRect(x, y, 1, 1);
+        const twinkle = Math.sin(Date.now() * 0.005 + i) * 0.5 + 0.5;
+        ctx.globalAlpha = twinkle;
+        ctx.fillRect(x, y, 2, 2);
       }
+      ctx.globalAlpha = 1;
     }
 
-    // Draw animated clouds
-    if (customization.enableAnimations) {
-      ctx.fillStyle = theme.clouds;
-      for (let i = 0; i < 4; i++) {
-        const x = (Date.now() * 0.01 + i * 200) % (CANVAS_WIDTH + 100) - 50;
-        const y = 60 + i * 30;
+    if (theme.bubbles) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      for (let i = 0; i < 20; i++) {
+        const x = (Date.now() * 0.02 + i * 40) % CANVAS_WIDTH;
+        const y = CANVAS_HEIGHT - ((Date.now() * 0.03 + i * 60) % (CANVAS_HEIGHT + 50));
         ctx.beginPath();
-        ctx.arc(x, y, 25, 0, Math.PI * 2);
-        ctx.arc(x + 25, y, 35, 0, Math.PI * 2);
-        ctx.arc(x + 50, y, 25, 0, Math.PI * 2);
+        ctx.arc(x, y, 3 + Math.sin(Date.now() * 0.01 + i) * 2, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    // Draw weather effects
+    // Weather effects
     if (customization.weatherEffect === 'rain') {
       ctx.strokeStyle = 'rgba(100, 150, 255, 0.6)';
       ctx.lineWidth = 2;
@@ -434,86 +435,89 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
     }
 
     if (gameState !== 'menu') {
-      // Draw pipes with advanced rendering
-      pipes.forEach(pipe => {
-        const pipeColor = pipe.isBonus ? '#FFD700' : pipeTheme.color;
+      // Draw advanced obstacles
+      obstacles.forEach(obstacle => {
+        ctx.save();
         
-        // Pipe body
-        ctx.fillStyle = pipeColor;
-        ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
-        ctx.fillRect(pipe.x, pipe.bottomY, PIPE_WIDTH, CANVAS_HEIGHT - pipe.bottomY);
-        
-        // Pipe texture effects
-        if (pipeTheme.texture === 'metallic') {
-          const metalGradient = ctx.createLinearGradient(pipe.x, 0, pipe.x + PIPE_WIDTH, 0);
-          metalGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-          metalGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
-          metalGradient.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
-          ctx.fillStyle = metalGradient;
-          ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
-          ctx.fillRect(pipe.x, pipe.bottomY, PIPE_WIDTH, CANVAS_HEIGHT - pipe.bottomY);
+        switch (obstacle.type) {
+          case 'pipe':
+            const pipeColor = obstacle.isBonus ? '#FFD700' : '#228B22';
+            ctx.fillStyle = pipeColor;
+            ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight!);
+            ctx.fillRect(obstacle.x, obstacle.bottomY!, obstacle.width, CANVAS_HEIGHT - obstacle.bottomY!);
+            break;
+            
+          case 'spike':
+            ctx.fillStyle = '#FF4444';
+            // Draw spikes
+            ctx.beginPath();
+            ctx.moveTo(obstacle.x, obstacle.topHeight!);
+            ctx.lineTo(obstacle.x + obstacle.width/2, 0);
+            ctx.lineTo(obstacle.x + obstacle.width, obstacle.topHeight!);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(obstacle.x, obstacle.bottomY!);
+            ctx.lineTo(obstacle.x + obstacle.width/2, CANVAS_HEIGHT);
+            ctx.lineTo(obstacle.x + obstacle.width, obstacle.bottomY!);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'laser':
+            const gradient = ctx.createLinearGradient(obstacle.x, 0, obstacle.x + obstacle.width, 0);
+            gradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 100, 100, 1)');
+            gradient.addColorStop(1, 'rgba(255, 0, 0, 0.8)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(obstacle.x, obstacle.topHeight!, obstacle.width, obstacle.bottomY! - obstacle.topHeight!);
+            
+            // Laser glow effect
+            ctx.shadowColor = '#FF0000';
+            ctx.shadowBlur = 20;
+            ctx.fillRect(obstacle.x, obstacle.topHeight!, obstacle.width, obstacle.bottomY! - obstacle.topHeight!);
+            ctx.shadowBlur = 0;
+            break;
+            
+          case 'moving-wall':
+            ctx.fillStyle = '#666666';
+            ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight!);
+            ctx.fillRect(obstacle.x, obstacle.bottomY!, obstacle.width, CANVAS_HEIGHT - obstacle.bottomY!);
+            
+            // Movement indicator
+            ctx.fillStyle = '#FFFF00';
+            ctx.fillRect(obstacle.x + 5, obstacle.topHeight! - 10, obstacle.width - 10, 10);
+            ctx.fillRect(obstacle.x + 5, obstacle.bottomY!, obstacle.width - 10, 10);
+            break;
         }
         
-        // Pipe caps with enhanced styling
-        ctx.fillStyle = pipe.isBonus ? '#FFA500' : pipeTheme.capColor;
-        ctx.fillRect(pipe.x - 5, pipe.topHeight - 25, PIPE_WIDTH + 10, 25);
-        ctx.fillRect(pipe.x - 5, pipe.bottomY, PIPE_WIDTH + 10, 25);
-        
-        // Bonus pipe effects
-        if (pipe.isBonus) {
-          ctx.save();
-          ctx.shadowColor = '#FFD700';
-          ctx.shadowBlur = 15;
-          ctx.fillStyle = '#FF6347';
-          ctx.font = 'bold 20px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('★', pipe.x + PIPE_WIDTH/2, pipe.topHeight + params.PIPE_GAP/2);
-          ctx.restore();
-        }
+        ctx.restore();
       });
 
-      // Draw particles
-      if (customization.enableParticles) {
-        particles.forEach(particle => {
-          ctx.save();
-          ctx.globalAlpha = particle.life / 30;
-          ctx.fillStyle = particle.color;
-          ctx.beginPath();
-          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        });
-      }
-
-      // Draw bird with advanced animations
+      // Enhanced bird rendering with expressions
       ctx.save();
       ctx.translate(bird.x + 15, bird.y + 15);
       if (customization.enableAnimations) {
         ctx.rotate(bird.rotation);
       }
       
-      // Bird shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.beginPath();
-      ctx.ellipse(2, 25, 15, 5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      
       ctx.translate(-15, -15);
       
-      // Get bird appearance based on type and state
+      // Get bird appearance with expression
       const birdInfo = birdTypes[bird.type as keyof typeof birdTypes];
-      let birdSymbol = birdInfo.idle;
+      let birdSymbol = birdInfo.expressions[bird.expression];
       
       if (bird.state === 'flapping' && bird.animation < 15) {
         birdSymbol = birdInfo.flap;
-      } else if (bird.state === 'hurt') {
-        birdSymbol = birdInfo.hurt;
       }
       
-      // Bird glow effect when flapping
+      // Wing flapping effect
       if (bird.state === 'flapping' && customization.enableAnimations) {
         ctx.shadowColor = customization.birdColor;
         ctx.shadowBlur = 10;
+        const wingOffset = Math.sin(bird.animation * 0.5) * 5;
+        ctx.translate(0, wingOffset);
       }
       
       ctx.font = '30px Arial';
@@ -523,13 +527,12 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
       ctx.restore();
     }
 
-    // Draw UI text with enhanced styling
+    // Enhanced UI
     ctx.fillStyle = '#000';
     ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'center';
 
     if (gameState === 'menu') {
-      // Animated title
       ctx.save();
       const titleY = 180 + Math.sin(Date.now() * 0.003) * 5;
       ctx.fillStyle = '#333';
@@ -542,49 +545,33 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
       ctx.font = 'bold 24px Arial';
       ctx.fillStyle = '#555';
       ctx.fillText('Click or Press Space to Start', CANVAS_WIDTH/2, 250);
-      ctx.font = '18px Arial';
-      ctx.fillText('Choose your bird and customize your adventure!', CANVAS_WIDTH/2, 290);
       ctx.restore();
     } else if (gameState === 'gameOver') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       
       ctx.fillStyle = '#FFF';
-      ctx.strokeStyle = '#FF0000';
-      ctx.lineWidth = 2;
       ctx.font = 'bold 48px Arial';
-      ctx.strokeText('Game Over', CANVAS_WIDTH/2, 180);
       ctx.fillText('Game Over', CANVAS_WIDTH/2, 180);
-      
       ctx.font = 'bold 24px Arial';
-      ctx.fillText(`Final Score: ${score}`, CANVAS_WIDTH/2, 220);
-      ctx.fillText(`Level Reached: ${level}`, CANVAS_WIDTH/2, 250);
-      ctx.fillText(`High Score: ${highScore}`, CANVAS_WIDTH/2, 280);
-      ctx.fillText('Click to Fly Again', CANVAS_WIDTH/2, 320);
+      ctx.fillText(`Score: ${score}`, CANVAS_WIDTH/2, 220);
+      ctx.fillText(`Level: ${level}`, CANVAS_WIDTH/2, 250);
+      ctx.fillText('Click to Fly Again', CANVAS_WIDTH/2, 290);
     }
 
-    // Draw active game UI with better styling
+    // Game UI
     if (gameState === 'playing' || gameState === 'paused') {
-      // Score with glow effect
       ctx.save();
       ctx.shadowColor = '#000';
       ctx.shadowBlur = 3;
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 32px Arial';
+      ctx.font = 'bold 28px Arial';
       ctx.textAlign = 'left';
-      ctx.fillText(`Score: ${score}`, 20, 45);
-      ctx.fillText(`Level: ${level}`, 20, 80);
-      
-      // Level progress bar
-      const progress = (score % 15) / 15;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.fillRect(20, 90, 150, 8);
-      ctx.fillStyle = '#FFD700';
-      ctx.fillRect(20, 90, 150 * progress, 8);
-      
+      ctx.fillText(`Score: ${score}`, 20, 40);
+      ctx.fillText(`Level: ${level}`, 20, 75);
       ctx.restore();
     }
-  }, [gameState, bird, pipes, particles, score, level, highScore, customization]);
+  }, [gameState, bird, obstacles, particles, score, level, highScore, customization]);
 
   const gameLoop = useCallback(() => {
     updateGame();
@@ -642,7 +629,7 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-green-100 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Enhanced Header */}
         <div className="flex justify-between items-center mb-6">
           <Button onClick={onBack} variant="outline" className="flex items-center space-x-2">
             <ArrowLeft className="h-4 w-4" />
@@ -650,7 +637,11 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
           </Button>
           <h1 className="text-3xl font-bold text-blue-800">🐦 Enhanced Flappy Bird</h1>
           <div className="flex space-x-2">
-            <Button onClick={() => setShowCustomization(!showCustomization)} variant="outline">
+            <Button onClick={() => setShowHowToPlay(true)} variant="outline" size="sm">
+              <HelpCircle className="h-4 w-4 mr-2" />
+              How to Play
+            </Button>
+            <Button onClick={() => setShowCustomization(true)} variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-2" />
               Customize
             </Button>
@@ -662,7 +653,7 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Game Canvas */}
-          <Card className="flex-1">
+          <Card className="flex-1 shadow-lg">
             <CardContent className="p-4">
               <div className="flex justify-center">
                 <canvas
@@ -676,44 +667,57 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
             </CardContent>
           </Card>
 
-          {/* Game Info - keeping existing structure but enhanced */}
+          {/* Simplified Game Controls */}
           <div className="lg:w-80 space-y-4">
-            <Card>
+            <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle>Game Stats</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <Star className="h-5 w-5 text-blue-600" />
+                  <span>Game Status</span>
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <Badge variant="outline" className="text-lg p-2 w-full">
-                      Score: {score}
-                    </Badge>
-                  </div>
-                  <div className="text-center">
-                    <Badge variant="secondary" className="text-lg p-2 w-full">
-                      <Star className="h-4 w-4 mr-1" />
-                      Level: {level}
-                    </Badge>
-                  </div>
-                  <div className="text-center col-span-2">
-                    <Badge variant="secondary" className="text-lg p-2 w-full">
-                      <Trophy className="h-4 w-4 mr-1" />
-                      Best: {highScore}
-                    </Badge>
-                  </div>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Badge variant="outline" className="p-2 text-center">
+                    Score: {score}
+                  </Badge>
+                  <Badge variant="secondary" className="p-2 text-center">
+                    Level: {level}
+                  </Badge>
+                </div>
+                
+                <div className="text-center">
+                  <Badge variant="secondary" className="p-2 w-full">
+                    <Trophy className="h-4 w-4 mr-1" />
+                    Best: {highScore}
+                  </Badge>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Difficulty</label>
+                  <Select value={difficulty} onValueChange={(value: any) => setDifficulty(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="expert">Expert</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
                   {gameState === 'playing' && (
                     <Button onClick={togglePause} className="w-full" variant="outline">
                       <Pause className="h-4 w-4 mr-2" />
-                      Pause Game
+                      Pause
                     </Button>
                   )}
                   {gameState === 'paused' && (
                     <Button onClick={togglePause} className="w-full">
                       <Play className="h-4 w-4 mr-2" />
-                      Resume Game
+                      Resume
                     </Button>
                   )}
                   <Button onClick={initializeGame} className="w-full" variant="outline">
@@ -724,47 +728,77 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle>Bird Status</CardTitle>
+                <CardTitle className="text-sm">Bird Status</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span>Bird Type:</span>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Type:</span>
                     <Badge variant="outline">{customization.birdType}</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>Difficulty:</span>
-                    <Badge variant="secondary">{customization.difficulty}</Badge>
+                  <div className="flex justify-between">
+                    <span>State:</span>
+                    <Badge variant="secondary">{bird.state}</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>Theme:</span>
-                    <Badge variant="outline">{customization.backgroundTheme}</Badge>
+                  <div className="flex justify-between">
+                    <span>Expression:</span>
+                    <span>{birdTypes[bird.type as keyof typeof birdTypes]?.expressions[bird.expression]}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>How to Play</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm space-y-2">
-                  <li>• Click or press SPACE to make the bird fly</li>
-                  <li>• Avoid hitting pipes or ground</li>
-                  <li>• Golden pipes give bonus points</li>
-                  <li>• Each level increases difficulty</li>
-                  <li>• Collect 15 points to level up</li>
-                  <li>• Press P to pause during gameplay</li>
-                  <li>• Customize your bird and environment</li>
-                </ul>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* How to Play Modal */}
+      {showHowToPlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">How to Play Flappy Bird</h2>
+              <Button onClick={() => setShowHowToPlay(false)} variant="outline" size="sm">×</Button>
+            </div>
+            <div className="space-y-4 text-sm">
+              <div>
+                <h3 className="font-semibold mb-2">Controls</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li>• Click or press SPACE to make the bird fly</li>
+                  <li>• Press P to pause/resume during gameplay</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Gameplay</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li>• Avoid hitting obstacles or ground</li>
+                  <li>• Golden obstacles give bonus points</li>
+                  <li>• Each level increases difficulty and new obstacles</li>
+                  <li>• Collect 15 points to advance to next level</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Obstacles</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li>• 🟢 Pipes: Classic vertical barriers</li>
+                  <li>• 🔺 Spikes: Sharp triangular obstacles</li>
+                  <li>• 🔴 Lasers: Horizontal energy beams</li>
+                  <li>• ⬜ Moving Walls: Dynamic barriers</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Bird Expressions</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li>• 😊 Happy: When flying upward</li>
+                  <li>• 😨 Scared: When falling fast</li>
+                  <li>• 😵‍💫 Dizzy: When crashed</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Enhanced Customization Modal */}
       {showCustomization && (
@@ -789,6 +823,7 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
                       <SelectItem value="parrot">Parrot 🦜</SelectItem>
                       <SelectItem value="owl">Owl 🦉</SelectItem>
                       <SelectItem value="peacock">Peacock 🦚</SelectItem>
+                      <SelectItem value="phoenix">Phoenix 🔥</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -842,7 +877,7 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Difficulty</label>
-                  <Select value={customization.difficulty} onValueChange={(value) => setCustomization(prev => ({ ...prev, difficulty: value as any }))}>
+                  <Select value={difficulty} onValueChange={(value: any) => setDifficulty(value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
