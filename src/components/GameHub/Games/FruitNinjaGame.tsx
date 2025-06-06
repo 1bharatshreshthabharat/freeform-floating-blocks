@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,6 @@ interface Fruit {
   isBomb?: boolean;
   isBonus?: boolean;
   sliceTime?: number;
-  sliceAngle?: number;
 }
 
 interface SliceEffect {
@@ -34,38 +34,24 @@ interface SliceEffect {
   angle: number;
   life: number;
   fruitType: string;
-  particles: Array<{
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    size: number;
-    color: string;
-    life: number;
-  }>;
 }
 
 interface GameCustomization {
   bladeColor: string;
   bladeTrail: boolean;
   backgroundTheme: string;
-  difficulty: 'beginner' | 'medium' | 'expert';
+  fruitSize: number;
   gameSpeed: number;
+  difficulty: string;
   enableBombs: boolean;
   enableCombo: boolean;
-  senseiMode: boolean;
-  criticalHits: boolean;
+  trailLength: number;
 }
 
 export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameLoopRef = useRef<number>();
-  const mouseRef = useRef({ 
-    x: 0, 
-    y: 0, 
-    trail: [] as { x: number; y: number; time: number; pressure: number }[],
-    isDown: false 
-  });
+  const mouseRef = useRef({ x: 0, y: 0, trail: [] as { x: number; y: number; time: number }[] });
   
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameOver'>('menu');
   const [score, setScore] = useState(0);
@@ -79,87 +65,74 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showCustomization, setShowCustomization] = useState(false);
   const [isSlicing, setIsSlicing] = useState(false);
-  const [criticalHit, setCriticalHit] = useState<{ x: number; y: number; life: number; text: string } | null>(null);
-  const [showSplash, setShowSplash] = useState(true);
 
   const [customization, setCustomization] = useState<GameCustomization>({
-    bladeColor: '#00BFFF',
+    bladeColor: '#FFD700',
     bladeTrail: true,
     backgroundTheme: 'dojo',
-    difficulty: 'medium',
+    fruitSize: 1.0,
     gameSpeed: 1.0,
+    difficulty: 'normal',
     enableBombs: true,
     enableCombo: true,
-    senseiMode: false,
-    criticalHits: true
+    trailLength: 10
   });
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 500;
-  const MAX_TRAIL_LENGTH = 25;
+  const MAX_TRAIL_LENGTH = 20;
   
-  // Dynamic game parameters based on level and difficulty
+  // Dynamic game parameters based on level and customization
   const getLevelParams = () => {
+    const baseSpawnRate = 1000;
     const difficultyMultiplier = {
-      beginner: { spawnRate: 1.5, fruitSpeed: 0.7, bombRate: 0.5 },
-      medium: { spawnRate: 1.0, fruitSpeed: 1.0, bombRate: 1.0 },
-      expert: { spawnRate: 0.7, fruitSpeed: 1.3, bombRate: 1.5 }
-    }[customization.difficulty];
+      easy: 1.5,
+      normal: 1.0,
+      hard: 0.7,
+      expert: 0.5
+    }[customization.difficulty] || 1.0;
     
     return {
-      spawnRate: 1200 / customization.gameSpeed * difficultyMultiplier.spawnRate / (1 + (level - 1) * 0.1),
-      fruitSpeed: 12 * customization.gameSpeed * difficultyMultiplier.fruitSpeed * (1 + (level - 1) * 0.05),
-      bombRate: customization.enableBombs ? Math.min(0.05 + (level - 1) * 0.01, 0.25) * difficultyMultiplier.bombRate : 0,
-      bonusRate: 0.1 + (level - 1) * 0.01,
-      fruitCount: Math.min(2 + Math.floor((level - 1) / 2), 6),
-      criticalHitChance: customization.criticalHits ? 0.1 + (level - 1) * 0.01 : 0
+      spawnRate: baseSpawnRate * difficultyMultiplier / (1 + (level - 1) * 0.1) / customization.gameSpeed,
+      fruitSpeed: 8 * customization.gameSpeed * (1 + (level - 1) * 0.05),
+      bombRate: customization.enableBombs ? Math.min(0.05 + (level - 1) * 0.01, 0.25) : 0,
+      bonusRate: 0.08 + (level - 1) * 0.01,
+      fruitSize: 50 * customization.fruitSize
     };
   };
 
   const backgroundThemes = {
     dojo: {
       background: 'linear-gradient(to bottom, #3a0000, #8b0000)',
-      floor: '#422018',
-      elements: '🈴🈯🈵🈶🉐🈺'
+      floor: '#422018'
     },
     forest: {
       background: 'linear-gradient(to bottom, #143601, #1a4301)',
-      floor: '#2a3d00',
-      elements: '🌲🌳🍀🌿🌱🍃'
+      floor: '#2a3d00'
     },
     beach: {
       background: 'linear-gradient(to bottom, #87ceeb, #00bfff)',
-      floor: '#f0e68c',
-      elements: '🌊🏄‍♂️🐚🌴🐬☀️'
+      floor: '#f0e68c'
     },
     night: {
       background: 'linear-gradient(to bottom, #000000, #191970)',
-      floor: '#000033',
-      elements: '🌙⭐✨🔭⚪🌠'
-    },
-    dusk: {
-      background: 'linear-gradient(to bottom, #FF6347, #8B008B)',
-      floor: '#8B4513',
-      elements: '🌇🌆🧨🪔🌄🎆'
+      floor: '#000033'
     }
   };
 
   const fruitTypes = [
-    { type: 'apple', color: '#FF0000', icon: '🍎', points: 1, sfx: 'apple_slice' },
-    { type: 'orange', color: '#FFA500', icon: '🍊', points: 1, sfx: 'orange_slice' },
-    { type: 'watermelon', color: '#006400', icon: '🍉', points: 3, sfx: 'watermelon_slice' },
-    { type: 'banana', color: '#FFE135', icon: '🍌', points: 2, sfx: 'banana_slice' },
-    { type: 'pineapple', color: '#FEDC56', icon: '🍍', points: 3, sfx: 'pineapple_slice' },
-    { type: 'strawberry', color: '#FF3131', icon: '🍓', points: 2, sfx: 'strawberry_slice' },
-    { type: 'mango', color: '#FFD700', icon: '🥭', points: 3, sfx: 'mango_slice' },
-    { type: 'kiwi', color: '#8EE53F', icon: '🥝', points: 2, sfx: 'kiwi_slice' },
-    { type: 'pomegranate', color: '#C71585', icon: '🫑', points: 4, sfx: 'pomegranate_slice' },
-    { type: 'peach', color: '#FFDAB9', icon: '🍑', points: 2, sfx: 'peach_slice' }
+    { type: 'apple', color: '#FF0000', points: 1 },
+    { type: 'banana', color: '#FFE135', points: 1 },
+    { type: 'orange', color: '#FFA500', points: 1 },
+    { type: 'watermelon', color: '#006400', points: 2 },
+    { type: 'kiwi', color: '#8EE53F', points: 2 },
+    { type: 'strawberry', color: '#FF3131', points: 3 },
+    { type: 'pineapple', color: '#FEDC56', points: 3 }
   ];
 
-  const bladeColors = ['#FFD700', '#FF0000', '#4169E1', '#00BFFF', '#FF1493', '#00CED1', '#9370DB'];
+  const bladeColors = ['#FFD700', '#FF0000', '#4169E1', '#7CFC00', '#FF1493', '#00CED1', '#9370DB'];
 
-  const createFruit = useCallback((id: number): Fruit => {
+  const createFruit = (id: number): Fruit => {
     const params = getLevelParams();
     const fruitType = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
     
@@ -167,16 +140,15 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     const isBonus = !isBomb && Math.random() < params.bonusRate;
     
     const speedMultiplier = isBonus ? 0.8 : 1.0;
-    const sizeMultiplier = isBonus ? 1.5 : 1.0;
     
     return {
       id,
-      x: Math.random() * (CANVAS_WIDTH - 200) + 100,
+      x: Math.random() * (CANVAS_WIDTH - 100) + 50,
       y: CANVAS_HEIGHT + 50,
-      vx: (Math.random() - 0.5) * 8,
+      vx: (Math.random() - 0.5) * 5,
       vy: -params.fruitSpeed * speedMultiplier,
       type: isBomb ? 'bomb' : fruitType.type,
-      size: 50 * sizeMultiplier,
+      size: params.fruitSize * (isBonus ? 1.5 : 1.0),
       rotation: Math.random() * Math.PI * 2,
       rotationSpeed: (Math.random() - 0.5) * 0.2,
       sliced: false,
@@ -184,7 +156,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
       isBomb,
       isBonus
     };
-  }, [customization.difficulty, level, customization.gameSpeed]);
+  };
 
   const initializeGame = useCallback(() => {
     setFruits([]);
@@ -194,7 +166,6 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     setMaxCombo(0);
     setLevel(1);
     setLives(3);
-    setCriticalHit(null);
     setGameState('playing');
     mouseRef.current.trail = [];
   }, []);
@@ -203,7 +174,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     if (gameState !== 'playing') return;
     
     const params = getLevelParams();
-    const fruitCount = params.fruitCount;
+    const fruitCount = Math.max(1, Math.floor(Math.random() * (level / 2 + 1)));
     
     const newFruits = Array.from({ length: fruitCount }, (_, i) => 
       createFruit(Date.now() + i)
@@ -213,7 +184,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     
     // Schedule next spawn
     setTimeout(spawnFruits, params.spawnRate + Math.random() * 500);
-  }, [gameState, level, customization, createFruit]);
+  }, [gameState, level, customization]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const canvas = canvasRef.current;
@@ -224,29 +195,19 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    mouseRef.current.isDown = true;
     mouseRef.current.x = x;
     mouseRef.current.y = y;
-    mouseRef.current.trail = [{ x, y, time: Date.now(), pressure: 1.0 }];
+    mouseRef.current.trail = [{ x, y, time: Date.now() }];
     setIsSlicing(true);
   }, [gameState]);
 
   const handleMouseUp = useCallback(() => {
-    mouseRef.current.isDown = false;
     setIsSlicing(false);
-
-    // If on menu screen, start the game
-    if (gameState === 'menu' || gameState === 'gameOver') {
-      setShowSplash(false);
-      setTimeout(() => {
-        initializeGame();
-      }, 500);
-    }
-  }, [gameState, initializeGame]);
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const canvas = canvasRef.current;
-    if (!canvas || !mouseRef.current.isDown) return;
+    if (!canvas || !isSlicing) return;
     
     // Calculate canvas-relative mouse position
     const rect = canvas.getBoundingClientRect();
@@ -257,11 +218,11 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     mouseRef.current.y = y;
     
     // Add to trail with timestamp
-    const trailPoint = { x, y, time: Date.now(), pressure: 1.0 };
+    const trailPoint = { x, y, time: Date.now() };
     mouseRef.current.trail.push(trailPoint);
     
     // Limit trail length
-    if (mouseRef.current.trail.length > MAX_TRAIL_LENGTH) {
+    if (mouseRef.current.trail.length > customization.trailLength) {
       mouseRef.current.trail.shift();
     }
     
@@ -271,77 +232,32 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
       let slicedCount = 0;
       let lostLife = false;
       
-      // Get the previous point for line slice detection
-      const trail = mouseRef.current.trail;
-      if (trail.length < 2) return newFruits;
-      
-      const prevPoint = trail[trail.length - 2];
-      const currPoint = trail[trail.length - 1];
-      
       newFruits.forEach(fruit => {
         if (!fruit.sliced && !fruit.isBomb) {
-          // Check if line segment from prevPoint to currPoint intersects the fruit
-          const distToLine = lineDistToCircle(
-            prevPoint.x, prevPoint.y,
-            currPoint.x, currPoint.y,
-            fruit.x, fruit.y, fruit.size / 2
+          const distToMouse = Math.sqrt(
+            Math.pow(fruit.x - mouseRef.current.x, 2) + 
+            Math.pow(fruit.y - mouseRef.current.y, 2)
           );
           
-          if (distToLine < fruit.size / 2 + 10) {
+          if (distToMouse < fruit.size) {
             fruit.sliced = true;
             fruit.sliceTime = Date.now();
-            fruit.sliceAngle = Math.atan2(currPoint.y - prevPoint.y, currPoint.x - prevPoint.x);
             slicedCount++;
             
-            // Create slice effect with particles
-            const sliceParticles = [];
-            const fruitColor = fruitTypes.find(f => f.type === fruit.type)?.color || '#FF0000';
-            
-            // Create juice particles
-            for (let i = 0; i < 12; i++) {
-              const angle = fruit.sliceAngle + (Math.random() - 0.5) * 1.5;
-              const speed = Math.random() * 5 + 2;
-              
-              sliceParticles.push({
-                x: fruit.x,
-                y: fruit.y,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 2,
-                size: Math.random() * 5 + 2,
-                color: fruitColor,
-                life: Math.random() * 20 + 20
-              });
-            }
-            
+            // Create slice effect
             setSliceEffects(prev => [
               ...prev, 
               {
                 x: fruit.x,
                 y: fruit.y,
-                angle: fruit.sliceAngle || 0,
+                angle: Math.atan2(mouseRef.current.y - fruit.y, mouseRef.current.x - fruit.x),
                 life: 30,
-                fruitType: fruit.type,
-                particles: sliceParticles
+                fruitType: fruit.type
               }
             ]);
             
-            // Critical hit chance
-            const params = getLevelParams();
-            if (Math.random() < params.criticalHitChance) {
-              const bonusPoints = fruit.points * 2;
-              const critText = ['CRITICAL!', 'PERFECT!', 'EXCELLENT!', 'COMBO x2!'][Math.floor(Math.random() * 4)];
-              setCriticalHit({
-                x: fruit.x,
-                y: fruit.y,
-                life: 60,
-                text: critText
-              });
-              
-              setScore(prevScore => prevScore + bonusPoints);
-            } else {
-              // Regular points
-              setScore(prevScore => prevScore + fruit.points);
-            }
+            // Update score
+            setScore(prevScore => prevScore + fruit.points);
             
             // Update combo
             if (customization.enableCombo) {
@@ -357,51 +273,31 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
               }, 1000);
             }
             
-            // Level up every 20 points
-            if ((score + fruit.points) % 20 === 0) {
+            // Level up every 25 points
+            if ((score + fruit.points) % 25 === 0) {
               setLevel(prev => prev + 1);
             }
           }
         } else if (!fruit.sliced && fruit.isBomb) {
           // Check bomb collision
-          const distToLine = lineDistToCircle(
-            prevPoint.x, prevPoint.y,
-            currPoint.x, currPoint.y,
-            fruit.x, fruit.y, fruit.size / 2
+          const distToMouse = Math.sqrt(
+            Math.pow(fruit.x - mouseRef.current.x, 2) + 
+            Math.pow(fruit.y - mouseRef.current.y, 2)
           );
           
-          if (distToLine < fruit.size / 2 + 5 && !lostLife) {
+          if (distToMouse < fruit.size && !lostLife) {
             fruit.sliced = true;
             lostLife = true;
             
-            // Create bomb explosion effect with particles
-            const explosionParticles = [];
-            
-            // Create explosion particles
-            for (let i = 0; i < 30; i++) {
-              const angle = Math.random() * Math.PI * 2;
-              const speed = Math.random() * 8 + 2;
-              
-              explosionParticles.push({
-                x: fruit.x,
-                y: fruit.y,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 2,
-                size: Math.random() * 6 + 3,
-                color: ['#FF0000', '#FFA500', '#FFFF00'][Math.floor(Math.random() * 3)],
-                life: Math.random() * 30 + 30
-              });
-            }
-            
+            // Create bomb explosion effect
             setSliceEffects(prev => [
               ...prev, 
               {
                 x: fruit.x,
                 y: fruit.y,
-                angle: 0,
+                angle: Math.random() * Math.PI * 2,
                 life: 40,
-                fruitType: 'bomb',
-                particles: explosionParticles
+                fruitType: 'bomb'
               }
             ]);
             
@@ -419,38 +315,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
       
       return newFruits;
     });
-  }, [isSlicing, score, customization.enableCombo]);
-
-  // Helper function to calculate distance from line segment to circle
-  const lineDistToCircle = (x1: number, y1: number, x2: number, y2: number, cx: number, cy: number, r: number): number => {
-    // Calculate vector from point 1 to point 2
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const len = Math.sqrt(dx * dx + dy * dy);
-    
-    // Normalize the vector
-    const nx = dx / len;
-    const ny = dy / len;
-    
-    // Calculate vector from point 1 to circle center
-    const px = cx - x1;
-    const py = cy - y1;
-    
-    // Project circle center onto line
-    const proj = px * nx + py * ny;
-    
-    // Clamp projection to line segment
-    const projClamp = Math.max(0, Math.min(len, proj));
-    
-    // Calculate nearest point on line segment
-    const nearestX = x1 + projClamp * nx;
-    const nearestY = y1 + projClamp * ny;
-    
-    // Calculate distance from nearest point to circle center
-    const distance = Math.sqrt((nearestX - cx) * (nearestX - cx) + (nearestY - cy) * (nearestY - cy));
-    
-    return distance;
-  };
+  }, [isSlicing, score, customization.enableCombo, customization.trailLength]);
 
   const updateGame = useCallback(() => {
     if (gameState !== 'playing') return;
@@ -464,38 +329,36 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
             ...fruit,
             x: fruit.x + fruit.vx,
             y: fruit.y + fruit.vy,
-            vy: fruit.vy + 0.3, // gravity
+            vy: fruit.vy + 0.2,
             rotation: fruit.rotation + fruit.rotationSpeed
           };
           
           // Add special behavior for sliced fruits
           if (fruit.sliced) {
             // Split sliced fruits
-            updatedFruit.vx += fruit.id % 2 === 0 ? 0.3 : -0.3;
-            
-            // Add spinning effect for sliced fruits
-            updatedFruit.rotationSpeed *= 1.01;
+            updatedFruit.vx += fruit.isBomb ? 0 : (fruit.id % 2 === 0 ? 0.5 : -0.5);
           }
           
           return updatedFruit;
         })
         .filter(fruit => {
           // Remove fruits that have fallen below the screen
-          if (fruit.y > CANVAS_HEIGHT + 100 && !fruit.sliced && !fruit.isBomb) {
-            // Missing a fruit loses a life
-            setLives(prev => {
-              const newLives = prev - 1;
-              if (newLives <= 0) {
-                setGameState('gameOver');
-              }
-              return newLives;
-            });
+          if (fruit.y > CANVAS_HEIGHT + 50 && !fruit.sliced) {
+            // Missing a fruit loses a life (except bombs)
+            if (!fruit.isBomb && !fruit.sliced) {
+              setLives(prev => {
+                const newLives = prev - 1;
+                if (newLives <= 0) {
+                  setGameState('gameOver');
+                }
+                return newLives;
+              });
+            }
             return false;
           }
           
-          // Remove sliced fruits after they've fallen or off-screen bombs
-          if ((fruit.sliced && fruit.y > CANVAS_HEIGHT + 100) || 
-              (fruit.isBomb && fruit.y > CANVAS_HEIGHT + 100)) {
+          // Remove sliced fruits after they've fallen
+          if (fruit.sliced && fruit.y > CANVAS_HEIGHT + 150) {
             return false;
           }
           
@@ -508,34 +371,10 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
       prev
         .map(effect => ({
           ...effect,
-          life: effect.life - 1,
-          particles: effect.particles.map(particle => ({
-            ...particle,
-            x: particle.x + particle.vx,
-            y: particle.y + particle.vy,
-            vy: particle.vy + 0.2,
-            life: particle.life - 1
-          })).filter(particle => particle.life > 0)
+          life: effect.life - 1
         }))
-        .filter(effect => effect.life > 0 || effect.particles.length > 0)
+        .filter(effect => effect.life > 0)
     );
-
-    // Update critical hit animations
-    if (criticalHit) {
-      setCriticalHit(prev => {
-        if (!prev) return null;
-        
-        if (prev.life <= 0) {
-          return null;
-        } else {
-          return {
-            ...prev,
-            y: prev.y - 1,
-            life: prev.life - 1
-          };
-        }
-      });
-    }
   }, [gameState]);
 
   const draw = useCallback(() => {
@@ -545,61 +384,122 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const theme = backgroundThemes[customization.backgroundTheme as keyof typeof backgroundThemes];
+    // Get theme
+    const theme = backgroundThemes[customization.backgroundTheme as keyof typeof backgroundThemes] || backgroundThemes.dojo;
 
     // Clear canvas with themed background
-    const backdropGradient = theme.background.substring(
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    // Draw gradient background
+    const bgGradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    const gradientColor = theme.background.substring(
       theme.background.indexOf('(') + 1, 
       theme.background.lastIndexOf(')')
     );
-    const colors = backdropGradient.split(',');
+    const colors = gradientColor.split(',').slice(-2);
     
-    const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    gradient.addColorStop(0, colors[colors.length - 2].trim());
-    gradient.addColorStop(1, colors[colors.length - 1].trim());
-    ctx.fillStyle = gradient;
+    bgGradient.addColorStop(0, colors[0].trim());
+    bgGradient.addColorStop(1, colors[1].trim());
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Draw themed background elements
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.font = '40px Arial';
-    
-    const elementsArray = theme.elements.split('');
-    for (let i = 0; i < 6; i++) {
-      const x = (i * 150 + (Date.now() * 0.02) % 150) % CANVAS_WIDTH;
-      const y = 80 + (i % 3) * 150;
-      ctx.fillText(elementsArray[i % elementsArray.length], x, y);
-    }
-    
-    // Draw floor backdrop
+    // Draw floor
     ctx.fillStyle = theme.floor;
-    ctx.fillRect(0, CANVAS_HEIGHT - 30, CANVAS_WIDTH, 30);
+    ctx.fillRect(0, CANVAS_HEIGHT - 20, CANVAS_WIDTH, 20);
 
-    if (gameState !== 'menu') {
-      // Draw fruits with enhanced details
+    if (gameState === 'playing' || gameState === 'paused') {
+      // Draw blade trail if active
+      if (isSlicing && customization.bladeTrail && mouseRef.current.trail.length > 1) {
+        ctx.strokeStyle = customization.bladeColor;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        ctx.beginPath();
+        
+        // Draw trail with fading opacity based on time
+        const now = Date.now();
+        mouseRef.current.trail.forEach((point, index) => {
+          const opacity = 1 - (now - point.time) / 200; // Fade over 200ms
+          
+          if (index === 0) {
+            ctx.moveTo(point.x, point.y);
+          } else {
+            ctx.lineTo(point.x, point.y);
+          }
+          
+          // Add blade sparkle effect
+          if (index % 3 === 0) {
+            ctx.shadowColor = customization.bladeColor;
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        });
+        
+        ctx.stroke();
+      }
+
+      // Draw slice effects
+      sliceEffects.forEach(effect => {
+        const opacity = effect.life / 30;
+        
+        if (effect.fruitType === 'bomb') {
+          // Explosion effect
+          const gradient = ctx.createRadialGradient(
+            effect.x, effect.y, 0,
+            effect.x, effect.y, 40 * (1 - effect.life / 40)
+          );
+          gradient.addColorStop(0, `rgba(255, 200, 0, ${opacity})`);
+          gradient.addColorStop(0.7, `rgba(255, 0, 0, ${opacity * 0.7})`);
+          gradient.addColorStop(1, `rgba(0, 0, 0, 0)`);
+          
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(effect.x, effect.y, 50 * (1 - effect.life / 40), 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Juice splash effect
+          const fruitColor = fruitTypes.find(f => f.type === effect.fruitType)?.color || '#FF0000';
+          
+          ctx.fillStyle = fruitColor + Math.floor(opacity * 255).toString(16).padStart(2, '0');
+          
+          for (let i = 0; i < 8; i++) {
+            const angle = effect.angle + (Math.PI * 2 / 8) * i + Math.random() * 0.3;
+            const distance = (30 - effect.life) * 1.5;
+            const x = effect.x + Math.cos(angle) * distance;
+            const y = effect.y + Math.sin(angle) * distance;
+            const size = Math.random() * 4 + 2;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      });
+
+      // Draw fruits
       fruits.forEach(fruit => {
         ctx.save();
         ctx.translate(fruit.x, fruit.y);
         ctx.rotate(fruit.rotation);
         
+        // Special rendering for bombs
         if (fruit.isBomb) {
-          // Draw bomb
           ctx.fillStyle = '#000000';
           ctx.beginPath();
-          ctx.arc(0, 0, fruit.size * 0.7, 0, Math.PI * 2);
+          ctx.arc(0, 0, fruit.size * 0.8, 0, Math.PI * 2);
           ctx.fill();
           
-          // Bomb shine
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-          ctx.beginPath();
-          ctx.arc(fruit.size * 0.3, -fruit.size * 0.3, fruit.size * 0.2, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Bomb fuse with animated sparks
+          // Bomb fuse
           ctx.strokeStyle = '#FF0000';
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.moveTo(0, -fruit.size * 0.7);
+          ctx.moveTo(0, -fruit.size * 0.8);
           ctx.quadraticCurveTo(
             fruit.size * 0.5, -fruit.size * 1.3,
             fruit.size * 0.7, -fruit.size * 0.7
@@ -607,372 +507,178 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
           ctx.stroke();
           
           if (!fruit.sliced) {
-            // Animated fuse sparks
-            if (Math.random() > 0.5) {
-              ctx.fillStyle = '#FFFF00';
-              ctx.beginPath();
-              ctx.arc(
-                fruit.size * 0.7, 
-                -fruit.size * 0.7, 
-                Math.random() * 5 + 2,
-                0, Math.PI * 2
-              );
-              ctx.fill();
-            }
+            // Bomb shine
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(fruit.size * 0.3, -fruit.size * 0.3, fruit.size * 0.2, 0, Math.PI * 2);
+            ctx.fill();
           } else {
-            // Sliced bomb effect - X eyes
+            // Bomb with "X" eyes when sliced
+            ctx.fillStyle = '#FF0000';
             ctx.strokeStyle = '#FF0000';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2;
             
             // X eyes
+            // Left eye
             ctx.beginPath();
-            ctx.moveTo(-fruit.size * 0.3, -fruit.size * 0.2);
-            ctx.lineTo(-fruit.size * 0.1, -fruit.size * 0.4);
-            ctx.moveTo(-fruit.size * 0.3, -fruit.size * 0.4);
-            ctx.lineTo(-fruit.size * 0.1, -fruit.size * 0.2);
+            ctx.moveTo(-fruit.size * 0.3, -fruit.size * 0.1);
+            ctx.lineTo(-fruit.size * 0.1, -fruit.size * 0.3);
+            ctx.moveTo(-fruit.size * 0.3, -fruit.size * 0.3);
+            ctx.lineTo(-fruit.size * 0.1, -fruit.size * 0.1);
             ctx.stroke();
             
+            // Right eye
             ctx.beginPath();
-            ctx.moveTo(fruit.size * 0.1, -fruit.size * 0.2);
-            ctx.lineTo(fruit.size * 0.3, -fruit.size * 0.4);
-            ctx.moveTo(fruit.size * 0.1, -fruit.size * 0.4);
-            ctx.lineTo(fruit.size * 0.3, -fruit.size * 0.2);
+            ctx.moveTo(fruit.size * 0.1, -fruit.size * 0.1);
+            ctx.lineTo(fruit.size * 0.3, -fruit.size * 0.3);
+            ctx.moveTo(fruit.size * 0.1, -fruit.size * 0.3);
+            ctx.lineTo(fruit.size * 0.3, -fruit.size * 0.1);
             ctx.stroke();
           }
         } else {
-          // Get fruit info
+          // Find fruit color
           const fruitInfo = fruitTypes.find(f => f.type === fruit.type);
-          const fruitIcon = fruitInfo?.icon || '🍎';
+          const fruitColor = fruitInfo?.color || '#FF0000';
           
           if (!fruit.sliced) {
             // Draw whole fruit
-            ctx.font = `${fruit.size}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(fruitIcon, 0, 0);
+            ctx.fillStyle = fruitColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, fruit.size, 0, Math.PI * 2);
+            ctx.fill();
             
-            // Bonus glow
+            // Draw highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(fruit.size * 0.3, -fruit.size * 0.3, fruit.size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw stem for some fruits
+            if (['apple', 'watermelon', 'strawberry'].includes(fruit.type)) {
+              ctx.fillStyle = '#654321';
+              ctx.beginPath();
+              ctx.ellipse(0, -fruit.size * 0.9, fruit.size * 0.15, fruit.size * 0.3, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            
+            // Bonus indicator
             if (fruit.isBonus) {
-              ctx.save();
-              ctx.shadowColor = '#FFD700';
-              ctx.shadowBlur = 20;
               ctx.strokeStyle = '#FFD700';
               ctx.lineWidth = 3;
               ctx.beginPath();
-              ctx.arc(0, 0, fruit.size * 0.8, 0, Math.PI * 2);
+              ctx.arc(0, 0, fruit.size * 1.2, 0, Math.PI * 2);
               ctx.stroke();
-              ctx.restore();
             }
           } else {
             // Draw sliced fruit (two halves)
-            const sliceAngle = fruit.sliceAngle || Math.PI/4;
+            const sliceAngle = Math.atan2(
+              mouseRef.current.y - fruit.y, 
+              mouseRef.current.x - fruit.x
+            );
             
-            ctx.save();
-            // Left half (rotated slightly)
-            ctx.rotate(-0.2);
-            ctx.translate(-fruit.size * 0.3, 0);
-            ctx.scale(0.8, 1);
-            ctx.font = `${fruit.size}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(fruitIcon, 0, 0);
-            ctx.restore();
-            
-            ctx.save();
-            // Right half (rotated opposite)
-            ctx.rotate(0.2);
-            ctx.translate(fruit.size * 0.3, 0);
-            ctx.scale(0.8, 1);
-            ctx.font = `${fruit.size}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(fruitIcon, 0, 0);
-            ctx.restore();
-            
-            // Slice line
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 3;
+            // Left/top half
+            ctx.fillStyle = fruitColor;
             ctx.beginPath();
-            ctx.moveTo(-fruit.size * 0.8 * Math.cos(sliceAngle), -fruit.size * 0.8 * Math.sin(sliceAngle));
-            ctx.lineTo(fruit.size * 0.8 * Math.cos(sliceAngle), fruit.size * 0.8 * Math.sin(sliceAngle));
-            ctx.stroke();
-          }
-        }
-        
-        ctx.restore();
-      });
-
-      // Draw slice effect particles
-      sliceEffects.forEach(effect => {
-        if (effect.fruitType === 'bomb') {
-          // Draw explosion effect
-          ctx.save();
-          const gradient = ctx.createRadialGradient(
-            effect.x, effect.y, 0,
-            effect.x, effect.y, 100 * (1 - effect.life / 40)
-          );
-          gradient.addColorStop(0, `rgba(255, 200, 0, ${effect.life / 40})`);
-          gradient.addColorStop(0.5, `rgba(255, 0, 0, ${effect.life / 40 * 0.8})`);
-          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(effect.x, effect.y, 80 * (1 - effect.life / 40), 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
-        
-        // Draw juice/particle effects
-        effect.particles.forEach(particle => {
-          ctx.save();
-          ctx.globalAlpha = particle.life / 30;
-          ctx.fillStyle = particle.color;
-          ctx.beginPath();
-          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        });
-      });
-
-      // Draw blade trail
-      if (isSlicing && customization.bladeTrail && mouseRef.current.trail.length > 1) {
-        ctx.save();
-        
-        // Create gradient for blade trail
-        const gradient = ctx.createLinearGradient(
-          mouseRef.current.trail[0].x, mouseRef.current.trail[0].y,
-          mouseRef.current.x, mouseRef.current.y
-        );
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        gradient.addColorStop(0.5, customization.bladeColor);
-        gradient.addColorStop(1, 'white');
-        
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 8;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        
-        // Draw main blade trail
-        ctx.beginPath();
-        ctx.moveTo(mouseRef.current.trail[0].x, mouseRef.current.trail[0].y);
-        
-        for (let i = 1; i < mouseRef.current.trail.length; i++) {
-          const point = mouseRef.current.trail[i];
-          
-          // Adjust line width by pressure and time
-          const age = (Date.now() - point.time) / 200;
-          const thickness = 8 * Math.max(0, 1 - age) * point.pressure;
-          
-          if (i === 1) {
-            ctx.lineTo(point.x, point.y);
-          } else {
-            ctx.lineWidth = thickness;
-            ctx.lineTo(point.x, point.y);
-          }
-        }
-        
-        ctx.stroke();
-        
-        // Draw blade sparkles
-        for (let i = 0; i < mouseRef.current.trail.length; i += 3) {
-          const point = mouseRef.current.trail[i];
-          const age = (Date.now() - point.time) / 200;
-          if (age < 0.7) {
-            ctx.globalAlpha = 1 - age;
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, 2 + Math.random() * 3, 0, Math.PI * 2);
+            ctx.arc(0, 0, fruit.size, sliceAngle - Math.PI/2, sliceAngle + Math.PI/2);
+            ctx.lineTo(0, 0);
             ctx.fill();
             
-            // Extra sparkle effect
-            if (i % 9 === 0) {
-              ctx.fillStyle = customization.bladeColor;
-              ctx.beginPath();
-              ctx.arc(point.x + (Math.random() - 0.5) * 10, 
-                      point.y + (Math.random() - 0.5) * 10, 
-                      1 + Math.random() * 2, 0, Math.PI * 2);
-              ctx.fill();
-            }
+            // Right/bottom half (slightly offset)
+            ctx.translate(Math.cos(sliceAngle) * 5, Math.sin(sliceAngle) * 5);
+            ctx.fillStyle = fruitColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, fruit.size, sliceAngle + Math.PI/2, sliceAngle + 3*Math.PI/2);
+            ctx.lineTo(0, 0);
+            ctx.fill();
+            
+            // Inside of fruit (white/red/etc depending on fruit)
+            const insideColor = fruit.type === 'watermelon' ? '#FF3131' : 
+                               (fruit.type === 'banana' ? '#FFF9E3' : '#FFFA');
+            
+            // Left half inside
+            ctx.translate(-Math.cos(sliceAngle) * 5, -Math.sin(sliceAngle) * 5);
+            ctx.fillStyle = insideColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, fruit.size * 0.85, sliceAngle - Math.PI/2, sliceAngle + Math.PI/2);
+            ctx.lineTo(0, 0);
+            ctx.fill();
+            
+            // Right half inside
+            ctx.translate(Math.cos(sliceAngle) * 5, Math.sin(sliceAngle) * 5);
+            ctx.fillStyle = insideColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, fruit.size * 0.85, sliceAngle + Math.PI/2, sliceAngle + 3*Math.PI/2);
+            ctx.lineTo(0, 0);
+            ctx.fill();
           }
         }
         
         ctx.restore();
-      }
+      });
 
-      // Draw critical hit text
-      if (criticalHit) {
-        ctx.save();
-        ctx.font = 'bold 24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = `rgba(255, 215, 0, ${criticalHit.life / 60})`;
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 3;
-        ctx.strokeText(criticalHit.text, criticalHit.x, criticalHit.y - 30);
-        ctx.fillText(criticalHit.text, criticalHit.x, criticalHit.y - 30);
-        ctx.restore();
-      }
-    }
-
-    // Draw UI text
-    ctx.fillStyle = '#fff';
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 3;
-    ctx.font = 'bold 32px Arial';
-    ctx.textAlign = 'left';
-
-    if (gameState === 'playing' || gameState === 'paused') {
-      // Score with shadow
-      ctx.save();
-      ctx.shadowColor = 'black';
-      ctx.shadowBlur = 5;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
+      // Draw UI text
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 32px Arial';
+      ctx.font = 'bold 28px Arial';
       ctx.textAlign = 'left';
-      ctx.fillText(`Score: ${score}`, 20, 45);
+      ctx.fillText(`Score: ${score}`, 20, 40);
+      ctx.fillText(`Level: ${level}`, 20, 75);
       
-      // Lives display with hearts
-      ctx.fillText(`${Array(lives).fill('❤️').join('')}${Array(3 - lives).fill('🖤').join('')}`, 20, 85);
+      // Draw lives
+      ctx.textAlign = 'right';
+      ctx.fillText(`Lives: ${'❤️'.repeat(lives)}`, CANVAS_WIDTH - 20, 40);
       
-      // Level indicator
-      ctx.fillStyle = '#FFD700';
-      ctx.fillText(`Level ${level}`, 20, 125);
-      
-      // Combo display
+      // Draw combo if enabled
       if (customization.enableCombo && combo > 1) {
-        const comboSize = Math.min(48, 32 + combo * 2);
-        ctx.font = `bold ${comboSize}px Arial`;
-        ctx.textAlign = 'center';
         ctx.fillStyle = '#FFD700';
-        ctx.strokeText(`${combo}x COMBO!`, CANVAS_WIDTH / 2, 80);
-        ctx.fillText(`${combo}x COMBO!`, CANVAS_WIDTH / 2, 80);
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 36px Arial';
+        ctx.fillText(`${combo}x COMBO!`, CANVAS_WIDTH / 2, 100);
+      }
+    } else if (gameState === 'menu') {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 48px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Fruit Ninja', CANVAS_WIDTH / 2, 200);
+      
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText('Slice to Start', CANVAS_WIDTH / 2, 260);
+      
+      ctx.font = '18px Arial';
+      ctx.fillText('Customize your game in settings!', CANVAS_WIDTH / 2, 310);
+      
+      // Draw animated fruit on title screen
+      const time = Date.now() / 1000;
+      
+      for (let i = 0; i < 5; i++) {
+        const x = CANVAS_WIDTH / 2 + Math.cos(time + i) * 150;
+        const y = 100 + Math.sin(time * 0.8 + i * 0.5) * 50;
+        const fruitType = fruitTypes[i % fruitTypes.length];
+        
+        ctx.fillStyle = fruitType.color;
+        ctx.beginPath();
+        ctx.arc(x, y, 30, 0, Math.PI * 2);
+        ctx.fill();
       }
       
-      ctx.restore();
-    } else if (gameState === 'menu') {
-      // Title screen with splash animation
-      if (showSplash) {
-        // Fruit Ninja logo
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
-        
-        // Top text "FRUIT"
-        ctx.font = 'bold 90px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#FF4500';
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 8;
-        ctx.strokeText('FRUIT', CANVAS_WIDTH / 2, 180);
-        ctx.fillText('FRUIT', CANVAS_WIDTH / 2, 180);
-        
-        // Bottom text "NINJA"
-        ctx.font = 'bold 110px Arial';
-        ctx.fillStyle = '#8B0000';
-        ctx.strokeText('NINJA', CANVAS_WIDTH / 2, 280);
-        ctx.fillText('NINJA', CANVAS_WIDTH / 2, 280);
-        
-        // Ninja sword swing animation
-        const swordAngle = Math.PI * 0.15 * Math.sin(Date.now() * 0.003);
-        
-        ctx.save();
-        ctx.translate(CANVAS_WIDTH / 2, 350);
-        ctx.rotate(swordAngle);
-        ctx.fillStyle = '#363636';
-        ctx.fillRect(-100, -10, 200, 20);
-        
-        // Sword handle
-        ctx.fillStyle = '#8B4513';
-        ctx.fillRect(-100, -15, 40, 30);
-        
-        // Sword sharpened edge
-        ctx.beginPath();
-        ctx.moveTo(100, -10);
-        ctx.lineTo(120, 0);
-        ctx.lineTo(100, 10);
-        ctx.closePath();
-        ctx.fillStyle = '#C0C0C0';
-        ctx.fill();
-        
-        // Sword glint
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.fillRect(0, -5, 80, 3);
-        
-        ctx.restore();
-        
-        // Instruction text
-        ctx.font = 'bold 24px Arial';
-        ctx.fillStyle = '#FFF';
-        ctx.fillText('Slice to Start', CANVAS_WIDTH / 2 - 70, 420);
-        
-        // Animated fruits
-        const time = Date.now() / 1000;
-        for (let i = 0; i < fruitTypes.length; i++) {
-          const fruitIcon = fruitTypes[i].icon;
-          const x = 100 + (i * 70) % (CANVAS_WIDTH - 200);
-          const y = 100 + Math.sin(time + i * 0.7) * 50;
-          
-          ctx.font = '40px Arial';
-          ctx.fillText(fruitIcon, x, y);
-        }
-        
-        ctx.restore();
-      } else {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        
-        ctx.font = 'bold 36px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#FFF';
-        ctx.fillText('Starting Game...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-      }
     } else if (gameState === 'gameOver') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       
-      ctx.font = 'bold 72px Arial';
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 48px Arial';
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#FF0000';
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 5;
-      ctx.strokeText('GAME OVER', CANVAS_WIDTH / 2, 200);
-      ctx.fillText('GAME OVER', CANVAS_WIDTH / 2, 200);
+      ctx.fillText('Game Over', CANVAS_WIDTH / 2, 200);
       
-      ctx.font = 'bold 36px Arial';
-      ctx.fillStyle = '#FFF';
-      ctx.fillText(`Final Score: ${score}`, CANVAS_WIDTH / 2, 260);
-      ctx.fillText(`Max Combo: ${maxCombo}x`, CANVAS_WIDTH / 2, 310);
-      ctx.fillText(`Level Reached: ${level}`, CANVAS_WIDTH / 2, 360);
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText(`Final Score: ${score}`, CANVAS_WIDTH / 2, 250);
+      ctx.fillText(`Max Combo: ${maxCombo}x`, CANVAS_WIDTH / 2, 280);
+      ctx.fillText(`Level Reached: ${level}`, CANVAS_WIDTH / 2, 310);
+      ctx.fillText(`High Score: ${Math.max(score, highScore)}`, CANVAS_WIDTH / 2, 340);
       
-      // Sliced watermelon with splatter
-      ctx.font = '80px Arial';
-      ctx.fillText('🍉', CANVAS_WIDTH / 2 - 100, CANVAS_HEIGHT - 100);
-      
-      ctx.fillStyle = '#FF0000';
-      for (let i = 0; i < 8; i++) {
-        const angle = Math.PI * 2 * i / 8;
-        const dist = 30 + Math.random() * 20;
-        ctx.beginPath();
-        ctx.arc(
-          CANVAS_WIDTH / 2 - 100 + Math.cos(angle) * dist,
-          CANVAS_HEIGHT - 100 - 20 + Math.sin(angle) * dist,
-          4 + Math.random() * 6,
-          0, Math.PI * 2
-        );
-        ctx.fill();
-      }
-      
-      ctx.font = 'bold 28px Arial';
-      ctx.fillStyle = '#FFF';
-      ctx.fillText('Slice to Play Again', CANVAS_WIDTH / 2, 420);
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText('Slice to Play Again', CANVAS_WIDTH / 2, 400);
     }
-  }, [
-    gameState, fruits, sliceEffects, score, level, lives, highScore, maxCombo, combo, 
-    customization, isSlicing, criticalHit, showSplash
-  ]);
+  }, [gameState, fruits, sliceEffects, score, highScore, level, combo, maxCombo, lives, customization, isSlicing]);
 
   const gameLoop = useCallback(() => {
     updateGame();
@@ -987,7 +693,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
       }
-      draw(); // Make sure to still draw when paused/menu
+      draw();
     }
 
     return () => {
@@ -1012,26 +718,6 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
       spawnFruits();
     }
   }, [gameState, spawnFruits]);
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'Enter') {
-        if (gameState === 'menu' || gameState === 'gameOver') {
-          setShowSplash(false);
-          setTimeout(() => {
-            initializeGame();
-          }, 500);
-        } else if (gameState === 'playing') {
-          setGameState('paused');
-        } else if (gameState === 'paused') {
-          setGameState('playing');
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameState, initializeGame]);
 
   const togglePause = () => {
     setGameState(prev => prev === 'playing' ? 'paused' : 'playing');
@@ -1067,7 +753,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                   ref={canvasRef}
                   width={CANVAS_WIDTH}
                   height={CANVAS_HEIGHT}
-                  className="border-4 border-red-300 rounded-lg cursor-crosshair"
+                  className="border-4 border-red-300 rounded-lg cursor-pointer"
                   onMouseDown={handleMouseDown}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
@@ -1100,7 +786,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                 
                 <div className="flex justify-between items-center">
                   <span>Lives:</span>
-                  <div className="text-xl">
+                  <div>
                     {'❤️'.repeat(lives)}
                     {'🖤'.repeat(3 - lives)}
                   </div>
@@ -1143,10 +829,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                       Resume Game
                     </Button>
                   )}
-                  <Button onClick={() => {
-                    setShowSplash(false);
-                    initializeGame();
-                  }} className="w-full" variant="outline">
+                  <Button onClick={initializeGame} className="w-full" variant="outline">
                     <RotateCcw className="h-4 w-4 mr-2" />
                     New Game
                   </Button>
@@ -1156,28 +839,26 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
 
             <Card>
               <CardHeader>
-                <CardTitle>Current Mode</CardTitle>
+                <CardTitle>Level Progression</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div className="text-sm">Difficulty: <Badge>{customization.difficulty}</Badge></div>
-                  
-                  <div className="text-sm">Next Level: {20 - (score % 20)} points</div>
+                  <div className="text-sm">Current Level: <Badge>{level}</Badge></div>
+                  <div className="text-sm">Next Level: {25 - (score % 25)} points</div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-red-600 h-2 rounded-full transition-all"
-                      style={{ width: `${(score % 20) * 5}%` }}
+                      style={{ width: `${(score % 25) * 4}%` }}
                     />
                   </div>
-                  
-                  <div className="mt-4 text-sm text-gray-600">
-                    <p>Level attributes:</p>
-                    <ul className="list-disc list-inside">
-                      <li>Fruit speed increases</li>
-                      <li>More fruits spawn at once</li>
-                      <li>Critical hit chance increases</li>
-                    </ul>
-                  </div>
+                </div>
+                <div className="mt-4 text-sm text-gray-600">
+                  <p>Higher levels increase:</p>
+                  <ul className="list-disc list-inside">
+                    <li>Fruit spawn rate</li>
+                    <li>Fruit speed</li>
+                    <li>Bomb frequency</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
@@ -1188,13 +869,12 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
               </CardHeader>
               <CardContent>
                 <ul className="text-sm space-y-2">
-                  <li>• Slice fruits by swiping your mouse</li>
-                  <li>• Avoid bombs or lose a life</li>
-                  <li>• Missing fruits costs lives too</li>
-                  <li>• Make combos for bonus points</li>
-                  <li>• Special fruits give bonus points</li>
-                  <li>• Watch for critical hits!</li>
-                  <li>• Level up every 20 points</li>
+                  <li>• Slice fruits by dragging your mouse</li>
+                  <li>• Avoid missing fruits (lose a life)</li>
+                  <li>• Never hit bombs!</li>
+                  <li>• Special golden fruits give bonus points</li>
+                  <li>• Combo slices for multiplier points!</li>
+                  <li>• Level up every 25 points</li>
                 </ul>
               </CardContent>
             </Card>
@@ -1234,13 +914,27 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="dojo">Classic Dojo</SelectItem>
-                      <SelectItem value="forest">Bamboo Forest</SelectItem>
-                      <SelectItem value="beach">Sunny Beach</SelectItem>
-                      <SelectItem value="night">Nighttime</SelectItem>
-                      <SelectItem value="dusk">Sakura Dusk</SelectItem>
+                      <SelectItem value="dojo">Dojo</SelectItem>
+                      <SelectItem value="forest">Forest</SelectItem>
+                      <SelectItem value="beach">Beach</SelectItem>
+                      <SelectItem value="night">Night</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Trail Length: {customization.trailLength}</label>
+                  <input
+                    type="range"
+                    min="5"
+                    max="20"
+                    value={customization.trailLength}
+                    onChange={(e) => setCustomization(prev => ({ 
+                      ...prev, 
+                      trailLength: parseInt(e.target.value) 
+                    }))}
+                    className="w-full"
+                  />
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -1257,13 +951,14 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Difficulty</label>
-                  <Select value={customization.difficulty} onValueChange={(value) => setCustomization(prev => ({ ...prev, difficulty: value as any }))}>
+                  <Select value={customization.difficulty} onValueChange={(value) => setCustomization(prev => ({ ...prev, difficulty: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
                       <SelectItem value="expert">Expert</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1278,6 +973,19 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                     step="0.1"
                     value={customization.gameSpeed}
                     onChange={(e) => setCustomization(prev => ({ ...prev, gameSpeed: parseFloat(e.target.value) }))}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Fruit Size: {customization.fruitSize}x</label>
+                  <input
+                    type="range"
+                    min="0.7"
+                    max="1.5"
+                    step="0.1"
+                    value={customization.fruitSize}
+                    onChange={(e) => setCustomization(prev => ({ ...prev, fruitSize: parseFloat(e.target.value) }))}
                     className="w-full"
                   />
                 </div>
@@ -1301,26 +1009,6 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                       onChange={(e) => setCustomization(prev => ({ ...prev, enableCombo: e.target.checked }))}
                     />
                     <label htmlFor="combos" className="text-sm font-medium">Enable Combo System</label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="criticalHits"
-                      checked={customization.criticalHits}
-                      onChange={(e) => setCustomization(prev => ({ ...prev, criticalHits: e.target.checked }))}
-                    />
-                    <label htmlFor="criticalHits" className="text-sm font-medium">Enable Critical Hits</label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="senseiMode"
-                      checked={customization.senseiMode}
-                      onChange={(e) => setCustomization(prev => ({ ...prev, senseiMode: e.target.checked }))}
-                    />
-                    <label htmlFor="senseiMode" className="text-sm font-medium">Sensei Mode (Harder)</label>
                   </div>
                 </div>
               </div>

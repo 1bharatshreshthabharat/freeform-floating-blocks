@@ -2,14 +2,14 @@
 import React, { useState } from 'react';
 import { GameCard } from './GameCard';
 import { ChessGame } from './Games/ChessGame';
-import { SnakeGame } from './Games/SnakeGame';
+import { LudoGame } from './Games/LudoGame';
 import { FlappyGame } from './Games/FlappyGame';
 import { FruitNinjaGame } from './Games/FruitNinjaGame';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
 
-export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | null;
+export type GameType = 'chess' | 'ludo' | 'flappy' | 'fruitninja' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -30,18 +30,18 @@ export const GameHub: React.FC = () => {
       players: '1-2'
     },
     {
-      id: 'snake' as const,
-      title: 'Advanced Snake',
-      description: 'Classic snake game with modern features, customization options, and power-ups',
-      image: 'https://images.unsplash.com/photo-1610337673044-720471f83677?w=400&h=300&fit=crop',
-      difficulty: 'Medium',
-      category: 'Arcade',
-      players: '1'
+      id: 'ludo' as const,
+      title: 'Classic Ludo',
+      description: 'Authentic Ludo experience with AI opponents, multiple game modes, and beautiful graphics',
+      image: 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop',
+      difficulty: 'Easy',
+      category: 'Board Game',
+      players: '2-4'
     },
     {
       id: 'flappy' as const,
       title: 'Flappy Bird',
-      description: 'Enhanced flappy bird game with smooth controls and challenging gameplay',
+      description: 'Classic flappy bird game with smooth controls and challenging gameplay',
       image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=300&fit=crop',
       difficulty: 'Hard',
       category: 'Arcade',
@@ -62,8 +62,8 @@ export const GameHub: React.FC = () => {
     switch (currentGame) {
       case 'chess':
         return <ChessGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
-      case 'snake':
-        return <SnakeGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
+      case 'ludo':
+        return <LudoGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'flappy':
         return <FlappyGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'fruitninja':
@@ -168,10 +168,10 @@ export const GameHub: React.FC = () => {
               </Card>
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🐍</div>
+                  <div className="text-4xl">🎲</div>
                   <div>
-                    <h4 className="text-xl font-bold mb-2">Snake Adventure</h4>
-                    <p className="text-gray-600">Classic gameplay with modern twists</p>
+                    <h4 className="text-xl font-bold mb-2">Ludo Classic</h4>
+                    <p className="text-gray-600">Authentic board game experience</p>
                   </div>
                 </div>
               </Card>
