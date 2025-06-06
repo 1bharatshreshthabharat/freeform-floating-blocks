@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Pause, RotateCcw, Trophy, Volume2, VolumeX, Settings, Zap, Star, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Trophy, Volume2, VolumeX, Settings, Zap, Star } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SnakeGameProps {
@@ -44,7 +44,7 @@ interface GameCustomization {
 
 export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number | null>(null);
+  const gameLoopRef = useRef<number>();
   
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameOver'>('menu');
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
@@ -57,7 +57,6 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
   const [level, setLevel] = useState(1);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showCustomization, setShowCustomization] = useState(false);
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   const [customization, setCustomization] = useState<GameCustomization>({
     snakeType: 'classic',
@@ -90,44 +89,29 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
   const backgroundThemes = {
     grass: {
-      background: '#1A4A32',
-      accent: '#2E7D32',
-      border: '#388E3C',
-      gridPattern: false,
-      stars: false,
-      neonGlow: false
+      background: '#228B22',
+      pattern: '#32CD32',
+      border: '#006400'
     },
     desert: {
-      background: '#8D6E63',
-      accent: '#A1887F',
-      border: '#BCAAA4',
-      gridPattern: false,
-      stars: false,
-      neonGlow: false
+      background: '#DEB887',
+      pattern: '#F4A460',
+      border: '#8B4513'
     },
     ocean: {
-      background: '#0D47A1',
-      accent: '#1565C0',
-      border: '#1976D2',
-      gridPattern: false,
-      stars: false,
-      neonGlow: false
+      background: '#006994',
+      pattern: '#4682B4',
+      border: '#191970'
     },
     space: {
-      background: '#1A1A2E',
-      accent: '#16213E',
-      border: '#0F3460',
-      gridPattern: false,
-      stars: true,
-      neonGlow: false
+      background: '#000000',
+      pattern: '#191970',
+      border: '#4B0082'
     },
     neon: {
       background: '#000000',
-      accent: '#1B1B1B',
-      border: '#333333',
-      gridPattern: true,
-      neonGlow: true,
-      stars: false
+      pattern: '#FF00FF',
+      border: '#00FFFF'
     }
   };
 
@@ -139,13 +123,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     ice: { head: '❄️', body: '🔷' }
   };
 
-  const snakeColors = [
-    { name: 'Green', value: '#4CAF50' },
-    { name: 'Red', value: '#FF5722' },
-    { name: 'Blue', value: '#2196F3' },
-    { name: 'Purple', value: '#9C27B0' },
-    { name: 'Orange', value: '#FF9800' }
-  ];
+  const snakeColors = ['#4CAF50', '#FF5722', '#2196F3', '#9C27B0', '#FF9800', '#607D8B', '#E91E63'];
 
   const initializeGame = useCallback(() => {
     const startPos = { x: Math.floor(CANVAS_WIDTH / customization.gridSize / 2), y: Math.floor(CANVAS_HEIGHT / customization.gridSize / 2) };
@@ -156,13 +134,9 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     setActivePowerUps([]);
     setScore(0);
     setLevel(1);
+    setGameState('playing');
     generateFood();
   }, [customization.gridSize]);
-
-  const startGame = useCallback(() => {
-    initializeGame();
-    setGameState('playing');
-  }, [initializeGame]);
 
   const generateFood = useCallback(() => {
     const params = getDifficultyParams();
@@ -218,7 +192,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
   }, [snake, food, customization.enablePowerUps, customization.gridSize]);
 
   const updateGame = useCallback(() => {
-    if (gameState !== 'playing' || direction.x === 0 && direction.y === 0) return;
+    if (gameState !== 'playing') return;
 
     setSnake(prevSnake => {
       const newSnake = [...prevSnake];
@@ -317,86 +291,56 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     const params = getDifficultyParams();
     const theme = backgroundThemes[customization.backgroundTheme as keyof typeof backgroundThemes];
 
-    // Clear canvas with smooth background
+    // Clear canvas
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Add subtle background pattern
-    if (theme.stars) {
-      // Draw animated stars for space theme
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      for (let i = 0; i < 50; i++) {
-        const x = (Date.now() * 0.001 * 5 + i * 30) % CANVAS_WIDTH;
-        const y = (i * 23) % CANVAS_HEIGHT;
-        const twinkle = Math.sin(Date.now() * 0.003 + i) * 0.5 + 0.5;
-        ctx.globalAlpha = twinkle;
-        ctx.fillRect(x, y, 2, 2);
+    // Draw grid pattern
+    if (customization.backgroundTheme !== 'space') {
+      ctx.fillStyle = theme.pattern;
+      for (let x = 0; x < CANVAS_WIDTH; x += params.gridSize * 2) {
+        for (let y = 0; y < CANVAS_HEIGHT; y += params.gridSize * 2) {
+          ctx.fillRect(x, y, params.gridSize, params.gridSize);
+        }
       }
-      ctx.globalAlpha = 1;
+    } else {
+      // Draw stars for space theme
+      ctx.fillStyle = 'white';
+      for (let i = 0; i < 100; i++) {
+        const x = Math.random() * CANVAS_WIDTH;
+        const y = Math.random() * CANVAS_HEIGHT;
+        ctx.fillRect(x, y, 1, 1);
+      }
     }
 
     if (gameState !== 'menu') {
-      // Draw food with enhanced effects
+      // Draw food
       food.forEach(f => {
-        ctx.save();
-        
-        if (f.type === 'special') {
-          // Pulsing glow effect for special food
-          const pulse = Math.sin(Date.now() * 0.01) * 0.3 + 0.7;
-          ctx.shadowColor = f.color;
-          ctx.shadowBlur = 15 * pulse;
-        }
-        
         ctx.fillStyle = f.color;
-        const x = f.position.x * params.gridSize + 2;
-        const y = f.position.y * params.gridSize + 2;
-        const size = params.gridSize - 4;
+        ctx.fillRect(
+          f.position.x * params.gridSize,
+          f.position.y * params.gridSize,
+          params.gridSize - 2,
+          params.gridSize - 2
+        );
         
-        // Draw food as circles instead of squares
-        ctx.beginPath();
-        ctx.arc(x + size/2, y + size/2, size/2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Add shine effect
-        if (f.type !== 'normal') {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-          ctx.beginPath();
-          ctx.arc(x + size/3, y + size/3, size/6, 0, Math.PI * 2);
-          ctx.fill();
+        // Add glow effect for special food
+        if (f.type === 'special') {
+          ctx.shadowColor = f.color;
+          ctx.shadowBlur = 10;
+          ctx.fillRect(
+            f.position.x * params.gridSize,
+            f.position.y * params.gridSize,
+            params.gridSize - 2,
+            params.gridSize - 2
+          );
+          ctx.shadowBlur = 0;
         }
-        
-        ctx.restore();
       });
 
-      // Draw power-ups with enhanced visuals
+      // Draw power-ups
       if (customization.enablePowerUps) {
         powerUps.forEach(powerUp => {
-          const x = powerUp.position.x * params.gridSize;
-          const y = powerUp.position.y * params.gridSize;
-          
-          ctx.save();
-          
-          // Rotating background
-          ctx.translate(x + params.gridSize/2, y + params.gridSize/2);
-          ctx.rotate(Date.now() * 0.005);
-          ctx.translate(-params.gridSize/2, -params.gridSize/2);
-          
-          // Power-up background
-          const gradient = ctx.createRadialGradient(
-            params.gridSize/2, params.gridSize/2, 0,
-            params.gridSize/2, params.gridSize/2, params.gridSize/2
-          );
-          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-          gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
-          ctx.fillStyle = gradient;
-          
-          ctx.beginPath();
-          ctx.arc(params.gridSize/2, params.gridSize/2, params.gridSize/2 - 2, 0, Math.PI * 2);
-          ctx.fill();
-          
-          ctx.restore();
-          
-          // Power-up icon
           const icons = {
             slow: '🐌',
             shield: '🛡️',
@@ -404,27 +348,33 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
             magnet: '🧲'
           };
           
-          ctx.font = `${params.gridSize * 0.6}px Arial`;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fillRect(
+            powerUp.position.x * params.gridSize,
+            powerUp.position.y * params.gridSize,
+            params.gridSize,
+            params.gridSize
+          );
+          
+          ctx.font = `${params.gridSize * 0.8}px Arial`;
           ctx.textAlign = 'center';
           ctx.fillText(
             icons[powerUp.type],
-            x + params.gridSize/2,
-            y + params.gridSize * 0.7
+            powerUp.position.x * params.gridSize + params.gridSize / 2,
+            powerUp.position.y * params.gridSize + params.gridSize * 0.8
           );
         });
       }
 
-      // Draw snake with enhanced graphics
+      // Draw snake
       snake.forEach((segment, index) => {
-        const x = segment.x * params.gridSize + 1;
-        const y = segment.y * params.gridSize + 1;
-        const size = params.gridSize - 2;
-        
-        ctx.save();
-        
-        // Snake body color and effects
         if (customization.snakePattern === 'gradient') {
-          const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+          const gradient = ctx.createLinearGradient(
+            segment.x * params.gridSize,
+            segment.y * params.gridSize,
+            (segment.x + 1) * params.gridSize,
+            (segment.y + 1) * params.gridSize
+          );
           gradient.addColorStop(0, customization.snakeColor);
           gradient.addColorStop(1, index === 0 ? '#FFD700' : '#90EE90');
           ctx.fillStyle = gradient;
@@ -435,93 +385,81 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
         // Shield effect
         if (activePowerUps.includes('shield')) {
           ctx.strokeStyle = '#00BFFF';
-          ctx.lineWidth = 3;
-          ctx.shadowColor = '#00BFFF';
-          ctx.shadowBlur = 10;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(
+            segment.x * params.gridSize - 2,
+            segment.y * params.gridSize - 2,
+            params.gridSize + 4,
+            params.gridSize + 4
+          );
         }
         
-        // Draw snake segments as rounded rectangles
-        ctx.beginPath();
-        ctx.roundRect(x, y, size, size, size/4);
-        ctx.fill();
-        
-        if (activePowerUps.includes('shield')) {
-          ctx.stroke();
+        if (customization.snakeType === 'classic') {
+          ctx.fillRect(
+            segment.x * params.gridSize,
+            segment.y * params.gridSize,
+            params.gridSize - 2,
+            params.gridSize - 2
+          );
+        } else {
+          const snakeEmoji = snakeTypes[customization.snakeType as keyof typeof snakeTypes];
+          ctx.font = `${params.gridSize}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.fillText(
+            index === 0 ? snakeEmoji.head : snakeEmoji.body,
+            segment.x * params.gridSize + params.gridSize / 2,
+            segment.y * params.gridSize + params.gridSize * 0.8
+          );
         }
-        
-        // Snake head details
-        if (index === 0) {
-          ctx.fillStyle = '#000';
-          const eyeSize = size/8;
-          // Eyes
-          ctx.beginPath();
-          ctx.arc(x + size/3, y + size/3, eyeSize, 0, Math.PI * 2);
-          ctx.arc(x + 2*size/3, y + size/3, eyeSize, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        
-        ctx.restore();
       });
     }
 
-    // Enhanced UI rendering
+    // Draw UI text
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'center';
 
     if (gameState === 'menu') {
-      ctx.save();
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#333';
       ctx.font = 'bold 48px Arial';
-      ctx.strokeStyle = '#4CAF50';
-      ctx.lineWidth = 3;
-      ctx.strokeText('Advanced Snake', CANVAS_WIDTH/2, 150);
-      ctx.fillText('Advanced Snake', CANVAS_WIDTH/2, 150);
-      
+      ctx.fillText('Snake Game', CANVAS_WIDTH / 2, 150);
       ctx.font = 'bold 24px Arial';
-      ctx.fillText('Use Arrow Keys or Click to Start', CANVAS_WIDTH/2, 200);
+      ctx.fillText('Use Arrow Keys to Start', CANVAS_WIDTH / 2, 200);
       ctx.font = '18px Arial';
-      ctx.fillText('Customize your snake and arena!', CANVAS_WIDTH/2, 230);
-      ctx.restore();
+      ctx.fillText('Customize your snake in settings!', CANVAS_WIDTH / 2, 240);
     } else if (gameState === 'gameOver') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 48px Arial';
-      ctx.fillText('Game Over', CANVAS_WIDTH/2, 150);
+      ctx.fillText('Game Over', CANVAS_WIDTH / 2, 150);
       ctx.font = 'bold 24px Arial';
-      ctx.fillText(`Final Score: ${score}`, CANVAS_WIDTH/2, 190);
-      ctx.fillText(`Level Reached: ${level}`, CANVAS_WIDTH/2, 220);
-      ctx.fillText('Press Space to Play Again', CANVAS_WIDTH/2, 260);
+      ctx.fillText(`Score: ${score}`, CANVAS_WIDTH / 2, 190);
+      ctx.fillText(`Level: ${level}`, CANVAS_WIDTH / 2, 220);
+      ctx.fillText(`High Score: ${highScore}`, CANVAS_WIDTH / 2, 250);
+      ctx.fillText('Press Space to Play Again', CANVAS_WIDTH / 2, 290);
     }
 
-    // Clean game UI overlay
+    // Draw active game UI
     if (gameState === 'playing' || gameState === 'paused') {
-      ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 4;
-      ctx.fillStyle = '#FFF';
+      ctx.fillStyle = '#000';
       ctx.font = 'bold 20px Arial';
       ctx.textAlign = 'left';
+      ctx.fillText(`Score: ${score}`, 10, 30);
+      ctx.fillText(`Level: ${level}`, 10, 55);
+      ctx.fillText(`Length: ${snake.length}`, 10, 80);
       
-      ctx.fillText(`Score: ${score}`, 15, 30);
-      ctx.fillText(`Level: ${level}`, 15, 55);
-      ctx.fillText(`Length: ${snake.length}`, 15, 80);
-      
-      // Active power-ups indicator
+      // Active power-ups display
       if (activePowerUps.length > 0) {
         ctx.font = '14px Arial';
-        ctx.fillText('Power-ups Active:', 15, 105);
+        ctx.fillText('Power-ups:', 10, 105);
         activePowerUps.forEach((powerUp, index) => {
-          const names = { slow: 'Slow Mo', shield: 'Shield', double: 'Double Points', magnet: 'Magnet' };
-          ctx.fillText(`• ${names[powerUp as keyof typeof names]}`, 15, 125 + index * 18);
+          const names = { slow: 'Slow Mo', shield: 'Shield', double: 'Double', magnet: 'Magnet' };
+          ctx.fillText(`• ${names[powerUp as keyof typeof names]}`, 10, 125 + index * 18);
         });
       }
-      
-      ctx.restore();
     }
-  }, [gameState, snake, food, powerUps, score, level, activePowerUps, customization]);
+  }, [gameState, snake, food, powerUps, score, level, highScore, activePowerUps, customization]);
 
   const gameLoop = useCallback(() => {
     updateGame();
@@ -530,12 +468,12 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     const params = getDifficultyParams();
     const speed = activePowerUps.includes('slow') ? params.speed * 2 : params.speed;
     
-    gameLoopRef.current = window.setTimeout(gameLoop, speed);
+    gameLoopRef.current = setTimeout(gameLoop, speed);
   }, [updateGame, draw, activePowerUps]);
 
   useEffect(() => {
     if (gameState === 'playing') {
-      gameLoopRef.current = window.setTimeout(gameLoop, getDifficultyParams().speed);
+      gameLoopRef.current = setTimeout(gameLoop, getDifficultyParams().speed);
     } else {
       if (gameLoopRef.current) {
         clearTimeout(gameLoopRef.current);
@@ -554,9 +492,9 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     if (gameState === 'gameOver') {
       if (score > highScore) {
         setHighScore(score);
-        onStatsUpdate((prev: any) => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
+        onStatsUpdate(prev => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
       }
-      onStatsUpdate((prev: any) => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
+      onStatsUpdate(prev => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
     }
   }, [gameState, score, highScore, onStatsUpdate]);
 
@@ -568,19 +506,10 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (gameState === 'menu') {
+      if (gameState === 'menu' || gameState === 'gameOver') {
         if (e.code === 'Space' || e.code.startsWith('Arrow')) {
-          startGame();
-          if (e.code === 'ArrowUp') setDirection({ x: 0, y: -1 });
-          if (e.code === 'ArrowDown') setDirection({ x: 0, y: 1 });
-          if (e.code === 'ArrowLeft') setDirection({ x: -1, y: 0 });
-          if (e.code === 'ArrowRight') setDirection({ x: 1, y: 0 });
+          initializeGame();
         }
-        return;
-      }
-
-      if (gameState === 'gameOver' && e.code === 'Space') {
-        startGame();
         return;
       }
 
@@ -609,16 +538,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameState, direction, startGame]);
-
-  const handleCanvasClick = () => {
-    if (gameState === 'menu' || gameState === 'gameOver') {
-      startGame();
-    } else if (direction.x === 0 && direction.y === 0) {
-      // If game is started but snake isn't moving yet, start moving right
-      setDirection({ x: 1, y: 0 });
-    }
-  };
+  }, [gameState, direction, initializeGame]);
 
   const togglePause = () => {
     setGameState(prev => prev === 'playing' ? 'paused' : 'playing');
@@ -635,11 +555,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
           </Button>
           <h1 className="text-3xl font-bold text-green-800">🐍 Advanced Snake</h1>
           <div className="flex space-x-2">
-            <Button onClick={() => setShowHowToPlay(true)} variant="outline" size="sm">
-              <HelpCircle className="h-4 w-4 mr-2" />
-              How to Play
-            </Button>
-            <Button onClick={() => setShowCustomization(true)} variant="outline" size="sm">
+            <Button onClick={() => setShowCustomization(!showCustomization)} variant="outline">
               <Settings className="h-4 w-4 mr-2" />
               Customize
             </Button>
@@ -651,60 +567,61 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Game Canvas */}
-          <Card className="flex-1 shadow-lg">
+          <Card className="flex-1">
             <CardContent className="p-4">
               <div className="flex justify-center">
                 <canvas
                   ref={canvasRef}
                   width={CANVAS_WIDTH}
                   height={CANVAS_HEIGHT}
-                  className="border-4 border-green-300 rounded-lg shadow-inner cursor-pointer"
-                  onClick={handleCanvasClick}
-                  onTouchStart={handleCanvasClick}
+                  className="border-4 border-green-300 rounded-lg"
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* Game Status */}
+          {/* Game Info */}
           <div className="lg:w-80 space-y-4">
-            <Card className="shadow-lg">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Zap className="h-5 w-5 text-green-600" />
-                  <span>Game Status</span>
-                </CardTitle>
+                <CardTitle>Game Stats</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Badge variant="outline" className="p-2 text-center">
-                    Score: {score}
-                  </Badge>
-                  <Badge variant="secondary" className="p-2 text-center">
-                    Level: {level}
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <Badge variant="outline" className="p-2 text-center">
-                    Length: {snake.length}
-                  </Badge>
-                  <Badge variant="secondary" className="p-2 text-center">
-                    <Trophy className="h-3 w-3 mr-1" />
-                    Best: {highScore}
-                  </Badge>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <Badge variant="outline" className="text-lg p-2 w-full">
+                      Score: {score}
+                    </Badge>
+                  </div>
+                  <div className="text-center">
+                    <Badge variant="secondary" className="text-lg p-2 w-full">
+                      <Star className="h-4 w-4 mr-1" />
+                      Level: {level}
+                    </Badge>
+                  </div>
+                  <div className="text-center">
+                    <Badge variant="outline" className="text-lg p-2 w-full">
+                      Length: {snake.length}
+                    </Badge>
+                  </div>
+                  <div className="text-center">
+                    <Badge variant="secondary" className="text-lg p-2 w-full">
+                      <Trophy className="h-4 w-4 mr-1" />
+                      Best: {highScore}
+                    </Badge>
+                  </div>
                 </div>
 
                 {activePowerUps.length > 0 && (
-                  <div className="pt-2 border-t">
-                    <h4 className="text-sm font-semibold mb-2">Active Power-ups:</h4>
-                    <div className="flex flex-wrap gap-1">
+                  <div>
+                    <h4 className="font-semibold mb-2">Active Power-ups:</h4>
+                    <div className="space-y-1">
                       {activePowerUps.map((powerUp, index) => {
                         const names = {
-                          slow: 'Slow',
+                          slow: 'Slow Motion',
                           shield: 'Shield',
-                          double: 'Double',
-                          magnet: 'Magnet'
+                          double: 'Double Points',
+                          magnet: 'Food Magnet'
                         };
                         return (
                           <Badge key={index} variant="outline" className="text-xs">
@@ -720,16 +637,16 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
                   {gameState === 'playing' && (
                     <Button onClick={togglePause} className="w-full" variant="outline">
                       <Pause className="h-4 w-4 mr-2" />
-                      Pause
+                      Pause Game
                     </Button>
                   )}
                   {gameState === 'paused' && (
                     <Button onClick={togglePause} className="w-full">
                       <Play className="h-4 w-4 mr-2" />
-                      Resume
+                      Resume Game
                     </Button>
                   )}
-                  <Button onClick={startGame} className="w-full" variant="outline">
+                  <Button onClick={initializeGame} className="w-full" variant="outline">
                     <RotateCcw className="h-4 w-4 mr-2" />
                     New Game
                   </Button>
@@ -737,81 +654,25 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Snake Info</CardTitle>
+                <CardTitle>Controls</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Type:</span>
-                    <Badge variant="outline">{customization.snakeType}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Theme:</span>
-                    <Badge variant="secondary">{customization.backgroundTheme}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Difficulty:</span>
-                    <Badge variant="outline">{customization.difficulty}</Badge>
-                  </div>
-                </div>
+                <ul className="text-sm space-y-2">
+                  <li>• ↑↓←→ Arrow keys to move</li>
+                  <li>• P to pause/resume</li>
+                  <li>• Space to start new game</li>
+                  <li>• Collect food to grow</li>
+                  <li>• Avoid walls and yourself</li>
+                  <li>• Special food gives bonus points</li>
+                  <li>• Power-ups provide abilities</li>
+                </ul>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
-
-      {/* How to Play Modal */}
-      {showHowToPlay && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">How to Play Snake</h2>
-              <Button onClick={() => setShowHowToPlay(false)} variant="outline" size="sm">×</Button>
-            </div>
-            <div className="space-y-4 text-sm">
-              <div>
-                <h3 className="font-semibold mb-2">Controls</h3>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• Use Arrow Keys to move the snake</li>
-                  <li>• Click or tap the game board to start</li>
-                  <li>• Press P to pause/resume game</li>
-                  <li>• Press Space to start new game</li>
-                  <li>• Touch controls work on mobile devices</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Gameplay</h3>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• Eat food to grow and score points</li>
-                  <li>• Avoid hitting walls and yourself</li>
-                  <li>• Special food gives bonus points</li>
-                  <li>• Power-ups provide temporary abilities</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Power-ups</h3>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• 🐌 Slow Motion: Reduces game speed</li>
-                  <li>• 🛡️ Shield: Protects from collisions</li>
-                  <li>• 2️⃣ Double Points: Doubles food value</li>
-                  <li>• 🧲 Magnet: Attracts nearby food</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Scoring</h3>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• Normal food: 10 points</li>
-                  <li>• Bonus food: 20 points</li>
-                  <li>• Special food: 50 points</li>
-                  <li>• Power-up effects multiply scores</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Customization Modal */}
       {showCustomization && (
@@ -842,18 +703,16 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Snake Color</label>
-                  <Select value={customization.snakeColor} onValueChange={(value) => setCustomization(prev => ({ ...prev, snakeColor: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {snakeColors.map(color => (
-                        <SelectItem key={color.value} value={color.value}>
-                          {color.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-3 gap-2">
+                    {snakeColors.map(color => (
+                      <button
+                        key={color}
+                        className={`w-full h-8 rounded border-2 ${customization.snakeColor === color ? 'border-black' : 'border-gray-300'}`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => setCustomization(prev => ({ ...prev, snakeColor: color }))}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 <div>

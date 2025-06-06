@@ -2,338 +2,570 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, RotateCcw, Trophy, Crown, Sparkles, Settings, HelpCircle, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Settings, Lightbulb, Eye, Brain, Trophy, Clock, Target, Users } from 'lucide-react';
+import { ChessCustomization } from './ChessCustomization';
+import { ConceptModal } from '../ConceptModal';
+
+interface SquareProps {
+  row: number;
+  col: number;
+  piece: ChessPiece | null;
+  isSelected: boolean;
+  isValidMove: boolean;
+  isDraggedFrom: boolean;
+  handleSquareClick: (row: number, col: number) => void;
+  handleMouseDown: (e: React.MouseEvent, row: number, col: number) => void;
+  customization: any;
+  getPieceSymbol: (piece: ChessPiece) => string;
+  dragState: DragState;
+}
+
+interface ChessPiece {
+  type: 'king' | 'queen' | 'rook' | 'bishop' | 'knight' | 'pawn';
+  color: 'white' | 'black';
+  position: string;
+  hasMoved?: boolean;
+}
+
+interface GameState {
+  board: (ChessPiece | null)[][];
+  currentPlayer: 'white' | 'black';
+  gameStatus: 'playing' | 'check' | 'checkmate' | 'stalemate' | 'draw';
+  moves: string[];
+  capturedPieces: { white: ChessPiece[]; black: ChessPiece[] };
+}
 
 interface EnhancedChessGameProps {
   onBack: () => void;
   onStatsUpdate: (stats: any) => void;
 }
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-type Piece = {
-  type: string;
-  color: 'white' | 'black';
-} | null;
-
-const initialBoard: Piece[][] = [
-  [
-    { type: 'rook', color: 'black' }, { type: 'knight', color: 'black' }, { type: 'bishop', color: 'black' }, { type: 'queen', color: 'black' },
-    { type: 'king', color: 'black' }, { type: 'bishop', color: 'black' }, { type: 'knight', color: 'black' }, { type: 'rook', color: 'black' }
-  ],
-  [
-    { type: 'pawn', color: 'black' }, { type: 'pawn', color: 'black' }, { type: 'pawn', color: 'black' }, { type: 'pawn', color: 'black' },
-    { type: 'pawn', color: 'black' }, { type: 'pawn', color: 'black' }, { type: 'pawn', color: 'black' }, { type: 'pawn', color: 'black' }
-  ],
-  [null, null, null, null, null, null, null, null],
-  [null, null, null, null, null, null, null, null],
-  [null, null, null, null, null, null, null, null],
-  [null, null, null, null, null, null, null, null],
-  [
-    { type: 'pawn', color: 'white' }, { type: 'pawn', color: 'white' }, { type: 'pawn', color: 'white' }, { type: 'pawn', color: 'white' },
-    { type: 'pawn', color: 'white' }, { type: 'pawn', color: 'white' }, { type: 'pawn', color: 'white' }, { type: 'pawn', color: 'white' }
-  ],
-  [
-    { type: 'rook', color: 'white' }, { type: 'knight', color: 'white' }, { type: 'bishop', color: 'white' }, { type: 'queen', color: 'white' },
-    { type: 'king', color: 'white' }, { type: 'bishop', color: 'white' }, { type: 'knight', color: 'white' }, { type: 'rook', color: 'white' }
-  ]
-];
-
-interface GameCustomization {
-  boardTheme: string;
-  pieceSet: string;
-  showCoordinates: boolean;
-  highlightMoves: boolean;
-  animations: boolean;
+interface DragState {
+  isDragging: boolean;
+  draggedPiece: ChessPiece | null;
+  draggedFrom: { row: number; col: number } | null;
+  dragPosition: { x: number; y: number };
 }
 
 export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, onStatsUpdate }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [board, setBoard] = useState<Piece[][]>(initialBoard);
-  const [selectedPiece, setSelectedPiece] = useState<Position | null>(null);
-  const [validMoves, setValidMoves] = useState<Position[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<'white' | 'black'>('white');
-  const [capturedPieces, setCapturedPieces] = useState({ white: [] as string[], black: [] as string[] });
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [gameState, setGameState] = useState<GameState>({
+    board: initializeBoard(),
+    currentPlayer: 'white',
+    gameStatus: 'playing',
+    moves: [],
+    capturedPieces: { white: [], black: [] }
+  });
 
-  const [customization, setCustomization] = useState<GameCustomization>({
+  const [selectedSquare, setSelectedSquare] = useState<{ row: number; col: number } | null>(null);
+  const [validMoves, setValidMoves] = useState<{ row: number; col: number }[]>([]);
+  const [gameMode, setGameMode] = useState<'vs-computer' | 'vs-friend' | 'analysis' | 'puzzles'>('vs-computer');
+  const [aiDifficulty, setAiDifficulty] = useState<'beginner' | 'intermediate' | 'advanced' | 'expert'>('intermediate');
+  const [showCustomization, setShowCustomization] = useState(false);
+  const [showHints, setShowHints] = useState(false);
+  const [showLearnModal, setShowLearnModal] = useState(false);
+  const [isAnalysisMode, setIsAnalysisMode] = useState(false);
+  const [timeControl, setTimeControl] = useState<{ white: number; black: number }>({ white: 600, black: 600 });
+  const [isTimerActive, setIsTimerActive] = useState(false);
+
+  // Drag and drop state
+  const [dragState, setDragState] = useState<DragState>({
+    isDragging: false,
+    draggedPiece: null,
+    draggedFrom: null,
+    dragPosition: { x: 0, y: 0 }
+  });
+
+  const [customization, setCustomization] = useState({
     boardTheme: 'classic',
     pieceSet: 'classic',
+    animationSpeed: 'medium',
     showCoordinates: true,
-    highlightMoves: true,
-    animations: true
+    highlightLastMove: true,
+    showValidMoves: true,
+    boardBorder: 'wooden',
+    squareSize: 'medium'
   });
 
-  const [gameMode, setGameMode] = useState<'human-vs-ai' | 'human-vs-human'>('human-vs-ai');
-  const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'expert'>('beginner');
-  const [showVictory, setShowVictory] = useState(false);
-  const [winner, setWinner] = useState<string>('');
-  const [capturedAnimation, setCapturedAnimation] = useState<{show: boolean, piece: string, position: {x: number, y: number}}>({
-    show: false, piece: '', position: {x: 0, y: 0}
-  });
-  const [showCustomization, setShowCustomization] = useState(false);
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-
-  const boardThemes = {
-    classic: { light: '#F0D9B5', dark: '#B58863', border: '#A0522D' },
-    marble: { light: '#E3E3E3', dark: '#C8C8C8', border: '#778899' },
-    metal: { light: '#D3D3D3', dark: '#A9A9A9', border: '#808080' },
-    neon: { light: '#00FFFF', dark: '#FF00FF', border: '#FFFF00' }
+  const isValidPosition = (row: number, col: number): boolean => {
+    return row >= 0 && row < 8 && col >= 0 && col < 8;
   };
 
-  const pieceSets = {
-    classic: {
-      white: { pawn: '♟', rook: '♜', knight: '♞', bishop: '♝', queen: '♛', king: '♚' },
-      black: { pawn: '♙', rook: '♖', knight: '♘', bishop: '♗', queen: '♕', king: '♔' }
-    },
-    modern: {
-      white: { pawn: '⬢', rook: '⬙', knight: '⬟', bishop: '⬣', queen: '⬨', king: 'Effects' },
-      black: { pawn: '⬛', rook: '⛶', knight: ' గుర్', bishop: '⬖', queen: '⬔', king: '⬓' }
-    },
-    medieval: {
-      white: { pawn: '🚶', rook: '🏰', knight: '🐴', bishop: '⛪', queen: '👑', king: '🤴' },
-      black: { pawn: '🧎', rook: '🏯', knight: '🐎', bishop: '🕍', queen: '👸', king: '👲' }
-    },
-    fantasy: {
-      white: { pawn: '🍄', rook: '🐉', knight: '🦄', bishop: '🧙', queen: '🧚', king: '🧝' },
-      black: { pawn: '👹', rook: '👿', knight: '🧛', bishop: '🧟', queen: '🦹', king: '💀' }
-    }
-  };
-
-  const getHintsForDifficulty = () => {
-    switch (difficulty) {
-      case 'beginner': return ['Check protection', 'Look for forks', 'Control center', 'Develop pieces', 'Castle early'];
-      case 'intermediate': return ['Consider tactics', 'Plan ahead'];
-      case 'expert': return [];
-      default: return [];
-    }
-  };
-
-  const showCaptureAnimation = (piece: string, x: number, y: number) => {
-    setCapturedAnimation({ show: true, piece, position: { x, y } });
-    setTimeout(() => setCapturedAnimation({ show: false, piece: '', position: {x: 0, y: 0} }), 1000);
-  };
-
-  const checkGameEnd = useCallback(() => {
-    // Enhanced game end detection with victory celebration
-    const isCheckmate = false; // Simplified for demo
-    const isStalemate = false;
+  function initializeBoard(): (ChessPiece | null)[][] {
+    const board: (ChessPiece | null)[][] = Array(8).fill(null).map(() => Array(8).fill(null));
     
-    if (isCheckmate) {
-      const winnerName = currentPlayer === 'white' ? 'Black' : 'White';
-      setWinner(winnerName);
-      setShowVictory(true);
-      onStatsUpdate((prev: any) => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
-    } else if (isStalemate) {
-      setWinner('Draw');
-      setShowVictory(true);
+    // Place white pieces
+    const whitePieces = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+    whitePieces.forEach((piece, col) => {
+      board[7][col] = { type: piece as any, color: 'white', position: `${String.fromCharCode(97 + col)}${8 - 7}` };
+    });
+    for (let col = 0; col < 8; col++) {
+      board[6][col] = { type: 'pawn', color: 'white', position: `${String.fromCharCode(97 + col)}${8 - 6}` };
     }
-  }, [currentPlayer, onStatsUpdate]);
+    
+    // Place black pieces
+    const blackPieces = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+    blackPieces.forEach((piece, col) => {
+      board[0][col] = { type: piece as any, color: 'black', position: `${String.fromCharCode(97 + col)}${8 - 0}` };
+    });
+    for (let col = 0; col < 8; col++) {
+      board[1][col] = { type: 'pawn', color: 'black', position: `${String.fromCharCode(97 + col)}${8 - 1}` };
+    }
+    
+    return board;
+  }
 
-  const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / (canvas.width / 8));
-    const y = Math.floor((event.clientY - rect.top) / (canvas.height / 8));
-
-    if (selectedPiece) {
-      // Move piece logic
-      const isValidMove = validMoves.some(move => move.x === x && move.y === y);
-      if (isValidMove) {
-        const newBoard = board.map((row, rowIndex) =>
-          row.map((piece, colIndex) => {
-            if (rowIndex === y && colIndex === x) {
-              const movingPiece = board[selectedPiece.y][selectedPiece.x];
-              if (piece) {
-                setCapturedPieces(prev => ({
-                  ...prev,
-                  [piece.color]: [...prev[piece.color], getPieceSymbol(piece.type, piece.color)]
-                }));
-                showCaptureAnimation(getPieceSymbol(piece.type, piece.color), event.clientX - rect.left, event.clientY - rect.top);
-              }
-              return movingPiece;
-            } else if (rowIndex === selectedPiece.y && colIndex === selectedPiece.x) {
-              return null;
-            } else {
-              return piece;
-            }
-          })
-        );
-        setBoard(newBoard);
-        setSelectedPiece(null);
-        setValidMoves([]);
-        setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
-        checkGameEnd();
-      } else if (x === selectedPiece.x && y === selectedPiece.y) {
-        // Deselect piece
-        setSelectedPiece(null);
-        setValidMoves([]);
-      } else {
-        // Attempt to select a new piece
-        if (board[y][x] && board[y][x]?.color === currentPlayer) {
-          setSelectedPiece({ x, y });
-          setValidMoves(getValidMoves(x, y));
-        } else {
-          setSelectedPiece(null);
-          setValidMoves([]);
+  const getValidMoves = useCallback((piece: ChessPiece, fromRow: number, fromCol: number): { row: number; col: number }[] => {
+    // Simplified move validation - in a real implementation, this would be much more complex
+    const moves: { row: number; col: number }[] = [];
+    
+    switch (piece.type) {
+      case 'pawn':
+        const direction = piece.color === 'white' ? -1 : 1;
+        const startRow = piece.color === 'white' ? 6 : 1;
+        
+        // Forward move
+        if (isValidPosition(fromRow + direction, fromCol) && !gameState.board[fromRow + direction][fromCol]) {
+          moves.push({ row: fromRow + direction, col: fromCol });
+          
+          // Two squares from start
+          if (fromRow === startRow && isValidPosition(fromRow + 2 * direction, fromCol) && !gameState.board[fromRow + 2 * direction][fromCol]) {
+            moves.push({ row: fromRow + 2 * direction, col: fromCol });
+          }
         }
+        
+        // Captures
+        [-1, 1].forEach(colOffset => {
+          const newCol = fromCol + colOffset;
+          if (isValidPosition(fromRow + direction, newCol)) {
+            const targetPiece = gameState.board[fromRow + direction]?.[newCol];
+            if (targetPiece && targetPiece.color !== piece.color) {
+              moves.push({ row: fromRow + direction, col: newCol });
+            }
+          }
+        });
+        break;
+        
+      case 'rook':
+        // Horizontal and vertical moves
+        const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        directions.forEach(([dRow, dCol]) => {
+          for (let i = 1; i < 8; i++) {
+            const newRow = fromRow + i * dRow;
+            const newCol = fromCol + i * dCol;
+            
+            if (!isValidPosition(newRow, newCol)) break;
+            
+            const targetPiece = gameState.board[newRow][newCol];
+            if (!targetPiece) {
+              moves.push({ row: newRow, col: newCol });
+            } else {
+              if (targetPiece.color !== piece.color) {
+                moves.push({ row: newRow, col: newCol });
+              }
+              break;
+            }
+          }
+        });
+        break;
+        
+      case 'bishop':
+        // Diagonal moves
+        const diagonalDirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+        diagonalDirs.forEach(([dRow, dCol]) => {
+          for (let i = 1; i < 8; i++) {
+            const newRow = fromRow + i * dRow;
+            const newCol = fromCol + i * dCol;
+            
+            if (!isValidPosition(newRow, newCol)) break;
+            
+            const targetPiece = gameState.board[newRow][newCol];
+            if (!targetPiece) {
+              moves.push({ row: newRow, col: newCol });
+            } else {
+              if (targetPiece.color !== piece.color) {
+                moves.push({ row: newRow, col: newCol });
+              }
+              break;
+            }
+          }
+        });
+        break;
+        
+      case 'queen':
+        // Combination of rook and bishop moves
+        const allDirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+        allDirs.forEach(([dRow, dCol]) => {
+          for (let i = 1; i < 8; i++) {
+            const newRow = fromRow + i * dRow;
+            const newCol = fromCol + i * dCol;
+            
+            if (!isValidPosition(newRow, newCol)) break;
+            
+            const targetPiece = gameState.board[newRow][newCol];
+            if (!targetPiece) {
+              moves.push({ row: newRow, col: newCol });
+            } else {
+              if (targetPiece.color !== piece.color) {
+                moves.push({ row: newRow, col: newCol });
+              }
+              break;
+            }
+          }
+        });
+        break;
+        
+      case 'king':
+        // One square in any direction
+        for (let dRow = -1; dRow <= 1; dRow++) {
+          for (let dCol = -1; dCol <= 1; dCol++) {
+            if (dRow === 0 && dCol === 0) continue;
+            
+            const newRow = fromRow + dRow;
+            const newCol = fromCol + dCol;
+            
+            if (isValidPosition(newRow, newCol)) {
+              const targetPiece = gameState.board[newRow][newCol];
+              if (!targetPiece || targetPiece.color !== piece.color) {
+                moves.push({ row: newRow, col: newCol });
+              }
+            }
+          }
+        }
+        break;
+        
+      case 'knight':
+        // L-shaped moves
+        const knightMoves = [
+          [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+          [1, -2], [1, 2], [2, -1], [2, 1]
+        ];
+        knightMoves.forEach(([dRow, dCol]) => {
+          const newRow = fromRow + dRow;
+          const newCol = fromCol + dCol;
+          
+          if (isValidPosition(newRow, newCol)) {
+            const targetPiece = gameState.board[newRow][newCol];
+            if (!targetPiece || targetPiece.color !== piece.color) {
+              moves.push({ row: newRow, col: newCol });
+            }
+          }
+        });
+        break;
+    }
+    
+    return moves;
+  }, [gameState.board]);
+
+  const handleSquareClick = useCallback((row: number, col: number) => {
+    if (dragState.isDragging) return;
+    
+    const clickedPiece = gameState.board[row][col];
+    
+    if (selectedSquare) {
+      const isValidMove = validMoves.some(move => move.row === row && move.col === col);
+      
+      if (isValidMove) {
+        makeMove(selectedSquare.row, selectedSquare.col, row, col);
+      } else if (clickedPiece && clickedPiece.color === gameState.currentPlayer) {
+        setSelectedSquare({ row, col });
+        setValidMoves(getValidMoves(clickedPiece, row, col));
+      } else {
+        setSelectedSquare(null);
+        setValidMoves([]);
       }
-    } else {
-      // Select piece logic
-      if (board[y][x] && board[y][x]?.color === currentPlayer) {
-        setSelectedPiece({ x, y });
-        setValidMoves(getValidMoves(x, y));
+    } else if (clickedPiece && clickedPiece.color === gameState.currentPlayer) {
+      setSelectedSquare({ row, col });
+      setValidMoves(getValidMoves(clickedPiece, row, col));
+    }
+  }, [selectedSquare, validMoves, gameState, getValidMoves, dragState.isDragging]);
+
+  // Drag and drop handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent, row: number, col: number) => {
+    const piece = gameState.board[row][col];
+    if (!piece || piece.color !== gameState.currentPlayer) return;
+    
+    const rect = boardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    setDragState({
+      isDragging: true,
+      draggedPiece: piece,
+      draggedFrom: { row, col },
+      dragPosition: { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    });
+    
+    setValidMoves(getValidMoves(piece, row, col));
+    e.preventDefault();
+  }, [gameState.board, gameState.currentPlayer, getValidMoves]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragState.isDragging || !boardRef.current) return;
+    
+    const rect = boardRef.current.getBoundingClientRect();
+    setDragState(prev => ({
+      ...prev,
+      dragPosition: { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    }));
+  }, [dragState.isDragging]);
+
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (!dragState.isDragging || !dragState.draggedFrom || !boardRef.current) return;
+    
+    const rect = boardRef.current.getBoundingClientRect();
+    const squareSize = rect.width / 8;
+    const col = Math.floor((e.clientX - rect.left) / squareSize);
+    const row = Math.floor((e.clientY - rect.top) / squareSize);
+    
+    if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+      const isValidMove = validMoves.some(move => move.row === row && move.col === col);
+      if (isValidMove) {
+        makeMove(dragState.draggedFrom.row, dragState.draggedFrom.col, row, col);
       }
     }
-  }, [board, selectedPiece, validMoves, currentPlayer, checkGameEnd]);
+    
+    setDragState({
+      isDragging: false,
+      draggedPiece: null,
+      draggedFrom: null,
+      dragPosition: { x: 0, y: 0 }
+    });
+    setValidMoves([]);
+  }, [dragState, validMoves]);
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Drag start logic
-  };
+  const makeMove = useCallback((fromRow: number, fromCol: number, toRow: number, toCol: number) => {
+    const newBoard = gameState.board.map(row => [...row]);
+    const piece = newBoard[fromRow][fromCol];
+    const capturedPiece = newBoard[toRow][toCol];
+    
+    if (!piece) return;
+    
+    // Move the piece
+    newBoard[toRow][toCol] = piece;
+    newBoard[fromRow][fromCol] = null;
+    
+    // Update captured pieces
+    const newCapturedPieces = { ...gameState.capturedPieces };
+    if (capturedPiece) {
+      newCapturedPieces[capturedPiece.color].push(capturedPiece);
+    }
+    
+    // Update move notation
+    const moveNotation = `${String.fromCharCode(97 + fromCol)}${8 - fromRow}-${String.fromCharCode(97 + toCol)}${8 - toRow}`;
+    
+    setGameState(prev => ({
+      ...prev,
+      board: newBoard,
+      currentPlayer: prev.currentPlayer === 'white' ? 'black' : 'white',
+      moves: [...prev.moves, moveNotation],
+      capturedPieces: newCapturedPieces
+    }));
+    
+    setSelectedSquare(null);
+    setValidMoves([]);
+  }, [gameState]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Dragging logic
-  };
+  // AI move logic
+  useEffect(() => {
+    if (gameMode === 'vs-computer' && gameState.currentPlayer === 'black' && gameState.gameStatus === 'playing') {
+      const timer = setTimeout(() => {
+        makeAIMove();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.currentPlayer, gameMode, gameState.gameStatus]);
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Drag end logic
-  };
-
-  const getValidMoves = (x: number, y: number): Position[] => {
-    // Simplified valid moves logic
-    return [];
-  };
-
-  const getPieceSymbol = (type: string, color: 'white' | 'black'): string => {
-    const pieceSet = pieceSets[customization.pieceSet as keyof typeof pieceSets];
-    return pieceSet[color][type as keyof typeof pieceSet.white];
-  };
-
-  const drawBoard = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const boardTheme = boardThemes[customization.boardTheme as keyof typeof boardThemes];
-    const squareSize = canvas.width / 8;
-
+  const makeAIMove = useCallback(() => {
+    // Simple AI: find all possible moves and pick one randomly
+    const allMoves: { from: { row: number; col: number }; to: { row: number; col: number } }[] = [];
+    
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
-        const isLightSquare = (row + col) % 2 === 0;
-        ctx.fillStyle = isLightSquare ? boardTheme.light : boardTheme.dark;
-        ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
-
-        if (customization.showCoordinates) {
-          ctx.font = '12px Arial';
-          ctx.fillStyle = '#333';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          if (col === 0) ctx.fillText(`${8 - row}`, col * squareSize + 2, row * squareSize + 2);
-          if (row === 7) ctx.fillText(`abcdefgh`[col], col * squareSize + 2, row * squareSize + squareSize - 14);
-        }
-
-        if (selectedPiece && customization.highlightMoves) {
-          validMoves.forEach(move => {
-            if (move.x === col && move.y === row) {
-              ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
-              ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
-            }
+        const piece = gameState.board[row][col];
+        if (piece && piece.color === 'black') {
+          const moves = getValidMoves(piece, row, col);
+          moves.forEach(move => {
+            allMoves.push({ from: { row, col }, to: move });
           });
-        }
-
-        const piece = board[row][col];
-        if (piece) {
-          const pieceSymbol = getPieceSymbol(piece.type, piece.color);
-          ctx.font = `${squareSize * 0.7}px Arial`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = piece.color === 'white' ? '#333' : '#000';
-          ctx.fillText(pieceSymbol, col * squareSize + squareSize / 2, row * squareSize + squareSize / 2);
         }
       }
     }
+    
+    if (allMoves.length > 0) {
+      const randomMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+      makeMove(randomMove.from.row, randomMove.from.col, randomMove.to.row, randomMove.to.col);
+    }
+  }, [gameState.board, getValidMoves, makeMove]);
 
-    // Draw border
-    ctx.strokeStyle = boardTheme.border;
-    ctx.lineWidth = 5;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-  }, [board, selectedPiece, validMoves, customization]);
+  const getPieceSymbol = (piece: ChessPiece): string => {
+    const symbols = {
+      white: { king: '♔', queen: '♕', rook: '♖', bishop: '♗', knight: '♘', pawn: '♙' },
+      black: { king: '♚', queen: '♛', rook: '♜', bishop: '♝', knight: '♞', pawn: '♟' }
+    };
+    return symbols[piece.color][piece.type];
+  };
 
-  const resetGame = useCallback(() => {
-    setBoard(initialBoard);
-    setSelectedPiece(null);
+  const resetGame = () => {
+    setGameState({
+      board: initializeBoard(),
+      currentPlayer: 'white',
+      gameStatus: 'playing',
+      moves: [],
+      capturedPieces: { white: [], black: [] }
+    });
+    setSelectedSquare(null);
     setValidMoves([]);
-    setCurrentPlayer('white');
-    setCapturedPieces({ white: [], black: [] });
-  }, []);
+    setDragState({
+      isDragging: false,
+      draggedPiece: null,
+      draggedFrom: null,
+      dragPosition: { x: 0, y: 0 }
+    });
+  };
 
-  useEffect(() => {
-    drawBoard();
-  }, [drawBoard]);
+  const chessLearningConcepts = [
+    {
+      title: "Chess Fundamentals",
+      description: "Chess is a strategic board game between two players. The objective is to checkmate the opponent's king, meaning the king is in a position to be captured and cannot escape.",
+      example: "Each player starts with 16 pieces:\n- 1 King\n- 1 Queen\n- 2 Rooks\n- 2 Bishops\n- 2 Knights\n- 8 Pawns",
+      relatedTopics: ["Piece Movement", "Board Setup", "Game Objective"]
+    },
+    {
+      title: "Piece Movement",
+      description: "Each chess piece has its own unique way of moving across the board. Understanding how each piece moves is fundamental to playing chess.",
+      example: "King: One square in any direction\nQueen: Any number of squares in any direction\nRook: Any number of squares horizontally or vertically\nBishop: Any number of squares diagonally\nKnight: L-shape (2 squares in one direction, then 1 perpendicular)\nPawn: One square forward (two on first move), captures diagonally",
+      relatedTopics: ["Special Moves", "Capturing", "Strategy"]
+    },
+    {
+      title: "Special Moves",
+      description: "Chess has several special moves that can dramatically change the game: castling, en passant, and pawn promotion.",
+      example: "Castling: King moves 2 squares toward rook, rook moves to opposite side\nEn Passant: Capture a pawn that moved 2 squares\nPromotion: Pawn reaching end becomes any piece (usually Queen)",
+      relatedTopics: ["King Safety", "Endgame", "Tactics"]
+    },
+    {
+      title: "Check and Checkmate",
+      description: "Check occurs when the king is under attack. Checkmate happens when the king is in check and has no legal moves to escape capture.",
+      example: "Check: King is attacked, must move to safety\nCheckmate: King is attacked with no escape - game over\nStalemate: No legal moves but not in check - draw",
+      relatedTopics: ["King Safety", "Game Endings", "Tactics"]
+    }
+  ];
+
+  const ChessSquare: React.FC<SquareProps> = ({
+    row,
+    col,
+    piece,
+    isSelected,
+    isValidMove,
+    isDraggedFrom,
+    handleSquareClick,
+    handleMouseDown,
+    customization,
+    getPieceSymbol,
+    dragState
+  }) => {
+    const isLight = (row + col) % 2 === 0;
+  
+    return (
+      <div
+        key={`${row}-${col}`}
+        className={`absolute w-[60px] h-[60px] flex items-center justify-center text-3xl cursor-pointer transition-all duration-200 ${
+          isLight ? 'bg-amber-100' : 'bg-amber-600'
+        } ${isSelected ? 'ring-4 ring-blue-500' : ''} ${
+          isValidMove ? 'ring-2 ring-green-400' : ''
+        } ${isDraggedFrom && dragState.isDragging ? 'opacity-50' : ''}`}
+        style={{
+          left: `${col * 60}px`,
+          top: `${row * 60}px`,
+        }}
+        onClick={() => handleSquareClick(row, col)}
+        onMouseDown={(e) => handleMouseDown(e, row, col)}
+      >
+        {piece && !isDraggedFrom && getPieceSymbol(piece)}
+        {isValidMove && !piece && (
+          <div className="w-4 h-4 bg-green-400 rounded-full opacity-70" />
+        )}
+        {customization.showCoordinates && col === 0 && (
+          <span className="absolute top-1 left-1 text-xs text-gray-600">
+            {8 - row}
+          </span>
+        )}
+        {customization.showCoordinates && row === 7 && (
+          <span className="absolute bottom-1 right-1 text-xs text-gray-600">
+            {String.fromCharCode(97 + col)}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Enhanced Header */}
+        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <Button onClick={onBack} variant="outline" className="flex items-center space-x-2">
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Hub</span>
           </Button>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-            ♛ Master Chess
-          </h1>
+          <h1 className="text-3xl font-bold text-amber-800">♛ Enhanced Chess</h1>
           <div className="flex space-x-2">
-            <Button onClick={() => setShowHowToPlay(true)} variant="outline" size="sm">
-              <HelpCircle className="h-4 w-4 mr-2" />
-              How to Play
+            <Button onClick={() => setShowLearnModal(true)} variant="outline">
+              <Brain className="h-4 w-4 mr-2" />
+              Learn
             </Button>
-            <Button onClick={() => setShowCustomization(true)} variant="outline" size="sm">
+            <Button onClick={() => setShowCustomization(true)} variant="outline">
               <Settings className="h-4 w-4 mr-2" />
               Customize
-            </Button>
-            <Button onClick={() => setSoundEnabled(!soundEnabled)} variant="outline" size="sm">
-              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
           </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Game Board */}
-          <Card className="flex-1 shadow-2xl">
+          <Card className="flex-1">
             <CardContent className="p-6">
               <div className="flex justify-center">
-                <div className="relative">
-                  <canvas
-                    ref={canvasRef}
-                    width={640}
-                    height={640}
-                    className="border-4 border-amber-300 rounded-lg shadow-lg cursor-pointer"
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onClick={handleCanvasClick}
-                  />
+                <div 
+                  ref={boardRef}
+                  className="relative inline-block border-4 border-amber-800 rounded-lg bg-amber-200"
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={{ 
+                    width: '480px', 
+                    height: '480px',
+                    backgroundImage: customization.boardTheme === 'marble' ? 'linear-gradient(45deg, #f0f0f0 25%, #e0e0e0 25%, #e0e0e0 50%, #f0f0f0 50%, #f0f0f0 75%, #e0e0e0 75%, #e0e0e0)' : undefined
+                  }}
+                >
+                  {gameState.board.map((row, rowIndex) =>
+                    row.map((piece, colIndex) => (
+                      <ChessSquare
+                        key={`${rowIndex}-${colIndex}`}
+                        row={rowIndex}
+                        col={colIndex}
+                        piece={piece}
+                        isSelected={selectedSquare?.row === rowIndex && selectedSquare?.col === colIndex}
+                        isValidMove={validMoves.some(move => move.row === rowIndex && move.col === colIndex)}
+                        isDraggedFrom={dragState.draggedFrom?.row === rowIndex && dragState.draggedFrom?.col === colIndex}
+                        handleSquareClick={handleSquareClick}
+                        handleMouseDown={handleMouseDown}
+                        customization={customization}
+                        getPieceSymbol={getPieceSymbol}
+                        dragState={dragState}
+                      />
+                    ))
+                  )}
                   
-                  {/* Capture Animation */}
-                  {capturedAnimation.show && (
-                    <div 
-                      className="absolute pointer-events-none animate-bounce text-3xl"
+                  {/* Dragged piece */}
+                  {dragState.isDragging && dragState.draggedPiece && (
+                    <div
+                      className="absolute pointer-events-none text-3xl z-50 transform -translate-x-1/2 -translate-y-1/2"
                       style={{
-                        left: capturedAnimation.position.x,
-                        top: capturedAnimation.position.y,
-                        transform: 'translate(-50%, -50%)'
+                        left: dragState.dragPosition.x,
+                        top: dragState.dragPosition.y,
                       }}
                     >
-                      ⚡ {capturedAnimation.piece} ⚡
+                      {getPieceSymbol(dragState.draggedPiece)}
                     </div>
                   )}
                 </div>
@@ -341,51 +573,31 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
             </CardContent>
           </Card>
 
-          {/* Enhanced Game Controls */}
+          {/* Game Info */}
           <div className="lg:w-80 space-y-4">
-            <Card className="shadow-lg">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Crown className="h-5 w-5 text-amber-600" />
-                  <span>Game Settings</span>
-                </CardTitle>
+                <CardTitle>Game Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Game Mode</label>
-                  <Select value={gameMode} onValueChange={(value: any) => setGameMode(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="human-vs-ai">Human vs AI</SelectItem>
-                      <SelectItem value="human-vs-human">Human vs Human</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex justify-between items-center">
+                  <span>Current Turn:</span>
+                  <Badge variant={gameState.currentPlayer === 'white' ? 'default' : 'secondary'}>
+                    {gameState.currentPlayer === 'white' ? '♔ White' : '♛ Black'}
+                  </Badge>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span>Status:</span>
+                  <Badge variant="outline">{gameState.gameStatus}</Badge>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span>Moves:</span>
+                  <Badge variant="secondary">{gameState.moves.length}</Badge>
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Difficulty Level</label>
-                  <Select value={difficulty} onValueChange={(value: any) => setDifficulty(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="expert">Expert</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Current Turn:</span>
-                    <Badge variant={currentPlayer === 'white' ? 'default' : 'secondary'}>
-                      {currentPlayer === 'white' ? '⚪ White' : '⚫ Black'}
-                    </Badge>
-                  </div>
-                  
+                <div className="space-y-2">
                   <Button onClick={resetGame} className="w-full" variant="outline">
                     <RotateCcw className="h-4 w-4 mr-2" />
                     New Game
@@ -394,45 +606,85 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
               </CardContent>
             </Card>
 
-            {/* Hints for Difficulty */}
-            {getHintsForDifficulty().length > 0 && (
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-sm">💡 Strategic Hints</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="text-sm space-y-1">
-                    {getHintsForDifficulty().map((hint, index) => (
-                      <li key={index} className="flex items-center space-x-2">
-                        <span className="text-amber-600">•</span>
-                        <span>{hint}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Captured Pieces */}
-            <Card className="shadow-lg">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Captured Pieces</CardTitle>
+                <CardTitle>Game Mode</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant={gameMode === 'vs-computer' ? 'default' : 'outline'}
+                    onClick={() => setGameMode('vs-computer')}
+                    className="text-xs"
+                  >
+                    <Brain className="h-3 w-3 mr-1" />
+                    vs Computer
+                  </Button>
+                  <Button 
+                    variant={gameMode === 'vs-friend' ? 'default' : 'outline'}
+                    onClick={() => setGameMode('vs-friend')}
+                    className="text-xs"
+                  >
+                    <Users className="h-3 w-3 mr-1" />
+                    vs Friend
+                  </Button>
+                  <Button 
+                    variant={gameMode === 'analysis' ? 'default' : 'outline'}
+                    onClick={() => setGameMode('analysis')}
+                    className="text-xs"
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Analysis
+                  </Button>
+                  <Button 
+                    variant={gameMode === 'puzzles' ? 'default' : 'outline'}
+                    onClick={() => setGameMode('puzzles')}
+                    className="text-xs"
+                  >
+                    <Target className="h-3 w-3 mr-1" />
+                    Puzzles
+                  </Button>
+                </div>
+                
+                {gameMode === 'vs-computer' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">AI Difficulty:</label>
+                    <div className="grid grid-cols-2 gap-1">
+                      {(['beginner', 'intermediate', 'advanced', 'expert'] as const).map(level => (
+                        <Button
+                          key={level}
+                          variant={aiDifficulty === level ? 'default' : 'outline'}
+                          onClick={() => setAiDifficulty(level)}
+                          className="text-xs"
+                        >
+                          {level}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Captured Pieces</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div>
-                    <span className="text-xs text-gray-600">White captured:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {capturedPieces.white.map((piece, index) => (
-                        <span key={index} className="text-lg">{piece}</span>
+                    <div className="text-sm font-medium mb-1">White captured:</div>
+                    <div className="text-xl">
+                      {gameState.capturedPieces.white.map((piece, index) => (
+                        <span key={index}>{getPieceSymbol(piece)}</span>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <span className="text-xs text-gray-600">Black captured:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {capturedPieces.black.map((piece, index) => (
-                        <span key={index} className="text-lg">{piece}</span>
+                    <div className="text-sm font-medium mb-1">Black captured:</div>
+                    <div className="text-xl">
+                      {gameState.capturedPieces.black.map((piece, index) => (
+                        <span key={index}>{getPieceSymbol(piece)}</span>
                       ))}
                     </div>
                   </div>
@@ -443,154 +695,21 @@ export const EnhancedChessGame: React.FC<EnhancedChessGameProps> = ({ onBack, on
         </div>
       </div>
 
-      {/* Victory Celebration Modal */}
-      {showVictory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full m-4 text-center animate-scale-in">
-            <div className="text-6xl mb-4 animate-bounce">
-              {winner === 'Draw' ? '🤝' : '🏆'}
-            </div>
-            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              {winner === 'Draw' ? 'Game Draw!' : `${winner} Wins!`}
-            </h2>
-            <div className="flex justify-center space-x-2 mb-6">
-              <Sparkles className="h-6 w-6 text-amber-500 animate-pulse" />
-              <Crown className="h-8 w-8 text-amber-600" />
-              <Sparkles className="h-6 w-6 text-amber-500 animate-pulse" />
-            </div>
-            <div className="space-y-2">
-              <Button onClick={() => { setShowVictory(false); resetGame(); }} className="w-full">
-                Play Again
-              </Button>
-              <Button onClick={() => setShowVictory(false)} variant="outline" className="w-full">
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* How to Play Modal */}
-      {showHowToPlay && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">How to Play Chess</h2>
-              <Button onClick={() => setShowHowToPlay(false)} variant="outline" size="sm">×</Button>
-            </div>
-            <div className="space-y-4 text-sm">
-              <div>
-                <h3 className="font-semibold mb-2">Basic Rules</h3>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• Click to select a piece, then click destination</li>
-                  <li>• Or drag and drop pieces to move</li>
-                  <li>• Capture opponent pieces by moving to their square</li>
-                  <li>• Protect your King from checkmate</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Piece Movements</h3>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• ♜ Rook: Horizontal and vertical lines</li>
-                  <li>• ♝ Bishop: Diagonal lines</li>
-                  <li>• ♞ Knight: L-shaped moves</li>
-                  <li>• ♛ Queen: Any direction</li>
-                  <li>• ♚ King: One square in any direction</li>
-                  <li>• ♟ Pawn: Forward one square (two on first move)</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Special Moves</h3>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• Castling: King and Rook special move</li>
-                  <li>• En passant: Special pawn capture</li>
-                  <li>• Promotion: Pawn reaches end, becomes Queen</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Customization Modal */}
       {showCustomization && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Customize Chess</h2>
-              <Button onClick={() => setShowCustomization(false)} variant="outline" size="sm">×</Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Board Theme</label>
-                  <Select value={customization.boardTheme} onValueChange={(value) => setCustomization(prev => ({ ...prev, boardTheme: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="classic">Classic Wood</SelectItem>
-                      <SelectItem value="marble">Marble</SelectItem>
-                      <SelectItem value="metal">Metal</SelectItem>
-                      <SelectItem value="neon">Neon</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Piece Set</label>
-                  <Select value={customization.pieceSet} onValueChange={(value) => setCustomization(prev => ({ ...prev, pieceSet: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="classic">Classic</SelectItem>
-                      <SelectItem value="modern">Modern</SelectItem>
-                      <SelectItem value="medieval">Medieval</SelectItem>
-                      <SelectItem value="fantasy">Fantasy</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="showCoordinates"
-                      checked={customization.showCoordinates}
-                      onChange={(e) => setCustomization(prev => ({ ...prev, showCoordinates: e.target.checked }))}
-                    />
-                    <label htmlFor="showCoordinates" className="text-sm font-medium">Show Coordinates</label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="highlightMoves"
-                      checked={customization.highlightMoves}
-                      onChange={(e) => setCustomization(prev => ({ ...prev, highlightMoves: e.target.checked }))}
-                    />
-                    <label htmlFor="highlightMoves" className="text-sm font-medium">Highlight Valid Moves</label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="animations"
-                      checked={customization.animations}
-                      onChange={(e) => setCustomization(prev => ({ ...prev, animations: e.target.checked }))}
-                    />
-                    <label htmlFor="animations" className="text-sm font-medium">Enable Animations</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ChessCustomization
+          isOpen={showCustomization}
+          onClose={() => setShowCustomization(false)}
+          customization={customization}
+          onCustomizationChange={setCustomization}
+        />
       )}
+
+      <ConceptModal
+        isOpen={showLearnModal}
+        onClose={() => setShowLearnModal(false)}
+        concepts={chessLearningConcepts}
+        gameTitle="Enhanced Chess"
+      />
     </div>
   );
 };
