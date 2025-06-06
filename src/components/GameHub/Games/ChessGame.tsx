@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ChessGame as RefactoredChessGame } from './Chess/ChessGame';
+import { EnhancedChessGame } from './EnhancedChessGame';
 
 interface ChessGameProps {
   onBack: () => void;
@@ -8,5 +8,5 @@ interface ChessGameProps {
 }
 
 export const ChessGame: React.FC<ChessGameProps> = ({ onBack, onStatsUpdate }) => {
-  return <RefactoredChessGame onBack={onBack} onStatsUpdate={onStatsUpdate} />;
+  return <EnhancedChessGame onBack={onBack} onStatsUpdate={onStatsUpdate} />;
 };
