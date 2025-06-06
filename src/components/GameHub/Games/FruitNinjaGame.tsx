@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -101,8 +102,20 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     grape: { emoji: '🍇', color: '#8A2BE2', points: 15, juiceColor: '#DA70D6' },
     peach: { emoji: '🍑', color: '#FFB6C1', points: 20, juiceColor: '#FFC0CB' },
     coconut: { emoji: '🥥', color: '#8B4513', points: 30, juiceColor: '#DEB887' },
-    kiwi: { emoji: '🥝', color: '#9ACD32', points: 25, juiceColor: '#ADFF2F' }
+    kiwi: { emoji: '🥝', color: '#9ACD32', points: 25, juiceColor: '#ADFF2F' },
+    mango: { emoji: '🥭', color: '#FFD700', points: 25, juiceColor: '#FFED4E' },
+    cherry: { emoji: '🍒', color: '#FF0000', points: 15, juiceColor: '#FF6B6B' },
+    lemon: { emoji: '🍋', color: '#FFFF00', points: 15, juiceColor: '#FFFF80' },
+    avocado: { emoji: '🥑', color: '#568203', points: 20, juiceColor: '#9ACD32' }
   };
+
+  const bladeColors = [
+    { name: 'Golden', value: '#FFD700' },
+    { name: 'Silver', value: '#C0C0C0' },
+    { name: 'Fire', value: '#FF4500' },
+    { name: 'Ice', value: '#00BFFF' },
+    { name: 'Lightning', value: '#FFFF00' }
+  ];
 
   const backgroundThemes = {
     dojo: {
@@ -179,6 +192,8 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
   }, [level, customization]);
 
   const createParticles = useCallback((x: number, y: number, color: string, type: 'juice' | 'spark' | 'explosion', count: number = 10) => {
+    if (!customization.enableParticles) return;
+    
     const newParticles: Particle[] = [];
     
     for (let i = 0; i < count; i++) {
@@ -196,7 +211,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     }
     
     setParticles(prev => [...prev, ...newParticles]);
-  }, []);
+  }, [customization.enableParticles]);
 
   const sliceFruit = useCallback((fruitId: number) => {
     setFruits(prev => {
@@ -309,6 +324,11 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
   }, [gameState, spawnFruit, combo]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (gameState === 'menu') {
+      initializeGame();
+      return;
+    }
+    
     if (gameState !== 'playing') return;
     
     isSlicingRef.current = true;
@@ -340,12 +360,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
 
     // Check for fruit collisions
     fruits.forEach(fruit => {
-      if (!fruit.sliced && !fruit.isBomb) {
-        const distance = Math.sqrt((fruit.x - x) ** 2 + (fruit.y - y) ** 2);
-        if (distance < fruit.size / 2 + 10) {
-          sliceFruit(fruit.id);
-        }
-      } else if (!fruit.sliced && fruit.isBomb) {
+      if (!fruit.sliced) {
         const distance = Math.sqrt((fruit.x - x) ** 2 + (fruit.y - y) ** 2);
         if (distance < fruit.size / 2 + 10) {
           sliceFruit(fruit.id);
@@ -355,6 +370,60 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
   }, [gameState, fruits, sliceFruit]);
 
   const handleMouseUp = useCallback(() => {
+    isSlicingRef.current = false;
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (gameState === 'menu') {
+      initializeGame();
+      return;
+    }
+    if (gameState !== 'playing') return;
+    
+    isSlicingRef.current = true;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    setSliceTrail(prev => ({
+      ...prev,
+      points: [{ x, y, time: 30 }]
+    }));
+  }, [gameState]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isSlicingRef.current || gameState !== 'playing') return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    setSliceTrail(prev => ({
+      ...prev,
+      points: [...prev.points, { x, y, time: 30 }].slice(-10)
+    }));
+
+    // Check for fruit collisions
+    fruits.forEach(fruit => {
+      if (!fruit.sliced) {
+        const distance = Math.sqrt((fruit.x - x) ** 2 + (fruit.y - y) ** 2);
+        if (distance < fruit.size / 2 + 10) {
+          sliceFruit(fruit.id);
+        }
+      }
+    });
+  }, [gameState, fruits, sliceFruit]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     isSlicingRef.current = false;
   }, []);
 
@@ -480,9 +549,9 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
       ctx.fillText('Fruit Ninja', CANVAS_WIDTH/2, 200);
       
       ctx.font = 'bold 24px Arial';
-      ctx.fillText('Slice fruits to start!', CANVAS_WIDTH/2, 250);
+      ctx.fillText('Click or Touch to Start!', CANVAS_WIDTH/2, 250);
       ctx.font = '18px Arial';
-      ctx.fillText('Avoid bombs and don\'t let fruits fall!', CANVAS_WIDTH/2, 280);
+      ctx.fillText('Slice fruits to score!', CANVAS_WIDTH/2, 280);
       ctx.restore();
     } else if (gameState === 'gameOver') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
@@ -559,9 +628,9 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
     if (gameState === 'gameOver') {
       if (score > highScore) {
         setHighScore(score);
-        onStatsUpdate(prev => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
+        onStatsUpdate((prev: any) => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
       }
-      onStatsUpdate(prev => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
+      onStatsUpdate((prev: any) => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
     }
   }, [gameState, score, highScore, onStatsUpdate]);
 
@@ -604,12 +673,15 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* Simplified Game Status */}
+          {/* Game Status */}
           <div className="lg:w-80 space-y-4">
             <Card className="shadow-lg">
               <CardHeader>
@@ -702,9 +774,10 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
               <div>
                 <h3 className="font-semibold mb-2">Controls</h3>
                 <ul className="space-y-1 text-gray-600">
-                  <li>• Click and drag to slice fruits</li>
+                  <li>• Click and drag or swipe to slice fruits</li>
                   <li>• Move fast for better slicing action</li>
                   <li>• Create long slices for style points</li>
+                  <li>• Touch controls work on mobile devices</li>
                 </ul>
               </div>
               <div>
@@ -731,6 +804,7 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
                   <li>• 🍎 Apple, 🍊 Orange, 🍌 Banana</li>
                   <li>• 🍉 Watermelon, 🍍 Pineapple, 🍓 Strawberry</li>
                   <li>• 🍇 Grape, 🍑 Peach, 🥥 Coconut, 🥝 Kiwi</li>
+                  <li>• 🥭 Mango, 🍒 Cherry, 🍋 Lemon, 🥑 Avocado</li>
                 </ul>
               </div>
             </div>
@@ -766,12 +840,18 @@ export const FruitNinjaGame: React.FC<FruitNinjaGameProps> = ({ onBack, onStatsU
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Blade Color</label>
-                  <input
-                    type="color"
-                    value={customization.bladeColor}
-                    onChange={(e) => setCustomization(prev => ({ ...prev, bladeColor: e.target.value }))}
-                    className="w-full h-10 rounded"
-                  />
+                  <Select value={customization.bladeColor} onValueChange={(value) => setCustomization(prev => ({ ...prev, bladeColor: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bladeColors.map(color => (
+                        <SelectItem key={color.value} value={color.value}>
+                          {color.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>

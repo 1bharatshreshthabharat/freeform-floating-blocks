@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -103,7 +104,7 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
   const birdTypes = {
     classic: { 
       idle: '🐦', 
-      flap: '🐤', 
+      flap: '🕊️', 
       hurt: '😵‍💫', 
       expressions: { normal: '🐦', happy: '😊', scared: '😨', dizzy: '😵‍💫' }
     },
@@ -145,21 +146,24 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
       clouds: 'rgba(255, 255, 255, 0.8)',
       ground: '#8FBC8F',
       buildings: '#D3D3D3',
-      stars: false
+      stars: false,
+      bubbles: false
     },
     sunset: {
       sky: ['#FF6B6B', '#FFA500'],
       clouds: 'rgba(255, 215, 0, 0.7)',
       ground: '#CD853F',
       buildings: '#8B4513',
-      stars: false
+      stars: false,
+      bubbles: false
     },
     night: {
       sky: ['#191970', '#483D8B'],
       clouds: 'rgba(200, 200, 200, 0.6)',
       ground: '#2F4F4F',
       buildings: '#1C1C1C',
-      stars: true
+      stars: true,
+      bubbles: false
     },
     space: {
       sky: ['#000000', '#191970'],
@@ -167,14 +171,16 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
       ground: '#2F2F2F',
       buildings: '#4B0082',
       stars: true,
-      nebula: true
+      nebula: true,
+      bubbles: false
     },
     underwater: {
       sky: ['#006994', '#4682B4'],
       clouds: 'rgba(100, 200, 255, 0.5)',
       ground: '#4682B4',
       buildings: '#5F9EA0',
-      bubbles: true
+      bubbles: true,
+      stars: false
     }
   };
 
@@ -249,6 +255,44 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
         return createObstacle(x);
     }
   }, [level, difficulty, customization]);
+
+  const jump = useCallback(() => {
+    if (gameState === 'menu' || gameState === 'gameOver') {
+      initializeGame();
+    } else if (gameState === 'playing') {
+      setBird(prev => ({ 
+        ...prev, 
+        velocity: getDifficultyParams().JUMP_FORCE,
+        state: 'flapping',
+        expression: 'happy'
+      }));
+    }
+  }, [gameState]);
+
+  const initializeGame = useCallback(() => {
+    setBird({ 
+      x: 100, 
+      y: 250, 
+      velocity: 0, 
+      rotation: 0, 
+      type: customization.birdType,
+      animation: 0,
+      state: 'flying',
+      expression: 'normal'
+    });
+    setObstacles([]);
+    setParticles([]);
+    setScore(0);
+    setLevel(1);
+    setGameState('playing');
+    
+    // Add initial obstacles
+    const initialObstacles = [];
+    for (let i = 1; i <= 3; i++) {
+      initialObstacles.push(createObstacle(CANVAS_WIDTH + i * 250));
+    }
+    setObstacles(initialObstacles);
+  }, [customization.birdType, createObstacle]);
 
   const updateGame = useCallback(() => {
     if (gameState !== 'playing') return;
@@ -600,9 +644,9 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
     if (gameState === 'gameOver') {
       if (score > highScore) {
         setHighScore(score);
-        onStatsUpdate(prev => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
+        onStatsUpdate((prev: any) => ({ ...prev, totalScore: Math.max(prev.totalScore, score) }));
       }
-      onStatsUpdate(prev => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
+      onStatsUpdate((prev: any) => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
     }
   }, [gameState, score, highScore, onStatsUpdate]);
 
@@ -618,8 +662,18 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
       }
     };
 
+    const handleTouch = (e: TouchEvent) => {
+      e.preventDefault();
+      jump();
+    };
+
     window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener('touchstart', handleTouch);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener('touchstart', handleTouch);
+    };
   }, [jump, gameState]);
 
   const togglePause = () => {
@@ -662,6 +716,10 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
                   height={CANVAS_HEIGHT}
                   className="border-4 border-blue-300 rounded-lg cursor-pointer"
                   onClick={jump}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    jump();
+                  }}
                 />
               </div>
             </CardContent>
@@ -765,8 +823,9 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
               <div>
                 <h3 className="font-semibold mb-2">Controls</h3>
                 <ul className="space-y-1 text-gray-600">
-                  <li>• Click or press SPACE to make the bird fly</li>
+                  <li>• Click, tap, or press SPACE to make the bird fly</li>
                   <li>• Press P to pause/resume during gameplay</li>
+                  <li>• Touch controls work on mobile devices</li>
                 </ul>
               </div>
               <div>
@@ -869,6 +928,8 @@ export const FlappyGame: React.FC<FlappyGameProps> = ({ onBack, onStatsUpdate })
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
                       <SelectItem value="rain">Rain</SelectItem>
+                      <SelectItem value="snow">Snow</SelectItem>
+                      <SelectItem value="wind">Wind</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,33 +93,41 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
       background: '#1A4A32',
       accent: '#2E7D32',
       border: '#388E3C',
-      gridPattern: false
+      gridPattern: false,
+      stars: false,
+      neonGlow: false
     },
     desert: {
       background: '#8D6E63',
       accent: '#A1887F',
       border: '#BCAAA4',
-      gridPattern: false
+      gridPattern: false,
+      stars: false,
+      neonGlow: false
     },
     ocean: {
       background: '#0D47A1',
       accent: '#1565C0',
       border: '#1976D2',
-      gridPattern: false
+      gridPattern: false,
+      stars: false,
+      neonGlow: false
     },
     space: {
       background: '#1A1A2E',
       accent: '#16213E',
       border: '#0F3460',
       gridPattern: false,
-      stars: true
+      stars: true,
+      neonGlow: false
     },
     neon: {
       background: '#000000',
       accent: '#1B1B1B',
       border: '#333333',
       gridPattern: true,
-      neonGlow: true
+      neonGlow: true,
+      stars: false
     }
   };
 
@@ -130,7 +139,13 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     ice: { head: '❄️', body: '🔷' }
   };
 
-  const snakeColors = ['#4CAF50', '#FF5722', '#2196F3', '#9C27B0', '#FF9800', '#607D8B', '#E91E63'];
+  const snakeColors = [
+    { name: 'Green', value: '#4CAF50' },
+    { name: 'Red', value: '#FF5722' },
+    { name: 'Blue', value: '#2196F3' },
+    { name: 'Purple', value: '#9C27B0' },
+    { name: 'Orange', value: '#FF9800' }
+  ];
 
   const initializeGame = useCallback(() => {
     const startPos = { x: Math.floor(CANVAS_WIDTH / customization.gridSize / 2), y: Math.floor(CANVAS_HEIGHT / customization.gridSize / 2) };
@@ -141,9 +156,13 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     setActivePowerUps([]);
     setScore(0);
     setLevel(1);
-    setGameState('playing');
     generateFood();
   }, [customization.gridSize]);
+
+  const startGame = useCallback(() => {
+    initializeGame();
+    setGameState('playing');
+  }, [initializeGame]);
 
   const generateFood = useCallback(() => {
     const params = getDifficultyParams();
@@ -199,7 +218,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
   }, [snake, food, customization.enablePowerUps, customization.gridSize]);
 
   const updateGame = useCallback(() => {
-    if (gameState !== 'playing') return;
+    if (gameState !== 'playing' || direction.x === 0 && direction.y === 0) return;
 
     setSnake(prevSnake => {
       const newSnake = [...prevSnake];
@@ -302,7 +321,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Add subtle background pattern (no grid lines)
+    // Add subtle background pattern
     if (theme.stars) {
       // Draw animated stars for space theme
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -314,22 +333,6 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
         ctx.fillRect(x, y, 2, 2);
       }
       ctx.globalAlpha = 1;
-    } else if (theme.neonGlow) {
-      // Neon grid effect (subtle)
-      ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x <= CANVAS_WIDTH; x += params.gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, CANVAS_HEIGHT);
-        ctx.stroke();
-      }
-      for (let y = 0; y <= CANVAS_HEIGHT; y += params.gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(CANVAS_WIDTH, y);
-        ctx.stroke();
-      }
     }
 
     if (gameState !== 'menu') {
@@ -476,7 +479,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
       ctx.fillText('Advanced Snake', CANVAS_WIDTH/2, 150);
       
       ctx.font = 'bold 24px Arial';
-      ctx.fillText('Use Arrow Keys to Start', CANVAS_WIDTH/2, 200);
+      ctx.fillText('Use Arrow Keys or Click to Start', CANVAS_WIDTH/2, 200);
       ctx.font = '18px Arial';
       ctx.fillText('Customize your snake and arena!', CANVAS_WIDTH/2, 230);
       ctx.restore();
@@ -565,10 +568,19 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (gameState === 'menu' || gameState === 'gameOver') {
+      if (gameState === 'menu') {
         if (e.code === 'Space' || e.code.startsWith('Arrow')) {
-          initializeGame();
+          startGame();
+          if (e.code === 'ArrowUp') setDirection({ x: 0, y: -1 });
+          if (e.code === 'ArrowDown') setDirection({ x: 0, y: 1 });
+          if (e.code === 'ArrowLeft') setDirection({ x: -1, y: 0 });
+          if (e.code === 'ArrowRight') setDirection({ x: 1, y: 0 });
         }
+        return;
+      }
+
+      if (gameState === 'gameOver' && e.code === 'Space') {
+        startGame();
         return;
       }
 
@@ -597,7 +609,16 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameState, direction, initializeGame]);
+  }, [gameState, direction, startGame]);
+
+  const handleCanvasClick = () => {
+    if (gameState === 'menu' || gameState === 'gameOver') {
+      startGame();
+    } else if (direction.x === 0 && direction.y === 0) {
+      // If game is started but snake isn't moving yet, start moving right
+      setDirection({ x: 1, y: 0 });
+    }
+  };
 
   const togglePause = () => {
     setGameState(prev => prev === 'playing' ? 'paused' : 'playing');
@@ -637,13 +658,15 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
                   ref={canvasRef}
                   width={CANVAS_WIDTH}
                   height={CANVAS_HEIGHT}
-                  className="border-4 border-green-300 rounded-lg shadow-inner"
+                  className="border-4 border-green-300 rounded-lg shadow-inner cursor-pointer"
+                  onClick={handleCanvasClick}
+                  onTouchStart={handleCanvasClick}
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* Simplified Game Status */}
+          {/* Game Status */}
           <div className="lg:w-80 space-y-4">
             <Card className="shadow-lg">
               <CardHeader>
@@ -706,7 +729,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
                       Resume
                     </Button>
                   )}
-                  <Button onClick={initializeGame} className="w-full" variant="outline">
+                  <Button onClick={startGame} className="w-full" variant="outline">
                     <RotateCcw className="h-4 w-4 mr-2" />
                     New Game
                   </Button>
@@ -752,8 +775,10 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
                 <h3 className="font-semibold mb-2">Controls</h3>
                 <ul className="space-y-1 text-gray-600">
                   <li>• Use Arrow Keys to move the snake</li>
+                  <li>• Click or tap the game board to start</li>
                   <li>• Press P to pause/resume game</li>
                   <li>• Press Space to start new game</li>
+                  <li>• Touch controls work on mobile devices</li>
                 </ul>
               </div>
               <div>
@@ -817,16 +842,18 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack, onStatsUpdate }) =
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Snake Color</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {snakeColors.map(color => (
-                      <button
-                        key={color}
-                        className={`w-full h-8 rounded border-2 ${customization.snakeColor === color ? 'border-black' : 'border-gray-300'}`}
-                        style={{ backgroundColor: color }}
-                        onClick={() => setCustomization(prev => ({ ...prev, snakeColor: color }))}
-                      />
-                    ))}
-                  </div>
+                  <Select value={customization.snakeColor} onValueChange={(value) => setCustomization(prev => ({ ...prev, snakeColor: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {snakeColors.map(color => (
+                        <SelectItem key={color.value} value={color.value}>
+                          {color.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
