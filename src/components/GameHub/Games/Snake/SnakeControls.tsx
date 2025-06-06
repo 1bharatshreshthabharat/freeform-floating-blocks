@@ -3,10 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Play, Pause, RotateCcw, Trophy, Zap } from 'lucide-react';
+import { Pause, Play, RotateCcw, Trophy, Zap, Settings } from 'lucide-react';
 import { useSnakeGame } from './SnakeGameProvider';
 
 export const SnakeControls: React.FC = () => {
@@ -15,17 +12,10 @@ export const SnakeControls: React.FC = () => {
     score,
     highScore,
     level,
-    gridSize,
-    boardTheme,
-    snakeType,
-    snakeColor,
     powerUp,
     setGameState,
-    setGridSize,
-    setBoardTheme,
-    setSnakeType,
-    setSnakeColor,
-    startGame
+    startGame,
+    setShowCustomization
   } = useSnakeGame();
 
   return (
@@ -84,79 +74,18 @@ export const SnakeControls: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Snake Customization */}
+      {/* Game Settings */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-sm">Snake Customization</CardTitle>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5 text-green-600" />
+            <span>Game Settings</span>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Snake Type</Label>
-            <Select value={snakeType} onValueChange={setSnakeType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="classic">Classic</SelectItem>
-                <SelectItem value="rounded">Rounded</SelectItem>
-                <SelectItem value="gradient">Gradient</SelectItem>
-                <SelectItem value="3">3D Style</SelectItem>
-                <SelectItem value="pixelated">Pixelated</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Snake Color</Label>
-            <Select value={snakeColor} onValueChange={setSnakeColor}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="#4CAF50">🟢 Green</SelectItem>
-                <SelectItem value="#FF5722">🔴 Red</SelectItem>
-                <SelectItem value="#2196F3">🔵 Blue</SelectItem>
-                <SelectItem value="#FF9800">🟠 Orange</SelectItem>
-                <SelectItem value="#9C27B0">🟣 Purple</SelectItem>
-                <SelectItem value="#FFD700">🟡 Gold</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Board Settings */}
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-sm">Board Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Board Theme</Label>
-            <Select value={boardTheme} onValueChange={setBoardTheme}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="classic">Classic</SelectItem>
-                <SelectItem value="forest">Forest</SelectItem>
-                <SelectItem value="retro">Retro</SelectItem>
-                <SelectItem value="desert">Desert</SelectItem>
-                <SelectItem value="neon">Neon</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Grid Size: {gridSize}x{gridSize}</Label>
-            <Slider
-              value={[gridSize]}
-              onValueChange={([value]) => setGridSize(value)}
-              min={15}
-              max={30}
-              step={1}
-            />
-          </div>
+        <CardContent className="space-y-2">
+          <Button onClick={() => setShowCustomization(true)} className="w-full">
+            Customize Game
+          </Button>
 
           <div className="mt-4 pt-4 border-t">
             <div className="text-xs text-gray-600">

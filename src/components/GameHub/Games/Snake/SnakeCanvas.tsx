@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSnakeGame } from './SnakeGameProvider';
 
@@ -89,7 +89,7 @@ const snakeTypes = {
       ctx.fill();
     }
   },
-  3: (ctx: CanvasRenderingContext2D, x: number, y: number, cellSize: number, color: string, isHead: boolean) => {
+  '3d': (ctx: CanvasRenderingContext2D, x: number, y: number, cellSize: number, color: string, isHead: boolean) => {
     ctx.fillStyle = color;
     ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
     ctx.strokeStyle = '#000000';
@@ -125,6 +125,50 @@ const snakeTypes = {
       const eyeSize = pixelSize * 1.5;
       ctx.fillRect(x * cellSize + cellSize * 0.2, y * cellSize + cellSize * 0.2, eyeSize, eyeSize);
       ctx.fillRect(x * cellSize + cellSize * 0.6, y * cellSize + cellSize * 0.2, eyeSize, eyeSize);
+    }
+  },
+  emoji: (ctx: CanvasRenderingContext2D, x: number, y: number, cellSize: number, _color: string, isHead: boolean) => {
+    ctx.font = `${cellSize * 0.8}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    if (isHead) {
+      ctx.fillText('🐍', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+    } else {
+      ctx.fillText('🟢', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+    }
+  },
+  dragon: (ctx: CanvasRenderingContext2D, x: number, y: number, cellSize: number, _color: string, isHead: boolean) => {
+    ctx.font = `${cellSize * 0.8}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    if (isHead) {
+      ctx.fillText('🐉', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+    } else {
+      ctx.fillText('🔶', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+    }
+  },
+  cat: (ctx: CanvasRenderingContext2D, x: number, y: number, cellSize: number, _color: string, isHead: boolean) => {
+    ctx.font = `${cellSize * 0.8}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    if (isHead) {
+      ctx.fillText('🐱', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+    } else {
+      ctx.fillText('🐾', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+    }
+  },
+  worm: (ctx: CanvasRenderingContext2D, x: number, y: number, cellSize: number, _color: string, isHead: boolean) => {
+    ctx.font = `${cellSize * 0.8}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    if (isHead) {
+      ctx.fillText('🪱', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+    } else {
+      ctx.fillText('🟤', x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
     }
   }
 };
@@ -167,6 +211,23 @@ export const SnakeCanvas: React.FC = () => {
     onStatsUpdate
   } = useSnakeGame();
 
+  // Create local refs for animation frame
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Check if the snake is colliding with itself
+  const isSelfCollision = useCallback((head: {x: number, y: number}) => {
+    // Check only if snake has more than 4 segments (head + 3 body parts)
+    if (snake.length <= 4) return false;
+    
+    // Check if head position matches any body segment (skip first 4 to avoid false positives)
+    for (let i = 4; i < snake.length; i++) {
+      if (head.x === snake[i].x && head.y === snake[i].y) {
+        return true;
+      }
+    }
+    return false;
+  }, [snake]);
+
   const moveSnake = useCallback(() => {
     if (gameState !== 'playing') return;
 
@@ -190,8 +251,8 @@ export const SnakeCanvas: React.FC = () => {
         break;
     }
     
-    // Check for collision
-    if (isCollision(head)) {
+    // Check for collision with walls or self
+    if (isCollision(head) || isSelfCollision(head)) {
       setGameState('gameOver');
       onStatsUpdate((prev: any) => ({ 
         ...prev, 
@@ -268,7 +329,7 @@ export const SnakeCanvas: React.FC = () => {
         return prev - 0.1;
       });
     }
-  }, [gameState, nextDirection, snake, food, score, level, speed, powerUp, powerUpTime, isCollision, generateFood, setDirection, setFood, setHighScore, setLastMovementTime, setPowerUp, setPowerUpTime, setScore, setSnake, setSpeed, setLevel, setGameState, onStatsUpdate]);
+  }, [gameState, nextDirection, snake, food, score, level, speed, powerUp, powerUpTime, isCollision, isSelfCollision, generateFood, setDirection, setFood, setHighScore, setLastMovementTime, setPowerUp, setPowerUpTime, setScore, setSnake, setSpeed, setLevel, setGameState, onStatsUpdate]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -289,6 +350,22 @@ export const SnakeCanvas: React.FC = () => {
     // Draw background
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Draw grid lines
+    ctx.strokeStyle = theme.gridLines;
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= gridSize; i++) {
+      const pos = i * cellSize;
+      ctx.beginPath();
+      ctx.moveTo(pos, 0);
+      ctx.lineTo(pos, CANVAS_HEIGHT);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(0, pos);
+      ctx.lineTo(CANVAS_WIDTH, pos);
+      ctx.stroke();
+    }
 
     if (gameState === 'menu') {
       // Draw start menu
@@ -398,6 +475,14 @@ export const SnakeCanvas: React.FC = () => {
     ctx.strokeStyle = theme.border;
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    // Draw score and level
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Score: ${score}`, 10, 25);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Level: ${level}`, CANVAS_WIDTH - 10, 25);
   }, [gameState, gridSize, boardTheme, snake, food, score, level, snakeType, snakeColor, powerUp, powerUpTime]);
 
   const gameLoop = useCallback(() => {
@@ -412,28 +497,26 @@ export const SnakeCanvas: React.FC = () => {
     
     draw();
     
-    if (gameLoopRef.current) {
-      cancelAnimationFrame(gameLoopRef.current);
-    }
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameState, lastMovementTime, speed, moveSnake, draw, gameLoopRef]);
+    // Use local ref for animation frame
+    animationFrameRef.current = requestAnimationFrame(gameLoop);
+  }, [gameState, lastMovementTime, speed, moveSnake, draw]);
 
   useEffect(() => {
     if (gameState === 'playing') {
-      if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
+      animationFrameRef.current = requestAnimationFrame(gameLoop);
     } else {
-      if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
       draw();
     }
 
     return () => {
-      if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, [gameState, gameLoop, draw]);

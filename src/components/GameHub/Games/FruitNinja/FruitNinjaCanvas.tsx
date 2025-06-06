@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFruitNinja } from './FruitNinjaProvider';
 import { fruitTypes, backgroundThemes } from './fruitNinjaUtils';
@@ -30,8 +30,12 @@ export const FruitNinjaCanvas: React.FC = () => {
     onStatsUpdate,
     handleInteractionStart,
     handleInteractionMove,
-    handleInteractionEnd
+    handleInteractionEnd,
+    initializeGame
   } = useFruitNinja();
+
+  // Create local refs for animation frame
+  const animationFrameRef = useRef<number | null>(null);
 
   const getDifficultyParams = useCallback(() => {
     const baseParams = {
@@ -381,28 +385,27 @@ export const FruitNinjaCanvas: React.FC = () => {
   const gameLoop = useCallback(() => {
     updateGame();
     draw();
-    if (gameLoopRef.current) {
-      cancelAnimationFrame(gameLoopRef.current);
-    }
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [updateGame, draw, gameLoopRef]);
+    
+    // Use local ref for animation frame
+    animationFrameRef.current = requestAnimationFrame(gameLoop);
+  }, [updateGame, draw]);
 
   useEffect(() => {
     if (gameState === 'playing') {
-      if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
+      animationFrameRef.current = requestAnimationFrame(gameLoop);
     } else {
-      if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
       draw();
     }
 
     return () => {
-      if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, [gameState, gameLoop, draw]);
@@ -423,8 +426,12 @@ export const FruitNinjaCanvas: React.FC = () => {
 
   // Mouse event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (gameState === 'gameOver') {
+      initializeGame();
+      return;
+    }
     handleInteractionStart(e.clientX, e.clientY);
-  }, [handleInteractionStart]);
+  }, [handleInteractionStart, gameState, initializeGame]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     handleInteractionMove(e.clientX, e.clientY);
@@ -437,9 +444,13 @@ export const FruitNinjaCanvas: React.FC = () => {
   // Touch event handlers
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    if (gameState === 'gameOver') {
+      initializeGame();
+      return;
+    }
     const touch = e.touches[0];
     handleInteractionStart(touch.clientX, touch.clientY);
-  }, [handleInteractionStart]);
+  }, [handleInteractionStart, gameState, initializeGame]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
