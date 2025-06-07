@@ -19,7 +19,6 @@ export const ChessBoard: React.FC = () => {
     customization, 
     capturedAnimation, 
     canvasRef,
-    setBoard,
     setCapturedPieces,
     setSelectedPiece,
     setValidMoves,
@@ -33,7 +32,12 @@ export const ChessBoard: React.FC = () => {
 
   const [draggedPiece, setDraggedPiece] = useState<{piece: any, startPos: {x: number, y: number}} | null>(null);
 
+  const showCaptureAnimation = (piece: string, x: number, y: number) => {
+    // Will be handled by parent component
+  };
+
   const checkGameEnd = useCallback(() => {
+    // Simple game end check - can be enhanced
     const whiteKing = board.flat().find(piece => piece && piece.type === 'king' && piece.color === 'white');
     const blackKing = board.flat().find(piece => piece && piece.type === 'king' && piece.color === 'black');
     
@@ -56,29 +60,35 @@ export const ChessBoard: React.FC = () => {
     if (!isValidMove) return false;
 
     // Create new board with the move
-    const newBoard = board.map(row => [...row]);
-    
-    // Capture piece if exists
-    if (newBoard[toY][toX]) {
-      setCapturedPieces(prev => ({
-        ...prev,
-        [newBoard[toY][toX]!.color]: [...prev[newBoard[toY][toX]!.color], getPieceSymbol(newBoard[toY][toX]!.type, newBoard[toY][toX]!.color)]
-      }));
-    }
-    
-    // Move piece
-    newBoard[toY][toX] = piece;
-    newBoard[fromY][fromX] = null;
+    const newBoard = board.map((row, rowIndex) =>
+      row.map((cell, colIndex) => {
+        if (rowIndex === toY && colIndex === toX) {
+          // Capture piece if exists
+          if (cell) {
+            setCapturedPieces(prev => ({
+              ...prev,
+              [cell.color]: [...prev[cell.color], getPieceSymbol(cell.type, cell.color)]
+            }));
+          }
+          return piece;
+        } else if (rowIndex === fromY && colIndex === fromX) {
+          return null;
+        } else {
+          return cell;
+        }
+      })
+    );
 
     // Update board and game state
+    const { setBoard } = useChessGame();
     setBoard(newBoard);
     setSelectedPiece(null);
     setValidMoves([]);
     setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
     
-    setTimeout(checkGameEnd, 100);
+    checkGameEnd();
     return true;
-  }, [board, currentPlayer, validMoves, setCapturedPieces, getPieceSymbol, setBoard, setSelectedPiece, setValidMoves, setCurrentPlayer, checkGameEnd]);
+  }, [board, currentPlayer, validMoves, setCapturedPieces, getPieceSymbol, setSelectedPiece, setValidMoves, setCurrentPlayer, checkGameEnd]);
 
   const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -149,7 +159,7 @@ export const ChessBoard: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const boardTheme = boardThemes[customization.boardTheme as keyof typeof boardThemes] || boardThemes.classic;
+    const boardTheme = boardThemes[customization.boardTheme as keyof typeof boardThemes];
     const squareSize = canvas.width / 8;
 
     // Clear canvas
@@ -164,7 +174,7 @@ export const ChessBoard: React.FC = () => {
 
         // Highlight selected square
         if (selectedPiece && selectedPiece.x === col && selectedPiece.y === row) {
-          ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
+          ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
           ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
         }
 
@@ -172,16 +182,8 @@ export const ChessBoard: React.FC = () => {
         if (customization.highlightMoves) {
           validMoves.forEach(move => {
             if (move.x === col && move.y === row) {
-              ctx.fillStyle = board[row][col] ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 255, 0, 0.5)';
-              ctx.beginPath();
-              ctx.arc(
-                col * squareSize + squareSize / 2, 
-                row * squareSize + squareSize / 2, 
-                squareSize / 6, 
-                0, 
-                Math.PI * 2
-              );
-              ctx.fill();
+              ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+              ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
             }
           });
         }
@@ -207,14 +209,7 @@ export const ChessBoard: React.FC = () => {
           ctx.font = `${squareSize * 0.7}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = piece.color === 'white' ? '#FFF' : '#000';
-          ctx.strokeStyle = piece.color === 'white' ? '#000' : '#FFF';
-          ctx.lineWidth = 1;
-          ctx.strokeText(
-            pieceSymbol, 
-            col * squareSize + squareSize / 2, 
-            row * squareSize + squareSize / 2
-          );
+          ctx.fillStyle = piece.color === 'white' ? '#000' : '#333';
           ctx.fillText(
             pieceSymbol, 
             col * squareSize + squareSize / 2, 
