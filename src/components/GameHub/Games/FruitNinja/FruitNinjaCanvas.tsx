@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFruitNinja } from './FruitNinjaProvider';
@@ -300,15 +299,35 @@ export const FruitNinjaCanvas: React.FC = () => {
         ctx.restore();
       });
 
-      // Draw slice trail
+      // Draw slice trail with proper blade customization
       if (customization.enableTrails && sliceTrail.points.length > 1) {
         ctx.save();
-        ctx.strokeStyle = customization.bladeColor;
-        ctx.lineWidth = sliceTrail.width;
+        
+        // Apply blade type styling
+        if (customization.bladeType === 'fire') {
+          ctx.strokeStyle = '#FF4500';
+          ctx.shadowColor = '#FF4500';
+          ctx.shadowBlur = 15;
+          ctx.lineWidth = sliceTrail.width + 2;
+        } else if (customization.bladeType === 'ice') {
+          ctx.strokeStyle = '#00FFFF';
+          ctx.shadowColor = '#00FFFF';
+          ctx.shadowBlur = 10;
+          ctx.lineWidth = sliceTrail.width;
+        } else if (customization.bladeType === 'lightning') {
+          ctx.strokeStyle = '#FFFF00';
+          ctx.shadowColor = '#FFFF00';
+          ctx.shadowBlur = 20;
+          ctx.lineWidth = sliceTrail.width;
+        } else {
+          ctx.strokeStyle = customization.bladeColor;
+          ctx.shadowColor = customization.bladeColor;
+          ctx.shadowBlur = 10;
+          ctx.lineWidth = sliceTrail.width;
+        }
+        
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.shadowColor = customization.bladeColor;
-        ctx.shadowBlur = 10;
         
         ctx.beginPath();
         sliceTrail.points.forEach((point, index) => {
@@ -421,7 +440,7 @@ export const FruitNinjaCanvas: React.FC = () => {
     }
   }, [gameState, score, setHighScore, onStatsUpdate]);
 
-  // Mouse and touch event handlers with proper trail tracking
+  // Fixed coordinate calculation for proper blade alignment
   const getCanvasCoordinates = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -469,7 +488,7 @@ export const FruitNinjaCanvas: React.FC = () => {
     handleInteractionEnd();
   }, [handleInteractionEnd]);
 
-  // Touch event handlers
+  // Touch event handlers with proper coordinate calculation
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (gameState === 'gameOver' || gameState === 'menu') {
@@ -502,7 +521,7 @@ export const FruitNinjaCanvas: React.FC = () => {
     });
   }, [getCanvasCoordinates, handleInteractionMove, fruits, sliceFruit, gameState]);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasEvent>) => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     isSlicingRef.current = false;
     handleInteractionEnd();
