@@ -53,7 +53,6 @@ interface ChessGameActions {
   setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   canvasRef: React.RefObject<HTMLCanvasElement>;
   resetGame: () => void;
-  handleCanvasClick: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   getValidMoves: (x: number, y: number) => Position[];
   getPieceSymbol: (type: string, color: 'white' | 'black') => string;
   onStatsUpdate: (stats: any) => void;
@@ -86,8 +85,8 @@ const initialBoard: Piece[][] = [
 
 const pieceSets = {
   classic: {
-    white: { pawn: '♟', rook: '♜', knight: '♞', bishop: '♝', queen: '♛', king: '♚' },
-    black: { pawn: '♙', rook: '♖', knight: '♘', bishop: '♗', queen: '♕', king: '♔' }
+    white: { pawn: '♙', rook: '♖', knight: '♘', bishop: '♗', queen: '♕', king: '♔' },
+    black: { pawn: '♟', rook: '♜', knight: '♞', bishop: '♝', queen: '♛', king: '♚' }
   },
   modern: {
     white: { pawn: '⬢', rook: '⬙', knight: '⬟', bishop: '⬣', queen: '⬨', king: '👑' },
@@ -105,7 +104,7 @@ const pieceSets = {
 
 export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpdate: (stats: any) => void }> = ({ children, onStatsUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [board, setBoard] = useState<Piece[][]>(initialBoard);
+  const [board, setBoard] = useState<Piece[][]>(JSON.parse(JSON.stringify(initialBoard)));
   const [selectedPiece, setSelectedPiece] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Position[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<'white' | 'black'>('white');
@@ -119,7 +118,7 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
     animations: true
   });
 
-  const [gameMode, setGameMode] = useState<'human-vs-ai' | 'human-vs-human'>('human-vs-ai');
+  const [gameMode, setGameMode] = useState<'human-vs-ai' | 'human-vs-human'>('human-vs-human');
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'expert'>('beginner');
   const [showVictory, setShowVictory] = useState(false);
   const [winner, setWinner] = useState<string>('');
@@ -130,96 +129,149 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  const showCaptureAnimation = (piece: string, x: number, y: number) => {
-    setCapturedAnimation({ show: true, piece, position: { x, y } });
-    setTimeout(() => setCapturedAnimation({ show: false, piece: '', position: {x: 0, y: 0} }), 1000);
-  };
+  const getValidMoves = useCallback((x: number, y: number): Position[] => {
+    const piece = board[y][x];
+    if (!piece) return [];
 
-  const checkGameEnd = useCallback(() => {
-    const isCheckmate = false;
-    const isStalemate = false;
+    const moves: Position[] = [];
     
-    if (isCheckmate) {
-      const winnerName = currentPlayer === 'white' ? 'Black' : 'White';
-      setWinner(winnerName);
-      setShowVictory(true);
-      onStatsUpdate((prev: any) => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
-    } else if (isStalemate) {
-      setWinner('Draw');
-      setShowVictory(true);
-    }
-  }, [currentPlayer, onStatsUpdate]);
-
-  const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / (canvas.width / 8));
-    const y = Math.floor((event.clientY - rect.top) / (canvas.height / 8));
-
-    if (selectedPiece) {
-      const isValidMove = validMoves.some(move => move.x === x && move.y === y);
-      if (isValidMove) {
-        const newBoard = board.map((row, rowIndex) =>
-          row.map((piece, colIndex) => {
-            if (rowIndex === y && colIndex === x) {
-              const movingPiece = board[selectedPiece.y][selectedPiece.x];
-              if (piece) {
-                setCapturedPieces(prev => ({
-                  ...prev,
-                  [piece.color]: [...prev[piece.color], getPieceSymbol(piece.type, piece.color)]
-                }));
-                showCaptureAnimation(getPieceSymbol(piece.type, piece.color), event.clientX - rect.left, event.clientY - rect.top);
-              }
-              return movingPiece;
-            } else if (rowIndex === selectedPiece.y && colIndex === selectedPiece.x) {
-              return null;
-            } else {
-              return piece;
-            }
-          })
-        );
-        setBoard(newBoard);
-        setSelectedPiece(null);
-        setValidMoves([]);
-        setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
-        checkGameEnd();
-      } else if (x === selectedPiece.x && y === selectedPiece.y) {
-        setSelectedPiece(null);
-        setValidMoves([]);
-      } else {
-        if (board[y][x] && board[y][x]?.color === currentPlayer) {
-          setSelectedPiece({ x, y });
-          setValidMoves(getValidMoves(x, y));
-        } else {
-          setSelectedPiece(null);
-          setValidMoves([]);
+    // Basic movement logic for each piece type
+    switch (piece.type) {
+      case 'pawn':
+        const direction = piece.color === 'white' ? -1 : 1;
+        const startRow = piece.color === 'white' ? 6 : 1;
+        
+        // Forward movement
+        if (y + direction >= 0 && y + direction < 8 && !board[y + direction][x]) {
+          moves.push({ x, y: y + direction });
+          
+          // Two squares from start
+          if (y === startRow && !board[y + 2 * direction][x]) {
+            moves.push({ x, y: y + 2 * direction });
+          }
         }
-      }
-    } else {
-      if (board[y][x] && board[y][x]?.color === currentPlayer) {
-        setSelectedPiece({ x, y });
-        setValidMoves(getValidMoves(x, y));
-      }
+        
+        // Captures
+        for (const dx of [-1, 1]) {
+          const newX = x + dx;
+          const newY = y + direction;
+          if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
+            const targetPiece = board[newY][newX];
+            if (targetPiece && targetPiece.color !== piece.color) {
+              moves.push({ x: newX, y: newY });
+            }
+          }
+        }
+        break;
+
+      case 'rook':
+        // Horizontal and vertical movement
+        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+          for (let i = 1; i < 8; i++) {
+            const newX = x + dx * i;
+            const newY = y + dy * i;
+            if (newX < 0 || newX >= 8 || newY < 0 || newY >= 8) break;
+            
+            const targetPiece = board[newY][newX];
+            if (!targetPiece) {
+              moves.push({ x: newX, y: newY });
+            } else {
+              if (targetPiece.color !== piece.color) {
+                moves.push({ x: newX, y: newY });
+              }
+              break;
+            }
+          }
+        }
+        break;
+
+      case 'bishop':
+        // Diagonal movement
+        for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          for (let i = 1; i < 8; i++) {
+            const newX = x + dx * i;
+            const newY = y + dy * i;
+            if (newX < 0 || newX >= 8 || newY < 0 || newY >= 8) break;
+            
+            const targetPiece = board[newY][newX];
+            if (!targetPiece) {
+              moves.push({ x: newX, y: newY });
+            } else {
+              if (targetPiece.color !== piece.color) {
+                moves.push({ x: newX, y: newY });
+              }
+              break;
+            }
+          }
+        }
+        break;
+
+      case 'queen':
+        // Combination of rook and bishop
+        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          for (let i = 1; i < 8; i++) {
+            const newX = x + dx * i;
+            const newY = y + dy * i;
+            if (newX < 0 || newX >= 8 || newY < 0 || newY >= 8) break;
+            
+            const targetPiece = board[newY][newX];
+            if (!targetPiece) {
+              moves.push({ x: newX, y: newY });
+            } else {
+              if (targetPiece.color !== piece.color) {
+                moves.push({ x: newX, y: newY });
+              }
+              break;
+            }
+          }
+        }
+        break;
+
+      case 'king':
+        // One square in any direction
+        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          const newX = x + dx;
+          const newY = y + dy;
+          if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
+            const targetPiece = board[newY][newX];
+            if (!targetPiece || targetPiece.color !== piece.color) {
+              moves.push({ x: newX, y: newY });
+            }
+          }
+        }
+        break;
+
+      case 'knight':
+        // L-shaped movement
+        for (const [dx, dy] of [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]]) {
+          const newX = x + dx;
+          const newY = y + dy;
+          if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
+            const targetPiece = board[newY][newX];
+            if (!targetPiece || targetPiece.color !== piece.color) {
+              moves.push({ x: newX, y: newY });
+            }
+          }
+        }
+        break;
     }
-  }, [board, selectedPiece, validMoves, currentPlayer, checkGameEnd]);
 
-  const getValidMoves = (x: number, y: number): Position[] => {
-    return [];
-  };
+    return moves;
+  }, [board]);
 
-  const getPieceSymbol = (type: string, color: 'white' | 'black'): string => {
+  const getPieceSymbol = useCallback((type: string, color: 'white' | 'black'): string => {
     const pieceSet = pieceSets[customization.pieceSet as keyof typeof pieceSets];
-    return pieceSet[color][type as keyof typeof pieceSet.white];
-  };
+    return pieceSet[color][type as keyof typeof pieceSet.white] || '?';
+  }, [customization.pieceSet]);
 
   const resetGame = useCallback(() => {
-    setBoard(initialBoard);
+    setBoard(JSON.parse(JSON.stringify(initialBoard)));
     setSelectedPiece(null);
     setValidMoves([]);
     setCurrentPlayer('white');
     setCapturedPieces({ white: [], black: [] });
+    setShowVictory(false);
+    setWinner('');
   }, []);
 
   const value = {
@@ -253,7 +305,6 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
     setSoundEnabled,
     canvasRef,
     resetGame,
-    handleCanvasClick,
     getValidMoves,
     getPieceSymbol,
     onStatsUpdate
@@ -269,7 +320,7 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
 export const useChessGame = () => {
   const context = useContext(ChessGameContext);
   if (!context) {
-    throw new Error('useChessGame must be used within ChessGameProvider');
+    throw new error('useChessGame must be used within ChessGameProvider');
   }
   return context;
 };

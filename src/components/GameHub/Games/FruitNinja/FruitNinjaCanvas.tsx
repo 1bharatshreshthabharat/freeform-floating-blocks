@@ -17,7 +17,6 @@ export const FruitNinjaCanvas: React.FC = () => {
     sliceTrail,
     customization,
     canvasRef,
-    gameLoopRef,
     setFruits,
     setParticles,
     setScore,
@@ -34,7 +33,6 @@ export const FruitNinjaCanvas: React.FC = () => {
     initializeGame
   } = useFruitNinja();
 
-  // Create local refs for animation frame
   const animationFrameRef = useRef<number | null>(null);
 
   const getDifficultyParams = useCallback(() => {
@@ -386,7 +384,6 @@ export const FruitNinjaCanvas: React.FC = () => {
     updateGame();
     draw();
     
-    // Use local ref for animation frame
     animationFrameRef.current = requestAnimationFrame(gameLoop);
   }, [updateGame, draw]);
 
@@ -430,12 +427,33 @@ export const FruitNinjaCanvas: React.FC = () => {
       initializeGame();
       return;
     }
-    handleInteractionStart(e.clientX, e.clientY);
+    if (gameState === 'menu') {
+      initializeGame();
+      return;
+    }
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    handleInteractionStart(x, y);
   }, [handleInteractionStart, gameState, initializeGame]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    handleInteractionMove(e.clientX, e.clientY);
-  }, [handleInteractionMove]);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    handleInteractionMove(x, y);
+    
+    // Check for fruit slicing
+    fruits.forEach(fruit => {
+      if (!fruit.sliced) {
+        const distance = Math.sqrt((fruit.x - x) ** 2 + (fruit.y - y) ** 2);
+        if (distance < fruit.size / 2 + 10) {
+          sliceFruit(fruit.id);
+        }
+      }
+    });
+  }, [handleInteractionMove, fruits, sliceFruit]);
 
   const handleMouseUp = useCallback(() => {
     handleInteractionEnd();
@@ -448,15 +466,36 @@ export const FruitNinjaCanvas: React.FC = () => {
       initializeGame();
       return;
     }
+    if (gameState === 'menu') {
+      initializeGame();
+      return;
+    }
+    
     const touch = e.touches[0];
-    handleInteractionStart(touch.clientX, touch.clientY);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    handleInteractionStart(x, y);
   }, [handleInteractionStart, gameState, initializeGame]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const touch = e.touches[0];
-    handleInteractionMove(touch.clientX, touch.clientY);
-  }, [handleInteractionMove]);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    handleInteractionMove(x, y);
+    
+    // Check for fruit slicing
+    fruits.forEach(fruit => {
+      if (!fruit.sliced) {
+        const distance = Math.sqrt((fruit.x - x) ** 2 + (fruit.y - y) ** 2);
+        if (distance < fruit.size / 2 + 10) {
+          sliceFruit(fruit.id);
+        }
+      }
+    });
+  }, [handleInteractionMove, fruits, sliceFruit]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();

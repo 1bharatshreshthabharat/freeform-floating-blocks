@@ -2,50 +2,41 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 interface Bird {
+  x: number;
   y: number;
   velocity: number;
-  flapState: number;
-  isFlapping: boolean;
+  size: number;
+  rotation: number;
 }
 
 interface Obstacle {
-  x: number;
-  topHeight: number;
-  bottomHeight: number;
-  passed: boolean;
-  type: 'pipe' | 'laser' | 'spike' | 'moving';
-  width: number;
-  color: string;
-  velocity?: number;
-}
-
-interface Particle {
+  id: number;
   x: number;
   y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: string;
-  size: number;
+  width: number;
+  height: number;
+  type: 'pipe' | 'moving' | 'laser' | 'spike' | 'swinging' | 'paired';
+  passed: boolean;
+  swingPhase?: number;
+  movingDirection?: number;
+  pairId?: number;
 }
 
 interface GameCustomization {
   birdType: string;
+  birdColor: string;
   backgroundTheme: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  gameSpeed: number;
   obstacleSpacing: number;
-  birdSize: number;
-  gravity: number;
-  enableParticles: boolean;
-  enableWeather: boolean;
-  weatherType: string;
+  enablePowerUps: boolean;
+  soundVolume: number;
 }
 
 interface FlappyGameState {
   gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
   bird: Bird;
   obstacles: Obstacle[];
-  particles: Particle[];
   score: number;
   highScore: number;
   level: number;
@@ -59,12 +50,11 @@ interface FlappyGameState {
 interface FlappyGameActions {
   setBird: React.Dispatch<React.SetStateAction<Bird>>;
   setObstacles: React.Dispatch<React.SetStateAction<Obstacle[]>>;
-  setParticles: React.Dispatch<React.SetStateAction<Particle[]>>;
+  setGameState: React.Dispatch<React.SetStateAction<'menu' | 'playing' | 'paused' | 'gameOver'>>;
   setScore: React.Dispatch<React.SetStateAction<number>>;
   setHighScore: React.Dispatch<React.SetStateAction<number>>;
   setLevel: React.Dispatch<React.SetStateAction<number>>;
   setLives: React.Dispatch<React.SetStateAction<number>>;
-  setGameState: React.Dispatch<React.SetStateAction<'menu' | 'playing' | 'paused' | 'gameOver'>>;
   setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   setShowCustomization: React.Dispatch<React.SetStateAction<boolean>>;
   setShowHowToPlay: React.Dispatch<React.SetStateAction<boolean>>;
@@ -72,20 +62,30 @@ interface FlappyGameActions {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   gameLoopRef: React.RefObject<number>;
   initializeGame: () => void;
-  flap: () => void;
+  handleJump: () => void;
   onStatsUpdate: (stats: any) => void;
 }
 
 const FlappyGameContext = createContext<(FlappyGameState & FlappyGameActions) | null>(null);
 
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 600;
+const GRAVITY = 0.6;
+const JUMP_FORCE = -12;
+
 export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUpdate: (stats: any) => void }> = ({ children, onStatsUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number>(0);
-
+  const gameLoopRef = useRef<number>();
+  
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameOver'>('menu');
-  const [bird, setBird] = useState<Bird>({ y: 300, velocity: 0, flapState: 0, isFlapping: false });
+  const [bird, setBird] = useState<Bird>({
+    x: 100,
+    y: CANVAS_HEIGHT / 2,
+    velocity: 0,
+    size: 30,
+    rotation: 0
+  });
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
-  const [particles, setParticles] = useState<Particle[]>([]);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [level, setLevel] = useState(1);
@@ -96,27 +96,31 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
 
   const [customization, setCustomization] = useState<GameCustomization>({
     birdType: 'classic',
+    birdColor: '#FFD700',
     backgroundTheme: 'day',
     difficulty: 'medium',
+    gameSpeed: 1.0,
     obstacleSpacing: 200,
-    birdSize: 20,
-    gravity: 0.5,
-    enableParticles: true,
-    enableWeather: false,
-    weatherType: 'none'
+    enablePowerUps: true,
+    soundVolume: 0.7
   });
 
   const initializeGame = useCallback(() => {
-    setBird({ y: 300, velocity: 0, flapState: 0, isFlapping: false });
+    setBird({
+      x: 100,
+      y: CANVAS_HEIGHT / 2,
+      velocity: 0,
+      size: 30,
+      rotation: 0
+    });
     setObstacles([]);
-    setParticles([]);
     setScore(0);
     setLevel(1);
     setLives(3);
     setGameState('playing');
   }, []);
 
-  const flap = useCallback(() => {
+  const handleJump = useCallback(() => {
     if (gameState === 'menu') {
       initializeGame();
       return;
@@ -128,11 +132,10 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     }
     
     if (gameState === 'playing') {
-      setBird(prev => ({ 
-        ...prev, 
-        velocity: -8, 
-        isFlapping: true, 
-        flapState: 0 
+      setBird(prev => ({
+        ...prev,
+        velocity: JUMP_FORCE,
+        rotation: -0.3
       }));
     }
   }, [gameState, initializeGame]);
@@ -141,7 +144,6 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     gameState,
     bird,
     obstacles,
-    particles,
     score,
     highScore,
     level,
@@ -152,12 +154,11 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     customization,
     setBird,
     setObstacles,
-    setParticles,
+    setGameState,
     setScore,
     setHighScore,
     setLevel,
     setLives,
-    setGameState,
     setSoundEnabled,
     setShowCustomization,
     setShowHowToPlay,
@@ -165,7 +166,7 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     canvasRef,
     gameLoopRef,
     initializeGame,
-    flap,
+    handleJump,
     onStatsUpdate
   };
 
@@ -183,3 +184,6 @@ export const useFlappyGame = () => {
   }
   return context;
 };
+
+export { CANVAS_WIDTH, CANVAS_HEIGHT, GRAVITY, JUMP_FORCE };
+export type { Obstacle };
