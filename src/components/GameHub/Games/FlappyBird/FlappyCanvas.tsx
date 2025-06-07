@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFlappyGame } from './FlappyGameProvider';
@@ -77,10 +76,12 @@ export const FlappyCanvas: React.FC = () => {
     
     const type = types[Math.floor(Math.random() * types.length)];
     
-    const gapSize = customization.difficulty === 'easy' ? 220 : customization.difficulty === 'medium' ? 180 : 140;
+    // Ensure proper gap sizing based on difficulty
+    const gapSize = customization.difficulty === 'easy' ? 250 : customization.difficulty === 'medium' ? 200 : 160;
     
-    const minTopHeight = 50;
-    const maxTopHeight = CANVAS_HEIGHT - gapSize - 50;
+    // Ensure minimum space from top and bottom
+    const minTopHeight = 80;
+    const maxTopHeight = CANVAS_HEIGHT - gapSize - 80;
     const topHeight = Math.random() * (maxTopHeight - minTopHeight) + minTopHeight;
     
     const newObstacle = {
@@ -104,8 +105,8 @@ export const FlappyCanvas: React.FC = () => {
   const checkCollision = useCallback((birdObj: any, obstacleObj: any) => {
     const birdSize = customization.birdSize;
     const birdHitbox = {
-      x: 100,
-      y: birdObj.y,
+      x: 100 - birdSize/2,
+      y: birdObj.y - birdSize/2,
       width: birdSize * 0.8,
       height: birdSize * 0.8
     };
@@ -191,16 +192,17 @@ export const FlappyCanvas: React.FC = () => {
         let updatedTopHeight = obstacle.topHeight;
         
         if (obstacle.type === 'moving') {
-          updatedTopHeight += Math.sin(Date.now() * 0.002) * 2;
+          const moveAmount = Math.sin(Date.now() * 0.002) * 30;
+          updatedTopHeight = Math.max(80, Math.min(CANVAS_HEIGHT - 200, obstacle.topHeight + moveAmount));
         }
         else if (obstacle.type === 'swinging') {
-          const updatedY = Math.sin(Date.now() * 0.001 + (obstacle.swingPhase || 0)) * 80;
-          updatedTopHeight = obstacle.topHeight + updatedY;
+          const swingAmount = Math.sin(Date.now() * 0.003 + (obstacle.swingPhase || 0)) * 50;
+          updatedTopHeight = Math.max(80, Math.min(CANVAS_HEIGHT - 200, obstacle.topHeight + swingAmount));
         }
         
         return {
           ...obstacle,
-          x: obstacle.x - 3,
+          x: obstacle.x - (3 * customization.gameSpeed),
           topHeight: updatedTopHeight
         };
       });
