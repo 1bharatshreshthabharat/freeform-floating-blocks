@@ -320,7 +320,7 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
 export const useChessGame = () => {
   const context = useContext(ChessGameContext);
   if (!context) {
-    throw new error('useChessGame must be used within ChessGameProvider');
+    throw new Error('useChessGame must be used within ChessGameProvider');
   }
   return context;
 };

@@ -32,7 +32,6 @@ export const FlappyCanvas: React.FC = () => {
     level,
     customization,
     canvasRef,
-    gameLoopRef,
     setBird,
     setObstacles,
     setParticles,
@@ -44,7 +43,6 @@ export const FlappyCanvas: React.FC = () => {
     onStatsUpdate
   } = useFlappyGame();
 
-  // Create local refs for animation frame
   const animationFrameRef = useRef<number | null>(null);
 
   const createParticles = useCallback((x: number, y: number, color: string, count: number = 5) => {
@@ -68,7 +66,6 @@ export const FlappyCanvas: React.FC = () => {
   const spawnObstacle = useCallback(() => {
     const difficultyIndex = customization.difficulty === 'easy' ? 0 : customization.difficulty === 'medium' ? 1 : 2;
     
-    // Different types of obstacles based on difficulty
     let types: ('pipe' | 'laser' | 'spike' | 'moving' | 'swinging' | 'paired')[] = ['pipe'];
     
     if (difficultyIndex >= 1) {
@@ -78,23 +75,24 @@ export const FlappyCanvas: React.FC = () => {
       types.push('moving', 'swinging', 'paired');
     }
     
-    const type = types[Math.floor(Math.random() * types.length)] as any;
+    const type = types[Math.floor(Math.random() * types.length)];
     
-    // Gap size decreases with difficulty
     const gapSize = customization.difficulty === 'easy' ? 220 : customization.difficulty === 'medium' ? 180 : 140;
     
-    // Ensure gap is playable - never place obstacles that overlap or make passage impossible
     const minTopHeight = 50;
     const maxTopHeight = CANVAS_HEIGHT - gapSize - 50;
     const topHeight = Math.random() * (maxTopHeight - minTopHeight) + minTopHeight;
     
     const newObstacle = {
+      id: Date.now(),
       x: CANVAS_WIDTH,
+      y: 0,
+      width: type === 'laser' ? 10 : type === 'spike' ? 40 : type === 'paired' ? 100 : 80,
+      height: CANVAS_HEIGHT,
       topHeight,
       bottomHeight: CANVAS_HEIGHT - topHeight - gapSize,
       passed: false,
       type,
-      width: type === 'laser' ? 10 : type === 'spike' ? 40 : type === 'paired' ? 100 : 80,
       color: type === 'laser' ? '#FF0000' : type === 'spike' ? '#8B0000' : type === 'swinging' ? '#9400D3' : '#228B22',
       velocity: (type === 'moving' || type === 'swinging') ? Math.sin(Date.now() * 0.01) * 2 : 0,
       swingPhase: Math.random() * Math.PI * 2
@@ -112,9 +110,7 @@ export const FlappyCanvas: React.FC = () => {
       height: birdSize * 0.8
     };
     
-    // Different hitbox calculations based on obstacle type
     if (obstacleObj.type === 'laser') {
-      // Top laser beam
       const topLaser = {
         x: obstacleObj.x,
         y: 0,
@@ -122,7 +118,6 @@ export const FlappyCanvas: React.FC = () => {
         height: obstacleObj.topHeight
       };
       
-      // Bottom laser beam
       const bottomLaser = {
         x: obstacleObj.x,
         y: CANVAS_HEIGHT - obstacleObj.bottomHeight,
@@ -142,7 +137,6 @@ export const FlappyCanvas: React.FC = () => {
       );
     } 
     else {
-      // Top and bottom obstacles
       const topObstacle = {
         x: obstacleObj.x,
         y: 0,
@@ -173,7 +167,6 @@ export const FlappyCanvas: React.FC = () => {
   const updateGame = useCallback(() => {
     if (gameState !== 'playing') return;
 
-    // Update bird
     setBird(prev => {
       const newBird = {
         ...prev,
@@ -183,7 +176,6 @@ export const FlappyCanvas: React.FC = () => {
         isFlapping: prev.flapState < 5 ? prev.isFlapping : false
       };
 
-      // Check boundaries
       if (newBird.y < 0 || newBird.y > CANVAS_HEIGHT - customization.birdSize) {
         setGameState('gameOver');
         onStatsUpdate((prev: any) => ({ ...prev, gamesPlayed: prev.gamesPlayed + 1 }));
@@ -194,18 +186,15 @@ export const FlappyCanvas: React.FC = () => {
       return newBird;
     });
 
-    // Update obstacles
     setObstacles(prev => {
       const updatedObstacles = prev.map(obstacle => {
-        // Different movement patterns based on obstacle type
         let updatedTopHeight = obstacle.topHeight;
-        let updatedY = 0;
         
         if (obstacle.type === 'moving') {
           updatedTopHeight += Math.sin(Date.now() * 0.002) * 2;
         }
         else if (obstacle.type === 'swinging') {
-          updatedY = Math.sin(Date.now() * 0.001 + obstacle.swingPhase) * 80;
+          const updatedY = Math.sin(Date.now() * 0.001 + (obstacle.swingPhase || 0)) * 80;
           updatedTopHeight = obstacle.topHeight + updatedY;
         }
         
@@ -216,7 +205,6 @@ export const FlappyCanvas: React.FC = () => {
         };
       });
 
-      // Check for collisions
       updatedObstacles.forEach(obstacle => {
         if (!obstacle.passed && checkCollision(bird, obstacle)) {
           setGameState('gameOver');
@@ -225,7 +213,6 @@ export const FlappyCanvas: React.FC = () => {
         }
       });
 
-      // Check for scoring
       updatedObstacles.forEach(obstacle => {
         if (!obstacle.passed && obstacle.x + obstacle.width < 100) {
           obstacle.passed = true;
@@ -240,11 +227,9 @@ export const FlappyCanvas: React.FC = () => {
         }
       });
 
-      // Remove off-screen obstacles
       return updatedObstacles.filter(obstacle => obstacle.x > -obstacle.width);
     });
 
-    // Update particles
     setParticles(prev => {
       return prev.map(particle => ({
         ...particle,
@@ -254,7 +239,6 @@ export const FlappyCanvas: React.FC = () => {
       })).filter(particle => particle.life > 0);
     });
 
-    // Spawn new obstacles
     if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < CANVAS_WIDTH - customization.obstacleSpacing) {
       spawnObstacle();
     }
@@ -270,17 +254,14 @@ export const FlappyCanvas: React.FC = () => {
     const theme = backgroundThemes[customization.backgroundTheme as keyof typeof backgroundThemes];
     const birdConfig = birdTypes[customization.birdType as keyof typeof birdTypes];
 
-    // Clear canvas
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw background
     const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
     gradient.addColorStop(0, theme.sky);
     gradient.addColorStop(1, theme.ground);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw clouds
     if (customization.backgroundTheme !== 'space') {
       ctx.fillStyle = theme.clouds;
       ctx.globalAlpha = 0.7;
@@ -295,7 +276,6 @@ export const FlappyCanvas: React.FC = () => {
       ctx.globalAlpha = 1;
     }
 
-    // Draw weather effects
     if (customization.enableWeather && customization.weatherType !== 'none') {
       ctx.fillStyle = customization.weatherType === 'rain' ? '#0066CC' : '#FFFFFF';
       for (let i = 0; i < 50; i++) {
@@ -306,7 +286,6 @@ export const FlappyCanvas: React.FC = () => {
     }
 
     if (gameState !== 'menu') {
-      // Draw obstacles
       obstacles.forEach(obstacle => {
         ctx.fillStyle = obstacle.color;
         
@@ -314,71 +293,21 @@ export const FlappyCanvas: React.FC = () => {
           ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight);
           ctx.fillRect(obstacle.x, CANVAS_HEIGHT - obstacle.bottomHeight, obstacle.width, obstacle.bottomHeight);
           
-          // Laser glow effect
           ctx.shadowColor = obstacle.color;
           ctx.shadowBlur = 20;
           ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight);
           ctx.fillRect(obstacle.x, CANVAS_HEIGHT - obstacle.bottomHeight, obstacle.width, obstacle.bottomHeight);
           ctx.shadowBlur = 0;
         } 
-        else if (obstacle.type === 'spike') {
-          // Draw spikes
-          const spikeCount = Math.floor(obstacle.topHeight / 20);
-          for (let i = 0; i < spikeCount; i++) {
-            ctx.beginPath();
-            ctx.moveTo(obstacle.x, i * 20);
-            ctx.lineTo(obstacle.x + obstacle.width / 2, i * 20 + 15);
-            ctx.lineTo(obstacle.x + obstacle.width, i * 20);
-            ctx.fill();
-          }
-          
-          const bottomSpikeCount = Math.floor(obstacle.bottomHeight / 20);
-          for (let i = 0; i < bottomSpikeCount; i++) {
-            ctx.beginPath();
-            ctx.moveTo(obstacle.x, CANVAS_HEIGHT - i * 20);
-            ctx.lineTo(obstacle.x + obstacle.width / 2, CANVAS_HEIGHT - i * 20 - 15);
-            ctx.lineTo(obstacle.x + obstacle.width, CANVAS_HEIGHT - i * 20);
-            ctx.fill();
-          }
-        }
-        else if (obstacle.type === 'paired') {
-          // Double pipes close together
-          ctx.fillRect(obstacle.x, 0, obstacle.width/2, obstacle.topHeight);
-          ctx.fillRect(obstacle.x, CANVAS_HEIGHT - obstacle.bottomHeight, obstacle.width/2, obstacle.bottomHeight);
-          
-          ctx.fillRect(obstacle.x + obstacle.width/2 + 30, 0, obstacle.width/2, obstacle.topHeight - 40);
-          ctx.fillRect(obstacle.x + obstacle.width/2 + 30, CANVAS_HEIGHT - obstacle.bottomHeight + 40, obstacle.width/2, obstacle.bottomHeight - 40);
-          
-          // Pipe caps
-          ctx.fillRect(obstacle.x - 10, obstacle.topHeight - 20, obstacle.width/2 + 20, 20);
-          ctx.fillRect(obstacle.x - 10, CANVAS_HEIGHT - obstacle.bottomHeight, obstacle.width/2 + 20, 20);
-          
-          ctx.fillRect(obstacle.x + obstacle.width/2 + 20, obstacle.topHeight - 40 - 20, obstacle.width/2 + 20, 20);
-          ctx.fillRect(obstacle.x + obstacle.width/2 + 20, CANVAS_HEIGHT - obstacle.bottomHeight + 40, obstacle.width/2 + 20, 20);
-        }
-        else if (obstacle.type === 'swinging') {
-          // Swinging obstacles that move up and down
-          const baseY = obstacle.topHeight - Math.sin(Date.now() * 0.001 + obstacle.swingPhase) * 80;
-          
-          ctx.fillRect(obstacle.x, 0, obstacle.width, baseY);
-          ctx.fillRect(obstacle.x, CANVAS_HEIGHT - obstacle.bottomHeight + Math.sin(Date.now() * 0.001 + obstacle.swingPhase) * 80, obstacle.width, obstacle.bottomHeight);
-          
-          // Obstacle caps
-          ctx.fillRect(obstacle.x - 10, baseY - 20, obstacle.width + 20, 20);
-          ctx.fillRect(obstacle.x - 10, CANVAS_HEIGHT - obstacle.bottomHeight + Math.sin(Date.now() * 0.001 + obstacle.swingPhase) * 80, obstacle.width + 20, 20);
-        }
         else {
-          // Regular pipes or moving pipes
           ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight);
           ctx.fillRect(obstacle.x, CANVAS_HEIGHT - obstacle.bottomHeight, obstacle.width, obstacle.bottomHeight);
           
-          // Pipe caps
           ctx.fillRect(obstacle.x - 10, obstacle.topHeight - 20, obstacle.width + 20, 20);
           ctx.fillRect(obstacle.x - 10, CANVAS_HEIGHT - obstacle.bottomHeight, obstacle.width + 20, 20);
         }
       });
 
-      // Draw particles
       particles.forEach(particle => {
         ctx.save();
         ctx.globalAlpha = particle.life / 30;
@@ -389,16 +318,13 @@ export const FlappyCanvas: React.FC = () => {
         ctx.restore();
       });
 
-      // Draw bird
       ctx.save();
       ctx.translate(100, bird.y);
       
-      // Bird body
       ctx.font = `${customization.birdSize}px Arial`;
       ctx.textAlign = 'center';
       ctx.fillText(birdConfig.body, 0, 0);
       
-      // Wing flapping animation
       if (bird.isFlapping) {
         ctx.font = `${customization.birdSize * 0.8}px Arial`;
         ctx.fillText(birdConfig.wing, bird.flapState < 3 ? -8 : 8, -5);
@@ -407,7 +333,6 @@ export const FlappyCanvas: React.FC = () => {
       ctx.restore();
     }
 
-    // Draw UI
     if (gameState === 'menu') {
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 48px Arial';
@@ -433,7 +358,6 @@ export const FlappyCanvas: React.FC = () => {
       ctx.fillText('Click to Restart', CANVAS_WIDTH/2, 360);
     }
 
-    // Score and level display
     if (gameState === 'playing' || gameState === 'paused') {
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 32px Arial';
@@ -453,7 +377,6 @@ export const FlappyCanvas: React.FC = () => {
     updateGame();
     draw();
     
-    // Use local ref for animation frame
     animationFrameRef.current = requestAnimationFrame(gameLoop);
   }, [updateGame, draw]);
 
@@ -477,7 +400,6 @@ export const FlappyCanvas: React.FC = () => {
     };
   }, [gameState, gameLoop, draw]);
 
-  // Event handlers
   const handleClick = useCallback(() => {
     flap();
   }, [flap]);

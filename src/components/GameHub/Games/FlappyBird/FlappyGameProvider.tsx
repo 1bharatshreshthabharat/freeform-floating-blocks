@@ -7,6 +7,8 @@ interface Bird {
   velocity: number;
   size: number;
   rotation: number;
+  isFlapping: boolean;
+  flapState: number;
 }
 
 interface Obstacle {
@@ -20,6 +22,20 @@ interface Obstacle {
   swingPhase?: number;
   movingDirection?: number;
   pairId?: number;
+  topHeight: number;
+  bottomHeight: number;
+  color: string;
+  velocity?: number;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: string;
+  size: number;
 }
 
 interface GameCustomization {
@@ -31,12 +47,18 @@ interface GameCustomization {
   obstacleSpacing: number;
   enablePowerUps: boolean;
   soundVolume: number;
+  birdSize: number;
+  gravity: number;
+  enableParticles: boolean;
+  enableWeather: boolean;
+  weatherType: string;
 }
 
 interface FlappyGameState {
   gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
   bird: Bird;
   obstacles: Obstacle[];
+  particles: Particle[];
   score: number;
   highScore: number;
   level: number;
@@ -50,6 +72,7 @@ interface FlappyGameState {
 interface FlappyGameActions {
   setBird: React.Dispatch<React.SetStateAction<Bird>>;
   setObstacles: React.Dispatch<React.SetStateAction<Obstacle[]>>;
+  setParticles: React.Dispatch<React.SetStateAction<Particle[]>>;
   setGameState: React.Dispatch<React.SetStateAction<'menu' | 'playing' | 'paused' | 'gameOver'>>;
   setScore: React.Dispatch<React.SetStateAction<number>>;
   setHighScore: React.Dispatch<React.SetStateAction<number>>;
@@ -63,6 +86,7 @@ interface FlappyGameActions {
   gameLoopRef: React.RefObject<number>;
   initializeGame: () => void;
   handleJump: () => void;
+  flap: () => void;
   onStatsUpdate: (stats: any) => void;
 }
 
@@ -83,9 +107,12 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     y: CANVAS_HEIGHT / 2,
     velocity: 0,
     size: 30,
-    rotation: 0
+    rotation: 0,
+    isFlapping: false,
+    flapState: 0
   });
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
+  const [particles, setParticles] = useState<Particle[]>([]);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [level, setLevel] = useState(1);
@@ -102,7 +129,12 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     gameSpeed: 1.0,
     obstacleSpacing: 200,
     enablePowerUps: true,
-    soundVolume: 0.7
+    soundVolume: 0.7,
+    birdSize: 30,
+    gravity: 0.6,
+    enableParticles: true,
+    enableWeather: false,
+    weatherType: 'none'
   });
 
   const initializeGame = useCallback(() => {
@@ -110,17 +142,20 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
       x: 100,
       y: CANVAS_HEIGHT / 2,
       velocity: 0,
-      size: 30,
-      rotation: 0
+      size: customization.birdSize,
+      rotation: 0,
+      isFlapping: false,
+      flapState: 0
     });
     setObstacles([]);
+    setParticles([]);
     setScore(0);
     setLevel(1);
     setLives(3);
     setGameState('playing');
-  }, []);
+  }, [customization.birdSize]);
 
-  const handleJump = useCallback(() => {
+  const flap = useCallback(() => {
     if (gameState === 'menu') {
       initializeGame();
       return;
@@ -135,15 +170,20 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
       setBird(prev => ({
         ...prev,
         velocity: JUMP_FORCE,
-        rotation: -0.3
+        rotation: -0.3,
+        isFlapping: true,
+        flapState: 0
       }));
     }
   }, [gameState, initializeGame]);
+
+  const handleJump = flap;
 
   const value = {
     gameState,
     bird,
     obstacles,
+    particles,
     score,
     highScore,
     level,
@@ -154,6 +194,7 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     customization,
     setBird,
     setObstacles,
+    setParticles,
     setGameState,
     setScore,
     setHighScore,
@@ -167,6 +208,7 @@ export const FlappyGameProvider: React.FC<{ children: React.ReactNode, onStatsUp
     gameLoopRef,
     initializeGame,
     handleJump,
+    flap,
     onStatsUpdate
   };
 
