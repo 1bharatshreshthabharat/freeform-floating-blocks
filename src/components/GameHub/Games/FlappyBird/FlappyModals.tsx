@@ -1,87 +1,47 @@
 
 import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFlappyGame } from './FlappyGameProvider';
 
 export const FlappyModals: React.FC = () => {
-  const { 
-    showHowToPlay, 
-    showCustomization, 
+  const {
+    showCustomization,
+    showHowToPlay,
     customization,
-    setShowHowToPlay,
     setShowCustomization,
+    setShowHowToPlay,
     setCustomization
   } = useFlappyGame();
 
-  const handleCustomizationChange = (key: string, value: any) => {
+  const updateCustomization = (key: string, value: any) => {
     setCustomization(prev => ({ ...prev, [key]: value }));
   };
 
-  if (showHowToPlay) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <Card className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">How to Play Flappy Bird</h2>
-            <Button onClick={() => setShowHowToPlay(false)} variant="outline" size="sm">×</Button>
-          </div>
-          <div className="space-y-4 text-sm">
-            <div>
-              <h3 className="font-semibold mb-2">Controls</h3>
-              <ul className="space-y-1 text-gray-600">
-                <li>• Tap the screen or click your mouse to make the bird flap upwards</li>
-                <li>• Press the space bar to flap (desktop)</li>
-                <li>• Tap screen to flap (mobile)</li>
-                <li>• Time your flaps to navigate through obstacles</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Gameplay</h3>
-              <ul className="space-y-1 text-gray-600">
-                <li>• Navigate your bird through openings between obstacles</li>
-                <li>• Each successfully passed obstacle earns one point</li>
-                <li>• The game gets progressively more difficult</li>
-                <li>• You have 3 lives - touching obstacles, floor, or ceiling costs a life</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Obstacles</h3>
-              <ul className="space-y-1 text-gray-600">
-                <li>• Regular Pipes: Standard green pipes to fly between</li>
-                <li>• Lasers: Thin red beams that are harder to see</li>
-                <li>• Spikes: Sharp obstacles that punish poor timing</li>
-                <li>• Moving Obstacles: Pipes that shift position vertically</li>
-                <li>• Swinging Obstacles: Pipes that swing up and down</li>
-                <li>• Paired Obstacles: Double pipes with offset openings</li>
-              </ul>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (showCustomization) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <Card className="bg-white rounded-lg p-6 max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Customize Flappy Bird</h2>
-            <Button onClick={() => setShowCustomization(false)} variant="outline" size="sm">×</Button>
-          </div>
+  return (
+    <>
+      {/* Customization Modal */}
+      <Dialog open={showCustomization} onOpenChange={setShowCustomization}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Customize Flappy Bird</DialogTitle>
+          </DialogHeader>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Bird Customization */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Bird Customization</h3>
-              <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Bird Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Bird Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Bird Type</label>
-                  <Select value={customization.birdType} onValueChange={(value) => handleCustomizationChange('birdType', value)}>
+                  <Label>Bird Type</Label>
+                  <Select value={customization.birdType} onValueChange={(value) => updateCustomization('birdType', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -96,50 +56,45 @@ export const FlappyModals: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Bird Size: {customization.birdSize}px</label>
-                  <Slider
-                    value={[customization.birdSize]}
-                    onValueChange={([value]) => handleCustomizationChange('birdSize', value)}
-                    min={15}
-                    max={35}
-                    step={1}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Gravity: {customization.gravity}</label>
-                  <Slider
-                    value={[customization.gravity]}
-                    onValueChange={([value]) => handleCustomizationChange('gravity', value)}
-                    min={0.3}
-                    max={0.8}
-                    step={0.1}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Game Settings */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Game Settings</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Difficulty</label>
-                  <Select value={customization.difficulty} onValueChange={(value) => handleCustomizationChange('difficulty', value)}>
+                  <Label>Bird Color</Label>
+                  <Select value={customization.birdColor} onValueChange={(value) => updateCustomization('birdColor', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="easy">Easy</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="hard">Hard</SelectItem>
+                      <SelectItem value="#FFD700">🟡 Golden</SelectItem>
+                      <SelectItem value="#FF6B6B">🔴 Red</SelectItem>
+                      <SelectItem value="#4ECDC4">🔵 Teal</SelectItem>
+                      <SelectItem value="#45B7D1">🔵 Blue</SelectItem>
+                      <SelectItem value="#96CEB4">🟢 Green</SelectItem>
+                      <SelectItem value="#FFEAA7">🟡 Yellow</SelectItem>
+                      <SelectItem value="#DDA0DD">🟣 Purple</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Background Theme</label>
-                  <Select value={customization.backgroundTheme} onValueChange={(value) => handleCustomizationChange('backgroundTheme', value)}>
+                  <Label>Bird Size: {customization.birdSize}</Label>
+                  <Slider
+                    value={[customization.birdSize]}
+                    onValueChange={([value]) => updateCustomization('birdSize', value)}
+                    min={20}
+                    max={50}
+                    step={5}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Game Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Game Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Background Theme</Label>
+                  <Select value={customization.backgroundTheme} onValueChange={(value) => updateCustomization('backgroundTheme', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -154,36 +109,80 @@ export const FlappyModals: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Obstacle Spacing: {customization.obstacleSpacing}px</label>
+                  <Label>Difficulty</Label>
+                  <Select value={customization.difficulty} onValueChange={(value) => updateCustomization('difficulty', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">🟢 Easy</SelectItem>
+                      <SelectItem value="medium">🟡 Medium</SelectItem>
+                      <SelectItem value="hard">🔴 Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Game Speed: {customization.gameSpeed.toFixed(1)}x</Label>
+                  <Slider
+                    value={[customization.gameSpeed]}
+                    onValueChange={([value]) => updateCustomization('gameSpeed', value)}
+                    min={0.5}
+                    max={2.0}
+                    step={0.1}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Gravity: {customization.gravity.toFixed(1)}</Label>
+                  <Slider
+                    value={[customization.gravity]}
+                    onValueChange={([value]) => updateCustomization('gravity', value)}
+                    min={0.3}
+                    max={1.0}
+                    step={0.1}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Obstacle Spacing: {customization.obstacleSpacing}</Label>
                   <Slider
                     value={[customization.obstacleSpacing]}
-                    onValueChange={([value]) => handleCustomizationChange('obstacleSpacing', value)}
+                    onValueChange={([value]) => updateCustomization('obstacleSpacing', value)}
                     min={150}
                     max={300}
                     step={10}
                   />
                 </div>
+              </CardContent>
+            </Card>
 
+            {/* Visual Effects */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Visual Effects</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Particles</label>
+                  <Label>Enable Particles</Label>
                   <Switch
                     checked={customization.enableParticles}
-                    onCheckedChange={(checked) => handleCustomizationChange('enableParticles', checked)}
+                    onCheckedChange={(checked) => updateCustomization('enableParticles', checked)}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Weather Effects</label>
+                  <Label>Enable Weather Effects</Label>
                   <Switch
                     checked={customization.enableWeather}
-                    onCheckedChange={(checked) => handleCustomizationChange('enableWeather', checked)}
+                    onCheckedChange={(checked) => updateCustomization('enableWeather', checked)}
                   />
                 </div>
 
                 {customization.enableWeather && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Weather Type</label>
-                    <Select value={customization.weatherType} onValueChange={(value) => handleCustomizationChange('weatherType', value)}>
+                    <Label>Weather Type</Label>
+                    <Select value={customization.weatherType} onValueChange={(value) => updateCustomization('weatherType', value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -195,13 +194,60 @@ export const FlappyModals: React.FC = () => {
                     </Select>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
 
-  return null;
+                <div className="flex items-center justify-between">
+                  <Label>Enable Power-ups</Label>
+                  <Switch
+                    checked={customization.enablePowerUps}
+                    onCheckedChange={(checked) => updateCustomization('enablePowerUps', checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button onClick={() => setShowCustomization(false)} className="w-full">
+              Apply Settings
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* How to Play Modal */}
+      <Dialog open={showHowToPlay} onOpenChange={setShowHowToPlay}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>How to Play Flappy Bird</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="text-sm space-y-2">
+              <p><strong>🎯 Goal:</strong> Navigate the bird through obstacles and score points</p>
+              <p><strong>🎮 Controls:</strong></p>
+              <ul className="list-disc list-inside ml-4 space-y-1">
+                <li>Click or tap to make the bird flap</li>
+                <li>Press Space bar to flap</li>
+                <li>Avoid hitting obstacles or the ground</li>
+              </ul>
+              <p><strong>🏆 Scoring:</strong></p>
+              <ul className="list-disc list-inside ml-4 space-y-1">
+                <li>Pass through obstacles to earn points</li>
+                <li>Level up every 10 points</li>
+                <li>Different obstacles appear based on difficulty</li>
+              </ul>
+              <p><strong>💡 Tips:</strong></p>
+              <ul className="list-disc list-inside ml-4 space-y-1">
+                <li>Time your flaps carefully</li>
+                <li>Watch for moving obstacles at higher levels</li>
+                <li>Use the gap size to your advantage</li>
+              </ul>
+            </div>
+            
+            <Button onClick={() => setShowHowToPlay(false)} className="w-full">
+              Got it!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 };
