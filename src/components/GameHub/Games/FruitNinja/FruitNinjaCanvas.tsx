@@ -1,10 +1,11 @@
+
 import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFruitNinja } from './FruitNinjaProvider';
 import { fruitTypes } from './fruitNinjaUtils';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRAVITY } from './FruitNinjaProvider';
-import { FruitNinjaCanvasRenderer } from './FruitNinjaCanvasRenderer';
-import { FruitNinjaInputHandler } from './FruitNinjaInputHandler';
+import { useFruitNinjaRenderer } from './FruitNinjaCanvasRenderer';
+import { useFruitNinjaInputHandler } from './FruitNinjaInputHandler';
 
 export const FruitNinjaCanvas: React.FC = () => {
   const {
@@ -199,7 +200,7 @@ export const FruitNinjaCanvas: React.FC = () => {
     spawnFruit();
   }, [gameState, spawnFruit, setFruits, setGameState, setLives, setCombo, setParticles, setSliceTrail]);
 
-  const renderer = FruitNinjaCanvasRenderer({
+  const renderer = useFruitNinjaRenderer({
     canvasRef,
     gameState,
     fruits,
@@ -212,7 +213,7 @@ export const FruitNinjaCanvas: React.FC = () => {
     customization
   });
 
-  const inputHandler = FruitNinjaInputHandler({
+  const inputHandler = useFruitNinjaInputHandler({
     canvasRef,
     gameState,
     fruits,

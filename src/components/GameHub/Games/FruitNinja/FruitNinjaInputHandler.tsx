@@ -12,7 +12,7 @@ interface InputHandlerProps {
   initializeGame: () => void;
 }
 
-export const FruitNinjaInputHandler: React.FC<InputHandlerProps> = ({
+export const useFruitNinjaInputHandler = ({
   canvasRef,
   gameState,
   fruits,
@@ -21,7 +21,7 @@ export const FruitNinjaInputHandler: React.FC<InputHandlerProps> = ({
   handleInteractionEnd,
   sliceFruit,
   initializeGame
-}) => {
+}: InputHandlerProps) => {
   const isSlicingRef = useRef(false);
 
   // Fixed coordinate calculation for proper blade alignment
@@ -37,7 +37,7 @@ export const FruitNinjaInputHandler: React.FC<InputHandlerProps> = ({
       x: (clientX - rect.left) * scaleX,
       y: (clientY - rect.top) * scaleY
     };
-  }, []);
+  }, [canvasRef]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (gameState === 'gameOver' || gameState === 'menu') {
@@ -119,4 +119,9 @@ export const FruitNinjaInputHandler: React.FC<InputHandlerProps> = ({
     handleTouchMove,
     handleTouchEnd
   };
+};
+
+// Legacy component wrapper (not used anymore)
+export const FruitNinjaInputHandler: React.FC<InputHandlerProps> = (props) => {
+  return null;
 };
