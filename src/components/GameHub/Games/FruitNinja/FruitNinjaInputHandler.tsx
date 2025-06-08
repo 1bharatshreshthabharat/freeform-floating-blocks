@@ -24,19 +24,30 @@ export const useFruitNinjaInputHandler = ({
 }: InputHandlerProps) => {
   const isSlicingRef = useRef(false);
 
-  // Fixed coordinate calculation for proper blade alignment
+  // Fixed coordinate calculation for proper blade alignment with display scaling
   const getCanvasCoordinates = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
     
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
-    };
+    // Get the actual canvas internal dimensions
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    
+    // Get the displayed canvas dimensions
+    const displayWidth = rect.width;
+    const displayHeight = rect.height;
+    
+    // Calculate scaling factors
+    const scaleX = canvasWidth / displayWidth;
+    const scaleY = canvasHeight / displayHeight;
+    
+    // Transform coordinates with proper scaling
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    
+    return { x, y };
   }, [canvasRef]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -56,11 +67,12 @@ export const useFruitNinjaInputHandler = ({
     const coords = getCanvasCoordinates(e.clientX, e.clientY);
     handleInteractionMove(coords.x, coords.y);
     
-    // Check for fruit slicing
+    // Check for fruit slicing with improved collision detection
     fruits.forEach(fruit => {
       if (!fruit.sliced) {
         const distance = Math.sqrt((fruit.x - coords.x) ** 2 + (fruit.y - coords.y) ** 2);
-        if (distance < fruit.size / 2 + 20) {
+        const hitRadius = fruit.size / 2 + 15; // Slightly smaller hit radius for better precision
+        if (distance < hitRadius) {
           sliceFruit(fruit.id);
         }
       }
@@ -72,7 +84,7 @@ export const useFruitNinjaInputHandler = ({
     handleInteractionEnd();
   }, [handleInteractionEnd]);
 
-  // Touch event handlers with proper coordinate calculation
+  // Touch event handlers with improved coordinate calculation
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (gameState === 'gameOver' || gameState === 'menu') {
@@ -94,11 +106,12 @@ export const useFruitNinjaInputHandler = ({
     const coords = getCanvasCoordinates(touch.clientX, touch.clientY);
     handleInteractionMove(coords.x, coords.y);
     
-    // Check for fruit slicing
+    // Check for fruit slicing with improved collision detection
     fruits.forEach(fruit => {
       if (!fruit.sliced) {
         const distance = Math.sqrt((fruit.x - coords.x) ** 2 + (fruit.y - coords.y) ** 2);
-        if (distance < fruit.size / 2 + 20) {
+        const hitRadius = fruit.size / 2 + 15; // Consistent hit radius
+        if (distance < hitRadius) {
           sliceFruit(fruit.id);
         }
       }
