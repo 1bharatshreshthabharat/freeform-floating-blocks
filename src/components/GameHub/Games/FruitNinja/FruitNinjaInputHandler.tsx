@@ -23,34 +23,40 @@ export const useFruitNinjaInputHandler = ({
   initializeGame
 }: InputHandlerProps) => {
   const isSlicingRef = useRef(false);
+  const lastSlicePositionRef = useRef<{x: number, y: number} | null>(null);
 
-  // Fixed coordinate calculation for proper blade alignment with display scaling
+  // Fixed coordinate calculation with proper scaling
   const getCanvasCoordinates = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     
     const rect = canvas.getBoundingClientRect();
     
-    // Get the actual canvas internal dimensions
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
+    // Calculate the exact scaling based on canvas internal vs display size
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     
-    // Get the displayed canvas dimensions
-    const displayWidth = rect.width;
-    const displayHeight = rect.height;
-    
-    // Calculate scaling factors
-    const scaleX = canvasWidth / displayWidth;
-    const scaleY = canvasHeight / displayHeight;
-    
-    // Transform coordinates with proper scaling
+    // Transform coordinates with exact scaling
     const x = (clientX - rect.left) * scaleX;
     const y = (clientY - rect.top) * scaleY;
     
     return { x, y };
   }, [canvasRef]);
 
+  const checkFruitCollision = useCallback((x: number, y: number) => {
+    fruits.forEach(fruit => {
+      if (!fruit.sliced) {
+        const distance = Math.sqrt((fruit.x - x) ** 2 + (fruit.y - y) ** 2);
+        const hitRadius = fruit.size / 2 + 20; // Generous hit radius
+        if (distance < hitRadius) {
+          sliceFruit(fruit.id);
+        }
+      }
+    });
+  }, [fruits, sliceFruit]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     if (gameState === 'gameOver' || gameState === 'menu') {
       initializeGame();
       return;
@@ -58,33 +64,39 @@ export const useFruitNinjaInputHandler = ({
     
     const coords = getCanvasCoordinates(e.clientX, e.clientY);
     isSlicingRef.current = true;
+    lastSlicePositionRef.current = coords;
     handleInteractionStart(coords.x, coords.y);
-  }, [getCanvasCoordinates, handleInteractionStart, gameState, initializeGame]);
+    checkFruitCollision(coords.x, coords.y);
+  }, [getCanvasCoordinates, handleInteractionStart, gameState, initializeGame, checkFruitCollision]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     if (!isSlicingRef.current || gameState !== 'playing') return;
     
     const coords = getCanvasCoordinates(e.clientX, e.clientY);
     handleInteractionMove(coords.x, coords.y);
     
-    // Check for fruit slicing with improved collision detection
-    fruits.forEach(fruit => {
-      if (!fruit.sliced) {
-        const distance = Math.sqrt((fruit.x - coords.x) ** 2 + (fruit.y - coords.y) ** 2);
-        const hitRadius = fruit.size / 2 + 15; // Slightly smaller hit radius for better precision
-        if (distance < hitRadius) {
-          sliceFruit(fruit.id);
-        }
+    // Check collision along the slice path for better detection
+    if (lastSlicePositionRef.current) {
+      const steps = 5;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const interpolatedX = lastSlicePositionRef.current.x + (coords.x - lastSlicePositionRef.current.x) * t;
+        const interpolatedY = lastSlicePositionRef.current.y + (coords.y - lastSlicePositionRef.current.y) * t;
+        checkFruitCollision(interpolatedX, interpolatedY);
       }
-    });
-  }, [getCanvasCoordinates, handleInteractionMove, fruits, sliceFruit, gameState]);
+    }
+    
+    lastSlicePositionRef.current = coords;
+  }, [getCanvasCoordinates, handleInteractionMove, gameState, checkFruitCollision]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e?: React.MouseEvent<HTMLCanvasElement>) => {
     isSlicingRef.current = false;
+    lastSlicePositionRef.current = null;
     handleInteractionEnd();
   }, [handleInteractionEnd]);
 
-  // Touch event handlers with improved coordinate calculation
+  // Touch event handlers with proper coordinate handling
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (gameState === 'gameOver' || gameState === 'menu') {
@@ -95,8 +107,10 @@ export const useFruitNinjaInputHandler = ({
     const touch = e.touches[0];
     const coords = getCanvasCoordinates(touch.clientX, touch.clientY);
     isSlicingRef.current = true;
+    lastSlicePositionRef.current = coords;
     handleInteractionStart(coords.x, coords.y);
-  }, [getCanvasCoordinates, handleInteractionStart, gameState, initializeGame]);
+    checkFruitCollision(coords.x, coords.y);
+  }, [getCanvasCoordinates, handleInteractionStart, gameState, initializeGame, checkFruitCollision]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
@@ -106,21 +120,24 @@ export const useFruitNinjaInputHandler = ({
     const coords = getCanvasCoordinates(touch.clientX, touch.clientY);
     handleInteractionMove(coords.x, coords.y);
     
-    // Check for fruit slicing with improved collision detection
-    fruits.forEach(fruit => {
-      if (!fruit.sliced) {
-        const distance = Math.sqrt((fruit.x - coords.x) ** 2 + (fruit.y - coords.y) ** 2);
-        const hitRadius = fruit.size / 2 + 15; // Consistent hit radius
-        if (distance < hitRadius) {
-          sliceFruit(fruit.id);
-        }
+    // Check collision along the slice path
+    if (lastSlicePositionRef.current) {
+      const steps = 5;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const interpolatedX = lastSlicePositionRef.current.x + (coords.x - lastSlicePositionRef.current.x) * t;
+        const interpolatedY = lastSlicePositionRef.current.y + (coords.y - lastSlicePositionRef.current.y) * t;
+        checkFruitCollision(interpolatedX, interpolatedY);
       }
-    });
-  }, [getCanvasCoordinates, handleInteractionMove, fruits, sliceFruit, gameState]);
+    }
+    
+    lastSlicePositionRef.current = coords;
+  }, [getCanvasCoordinates, handleInteractionMove, gameState, checkFruitCollision]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     isSlicingRef.current = false;
+    lastSlicePositionRef.current = null;
     handleInteractionEnd();
   }, [handleInteractionEnd]);
 
@@ -134,7 +151,6 @@ export const useFruitNinjaInputHandler = ({
   };
 };
 
-// Legacy component wrapper (not used anymore)
 export const FruitNinjaInputHandler: React.FC<InputHandlerProps> = (props) => {
   return null;
 };

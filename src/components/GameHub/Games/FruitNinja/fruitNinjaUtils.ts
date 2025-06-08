@@ -1,55 +1,103 @@
 
 export const fruitTypes = {
-  apple: { emoji: '🍎', color: '#FF0000', points: 10, juiceColor: '#FF6B6B' },
-  orange: { emoji: '🍊', color: '#FFA500', points: 10, juiceColor: '#FFB84D' },
-  banana: { emoji: '🍌', color: '#FFFF00', points: 15, juiceColor: '#FFFF80' },
-  watermelon: { emoji: '🍉', color: '#00FF00', points: 20, juiceColor: '#90EE90' },
-  pineapple: { emoji: '🍍', color: '#FFD700', points: 25, juiceColor: '#FFE55C' },
-  strawberry: { emoji: '🍓', color: '#FF1493', points: 15, juiceColor: '#FF69B4' },
-  grape: { emoji: '🍇', color: '#8A2BE2', points: 15, juiceColor: '#DA70D6' },
-  peach: { emoji: '🍑', color: '#FFB6C1', points: 20, juiceColor: '#FFC0CB' },
-  coconut: { emoji: '🥥', color: '#8B4513', points: 30, juiceColor: '#DEB887' },
-  kiwi: { emoji: '🥝', color: '#9ACD32', points: 25, juiceColor: '#ADFF2F' },
-  mango: { emoji: '🥭', color: '#FFD700', points: 25, juiceColor: '#FFED4E' },
-  cherry: { emoji: '🍒', color: '#FF0000', points: 15, juiceColor: '#FF6B6B' },
-  lemon: { emoji: '🍋', color: '#FFFF00', points: 15, juiceColor: '#FFFF80' },
-  avocado: { emoji: '🥑', color: '#568203', points: 20, juiceColor: '#9ACD32' },
-  tomato: { emoji: '🍅', color: '#FF6347', points: 12, juiceColor: '#FF7F7F' },
-  eggplant: { emoji: '🍆', color: '#9370DB', points: 18, juiceColor: '#BA55D3' }
+  // Original fruits
+  apple: { emoji: '🍎', points: 10, juiceColor: '#FF6B6B' },
+  orange: { emoji: '🍊', points: 15, juiceColor: '#FFA500' },
+  banana: { emoji: '🍌', points: 12, juiceColor: '#FFFF99' },
+  watermelon: { emoji: '🍉', points: 20, juiceColor: '#FF69B4' },
+  pineapple: { emoji: '🍍', points: 25, juiceColor: '#FFD700' },
+  strawberry: { emoji: '🍓', points: 18, juiceColor: '#FF1493' },
+  grape: { emoji: '🍇', points: 22, juiceColor: '#9370DB' },
+  kiwi: { emoji: '🥝', points: 16, juiceColor: '#90EE90' },
+  
+  // Additional fruits
+  peach: { emoji: '🍑', points: 14, juiceColor: '#FFCCCB' },
+  mango: { emoji: '🥭', points: 19, juiceColor: '#FFB347' },
+  coconut: { emoji: '🥥', points: 17, juiceColor: '#F5F5DC' },
+  lemon: { emoji: '🍋', points: 13, juiceColor: '#FFFACD' },
+  cherry: { emoji: '🍒', points: 21, juiceColor: '#DC143C' },
+  blueberry: { emoji: '🫐', points: 23, juiceColor: '#4169E1' },
+  
+  // Vegetables
+  carrot: { emoji: '🥕', points: 11, juiceColor: '#FFA500' },
+  broccoli: { emoji: '🥦', points: 14, juiceColor: '#228B22' },
+  tomato: { emoji: '🍅', points: 13, juiceColor: '#FF6347' },
+  eggplant: { emoji: '🍆', points: 16, juiceColor: '#9370DB' },
+  corn: { emoji: '🌽', points: 15, juiceColor: '#FFD700' },
+  pepper: { emoji: '🫑', points: 12, juiceColor: '#32CD32' },
+  onion: { emoji: '🧅', points: 10, juiceColor: '#DDBF94' },
+  potato: { emoji: '🥔', points: 9, juiceColor: '#DEB887' },
+  cucumber: { emoji: '🥒', points: 11, juiceColor: '#90EE90' },
+  mushroom: { emoji: '🍄', points: 17, juiceColor: '#D2B48C' },
+  
+  // Special items (higher value)
+  avocado: { emoji: '🥑', points: 30, juiceColor: '#6B8E23' },
+  pumpkin: { emoji: '🎃', points: 35, juiceColor: '#FF7518' }
 };
-
-export const bladeColors = [
-  { name: 'Golden', value: '#FFD700' },
-  { name: 'Silver', value: '#C0C0C0' },
-  { name: 'Fire', value: '#FF4500' },
-  { name: 'Ice', value: '#00BFFF' },
-  { name: 'Lightning', value: '#FFFF00' }
-];
 
 export const backgroundThemes = {
   dojo: {
-    background: 'linear-gradient(135deg, #2C1810 0%, #8B4513 100%)',
-    accent: '#FFD700',
+    primary: '#2C1810',
+    secondary: '#8B4513',
+    accent: '#D2691E',
     pattern: 'bamboo'
   },
   sunset: {
-    background: 'linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)',
-    accent: '#FF4757',
+    primary: '#FF6B6B',
+    secondary: '#FFE66D',
+    accent: '#FF8E53',
     pattern: 'clouds'
   },
   forest: {
-    background: 'linear-gradient(135deg, #2ECC71 0%, #27AE60 100%)',
-    accent: '#F39C12',
+    primary: '#2ECC71',
+    secondary: '#27AE60',
+    accent: '#58D68D',
     pattern: 'leaves'
   },
   ocean: {
-    background: 'linear-gradient(135deg, #3498DB 0%, #2980B9 100%)',
-    accent: '#E74C3C',
+    primary: '#3498DB',
+    secondary: '#2980B9',
+    accent: '#5DADE2',
     pattern: 'waves'
   },
   space: {
-    background: 'linear-gradient(135deg, #2C3E50 0%, #4A90E2 100%)',
-    accent: '#9B59B6',
+    primary: '#2C3E50',
+    secondary: '#4A90E2',
+    accent: '#7FB3D3',
     pattern: 'stars'
+  },
+  volcanic: {
+    primary: '#8B0000',
+    secondary: '#FF4500',
+    accent: '#FF6347',
+    pattern: 'lava'
+  }
+};
+
+export const bladeTypes = {
+  classic: {
+    color: '#FFD700',
+    width: 5,
+    effect: 'none'
+  },
+  fire: {
+    color: '#FF4500',
+    width: 6,
+    effect: 'glow'
+  },
+  ice: {
+    color: '#00FFFF',
+    width: 4,
+    effect: 'freeze'
+  },
+  lightning: {
+    color: '#FFFF00',
+    width: 8,
+    effect: 'electric'
+  },
+  rainbow: {
+    color: '#FF69B4',
+    width: 7,
+    effect: 'rainbow'
   }
 };

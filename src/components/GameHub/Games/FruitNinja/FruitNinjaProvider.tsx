@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 interface Fruit {
@@ -84,8 +83,8 @@ interface FruitNinjaActions {
   gameLoopRef: React.RefObject<number>;
   isSlicingRef: React.RefObject<boolean>;
   initializeGame: () => void;
-  handleInteractionStart: (clientX: number, clientY: number) => void;
-  handleInteractionMove: (clientX: number, clientY: number) => void;
+  handleInteractionStart: (x: number, y: number) => void;
+  handleInteractionMove: (x: number, y: number) => void;
   handleInteractionEnd: () => void;
   onStatsUpdate: (stats: any) => void;
 }
@@ -140,7 +139,7 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     setGameState('playing');
   }, [customization.bladeColor]);
 
-  const handleInteractionStart = useCallback((clientX: number, clientY: number) => {
+  const handleInteractionStart = useCallback((x: number, y: number) => {
     if (gameState === 'menu') {
       initializeGame();
       return;
@@ -154,41 +153,21 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     if (gameState !== 'playing') return;
     
     isSlicingRef.current = true;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
     
     setSliceTrail(prev => ({
       ...prev,
-      points: [{ x, y, time: 30 }]
+      points: [{ x, y, time: 35 }]
     }));
   }, [gameState, initializeGame]);
 
-  const handleInteractionMove = useCallback((clientX: number, clientY: number) => {
+  const handleInteractionMove = useCallback((x: number, y: number) => {
     if (!isSlicingRef.current || gameState !== 'playing') return;
-    
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
     
     setSliceTrail(prev => ({
       ...prev,
-      points: [...prev.points, { x, y, time: 30 }].slice(-10)
+      points: [...prev.points, { x, y, time: 35 }].slice(-15) // Keep more points for smoother trail
     }));
-
-    fruits.forEach(fruit => {
-      if (!fruit.sliced) {
-        const distance = Math.sqrt((fruit.x - x) ** 2 + (fruit.y - y) ** 2);
-        if (distance < fruit.size / 2 + 10) {
-          // Will be implemented in child components
-        }
-      }
-    });
-  }, [gameState, fruits]);
+  }, [gameState]);
 
   const handleInteractionEnd = useCallback(() => {
     isSlicingRef.current = false;
