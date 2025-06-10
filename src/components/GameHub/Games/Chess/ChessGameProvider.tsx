@@ -5,11 +5,11 @@ import { initialBoard, pieceSets } from './constants';
 import { getValidMoves, getBestMove } from './chessLogic';
 
 interface ChessGameActions {
-  setBoard: React.Dispatch<React.SetStateAction<Piece[][]>>;
+  setBoard: React.Dispatch<React.SetStateAction<(Piece | null)[][]>>;
   setSelectedPiece: React.Dispatch<React.SetStateAction<Position | null>>;
   setValidMoves: React.Dispatch<React.SetStateAction<Position[]>>;
   setCurrentPlayer: React.Dispatch<React.SetStateAction<PieceColor>>;
-  setCapturedPieces: React.Dispatch<React.SetStateAction<{ white: Piece[], black: Piece[] }>>;
+  setCapturedPieces: React.Dispatch<React.SetStateAction<{ white: (Piece | string)[], black: (Piece | string)[] }>>;
   setCustomization: React.Dispatch<React.SetStateAction<GameCustomization>>;
   setGameMode: React.Dispatch<React.SetStateAction<GameMode>>;
   setDifficulty: React.Dispatch<React.SetStateAction<Difficulty>>;
@@ -32,11 +32,11 @@ const ChessGameContext = createContext<(ChessGameState & ChessGameActions) | nul
 
 export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpdate: (stats: any) => void }> = ({ children, onStatsUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [board, setBoard] = useState<Piece[][]>(JSON.parse(JSON.stringify(initialBoard)));
+  const [board, setBoard] = useState<(Piece | null)[][]>(JSON.parse(JSON.stringify(initialBoard)));
   const [selectedPiece, setSelectedPiece] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Position[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<PieceColor>('white');
-  const [capturedPieces, setCapturedPieces] = useState({ white: [] as Piece[], black: [] as Piece[] });
+  const [capturedPieces, setCapturedPieces] = useState<{ white: (Piece | string)[], black: (Piece | string)[] }>({ white: [], black: [] });
   const [isAiThinking, setIsAiThinking] = useState(false);
 
   const [customization, setCustomization] = useState<GameCustomization>({
@@ -90,22 +90,22 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
       let bestMove;
       
       if (difficulty === 'beginner') {
-        // Random move for beginner
+        // Random move with 70% chance for beginner
         bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
       } else {
         // Get best move but add randomness
         const calculatedBest = getBestMove(board, difficulty);
         
         if (difficulty === 'intermediate') {
-          // 70% chance to play best move, 30% random
-          if (Math.random() < 0.7 && calculatedBest) {
+          // 75% chance to play best move, 25% random
+          if (Math.random() < 0.75 && calculatedBest) {
             bestMove = calculatedBest;
           } else {
             bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
           }
         } else {
-          // Expert: 90% best move, 10% random
-          if (Math.random() < 0.9 && calculatedBest) {
+          // Expert: 85% best move, 15% random
+          if (Math.random() < 0.85 && calculatedBest) {
             bestMove = calculatedBest;
           } else {
             bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
@@ -119,9 +119,10 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
         const capturedPiece = newBoard[bestMove.to.y][bestMove.to.x];
         
         if (capturedPiece) {
+          const capturedSymbol = getPieceSymbol(capturedPiece.type, capturedPiece.color);
           setCapturedPieces(prev => ({
             ...prev,
-            [capturedPiece.color]: [...prev[capturedPiece.color], capturedPiece]
+            [capturedPiece.color]: [...prev[capturedPiece.color], capturedSymbol]
           }));
         }
         
@@ -134,7 +135,7 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
       
       setIsAiThinking(false);
     }, 500 + Math.random() * 1000); // Random delay between 500-1500ms
-  }, [board, gameMode, currentPlayer, difficulty, isAiThinking]);
+  }, [board, gameMode, currentPlayer, difficulty, isAiThinking, getPieceSymbol]);
 
   useEffect(() => {
     if (gameMode === 'human-vs-ai' && currentPlayer === 'black' && !showVictory) {

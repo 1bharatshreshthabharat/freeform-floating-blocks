@@ -1,6 +1,7 @@
+
 import { Position, Piece, PieceColor } from './types';
 
-export const getValidMoves = (board: Piece[][], x: number, y: number): Position[] => {
+export const getValidMoves = (board: (Piece | null)[][], x: number, y: number): Position[] => {
   const piece = board[y][x];
   if (!piece) return [];
 
@@ -130,7 +131,7 @@ export const getValidMoves = (board: Piece[][], x: number, y: number): Position[
 };
 
 // Advanced evaluation function with positional awareness
-export const evaluatePosition = (board: Piece[][], difficulty: string): number => {
+export const evaluatePosition = (board: (Piece | null)[][], difficulty: string): number => {
   const pieceValues = {
     pawn: 1,
     knight: 3,
@@ -230,7 +231,7 @@ export const evaluatePosition = (board: Piece[][], difficulty: string): number =
 };
 
 export const minimax = (
-  board: Piece[][], 
+  board: (Piece | null)[][], 
   depth: number, 
   isMaximizing: boolean, 
   alpha: number = -Infinity, 
@@ -333,7 +334,7 @@ const pieceValues = {
   king: 0
 };
 
-export const getBestMove = (board: Piece[][], difficulty: string): { from: Position, to: Position } | null => {
+export const getBestMove = (board: (Piece | null)[][], difficulty: string): { from: Position, to: Position } | null => {
   const depth = difficulty === 'beginner' ? 2 : difficulty === 'intermediate' ? 3 : 4;
   const result = minimax(board, depth, true, -Infinity, Infinity, difficulty);
   return result.move || null;

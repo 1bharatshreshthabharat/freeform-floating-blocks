@@ -50,9 +50,11 @@ export const ChessBoard: React.FC = () => {
     
     // Capture piece if exists
     if (newBoard[toY][toX]) {
+      const capturedPiece = newBoard[toY][toX]!;
+      const capturedSymbol = getPieceSymbol(capturedPiece.type, capturedPiece.color);
       setCapturedPieces(prev => ({
         ...prev,
-        [newBoard[toY][toX]!.color]: [...prev[newBoard[toY][toX]!.color], getPieceSymbol(newBoard[toY][toX]!.type, newBoard[toY][toX]!.color)]
+        [capturedPiece.color]: [...prev[capturedPiece.color], capturedSymbol]
       }));
     }
     

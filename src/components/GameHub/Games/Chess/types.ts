@@ -12,11 +12,11 @@ export interface Piece {
 export type PieceColor = 'white' | 'black';
 
 export interface ChessGameState {
-  board: Piece[][];
+  board: (Piece | null)[][];
   selectedPiece: Position | null;
   validMoves: Position[];
   currentPlayer: PieceColor;
-  capturedPieces: { white: Piece[], black: Piece[] };
+  capturedPieces: { white: (Piece | string)[], black: (Piece | string)[] };
   customization: GameCustomization;
   gameMode: GameMode;
   difficulty: Difficulty;

@@ -15,7 +15,8 @@ export const ChessControls: React.FC = () => {
     setGameMode,
     setDifficulty,
     resetGame,
-    setShowCustomization
+    setShowCustomization,
+    getPieceSymbol
   } = useChessGame();
 
   return (
@@ -49,7 +50,9 @@ export const ChessControls: React.FC = () => {
             <div className="flex flex-wrap gap-1 mt-1">
               {capturedPieces.white.length > 0 ? 
                 capturedPieces.white.map((piece, index) => (
-                  <span key={index} className="text-lg">{piece}</span>
+                  <span key={index} className="text-lg">
+                    {typeof piece === 'string' ? piece : getPieceSymbol(piece.type, piece.color)}
+                  </span>
                 )) : 
                 <span className="text-gray-400 text-xs">None</span>
               }
@@ -60,7 +63,9 @@ export const ChessControls: React.FC = () => {
             <div className="flex flex-wrap gap-1 mt-1">
               {capturedPieces.black.length > 0 ? 
                 capturedPieces.black.map((piece, index) => (
-                  <span key={index} className="text-lg">{piece}</span>
+                  <span key={index} className="text-lg">
+                    {typeof piece === 'string' ? piece : getPieceSymbol(piece.type, piece.color)}
+                  </span>
                 )) : 
                 <span className="text-gray-400 text-xs">None</span>
               }
