@@ -1,9 +1,12 @@
+
 import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFruitNinja } from './FruitNinjaProvider';
 import { useFruitNinjaRenderer } from './FruitNinjaCanvasRenderer';
 import { useFruitNinjaInputHandler } from './FruitNinjaInputHandler';
 import { useFruitNinjaGameLogic } from './FruitNinjaGameLogic';
+import { useFruitNinjaEffects } from './FruitNinjaEffects';
+import { useFruitNinjaStats } from './FruitNinjaStats';
 
 export const FruitNinjaCanvas: React.FC = () => {
   const {
@@ -36,6 +39,10 @@ export const FruitNinjaCanvas: React.FC = () => {
   } = useFruitNinja();
 
   const animationFrameRef = useRef<number | null>(null);
+
+  // Use custom hooks for organized functionality
+  useFruitNinjaEffects({ setSliceTrail, gameState });
+  useFruitNinjaStats({ gameState, score, setHighScore, onStatsUpdate });
 
   const gameLogic = useFruitNinjaGameLogic({
     gameState,
@@ -78,20 +85,6 @@ export const FruitNinjaCanvas: React.FC = () => {
     initializeGame
   });
 
-  // Update slice trail fade
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSliceTrail(prev => ({
-        ...prev,
-        points: prev.points
-          .map(point => ({ ...point, time: point.time - 2 }))
-          .filter(point => point.time > 0)
-      }));
-    }, 16);
-
-    return () => clearInterval(interval);
-  }, [setSliceTrail]);
-
   const gameLoop = useCallback(() => {
     gameLogic.updateGame();
     renderer.draw();
@@ -118,20 +111,6 @@ export const FruitNinjaCanvas: React.FC = () => {
       }
     };
   }, [gameState, gameLoop, renderer.draw]);
-
-  useEffect(() => {
-    if (gameState === 'gameOver') {
-      setHighScore(prev => {
-        const newHighScore = Math.max(prev, score);
-        onStatsUpdate((prevStats: any) => ({ 
-          ...prevStats, 
-          totalScore: Math.max(prevStats.totalScore || 0, score),
-          gamesPlayed: prevStats.gamesPlayed + 1
-        }));
-        return newHighScore;
-      });
-    }
-  }, [gameState, score, setHighScore, onStatsUpdate]);
 
   return (
     <Card className="flex-1 shadow-lg">

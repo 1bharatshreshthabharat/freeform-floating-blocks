@@ -4,31 +4,19 @@ export interface Position {
   y: number;
 }
 
-export type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
-export type PieceColor = 'white' | 'black';
-
-export type Piece = {
-  type: PieceType;
-  color: PieceColor;
-} | null;
-
-export interface GameCustomization {
-  boardTheme: string;
-  pieceSet: string;
-  showCoordinates: boolean;
-  highlightMoves: boolean;
-  animations: boolean;
+export interface Piece {
+  type: 'king' | 'queen' | 'rook' | 'bishop' | 'knight' | 'pawn';
+  color: 'white' | 'black';
 }
 
-export type GameMode = 'human-vs-ai' | 'human-vs-human';
-export type Difficulty = 'beginner' | 'intermediate' | 'expert';
+export type PieceColor = 'white' | 'black';
 
 export interface ChessGameState {
   board: Piece[][];
   selectedPiece: Position | null;
   validMoves: Position[];
   currentPlayer: PieceColor;
-  capturedPieces: { white: string[], black: string[] };
+  capturedPieces: { white: Piece[], black: Piece[] };
   customization: GameCustomization;
   gameMode: GameMode;
   difficulty: Difficulty;
@@ -39,4 +27,21 @@ export interface ChessGameState {
   showHowToPlay: boolean;
   soundEnabled: boolean;
   isAiThinking: boolean;
+}
+
+export interface GameCustomization {
+  boardTheme: string;
+  pieceSet: string;
+  showCoordinates: boolean;
+  highlightMoves: boolean;
+  animations: boolean;
+}
+
+export type GameMode = 'human-vs-human' | 'human-vs-ai';
+export type Difficulty = 'beginner' | 'intermediate' | 'expert';
+
+export interface Move {
+  from: Position;
+  to: Position;
+  capturedPiece?: Piece;
 }

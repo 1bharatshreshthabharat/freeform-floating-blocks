@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
 
 export const CANVAS_WIDTH = 800;
@@ -27,7 +28,11 @@ interface FruitNinjaState {
     enableTrails: boolean;
     fruitSpawnRate: number;
     gameSpeed: number;
+    soundVolume: number;
   };
+  soundEnabled: boolean;
+  showHowToPlay: boolean;
+  showCustomization: boolean;
 }
 
 interface FruitNinjaActions {
@@ -43,6 +48,9 @@ interface FruitNinjaActions {
   setMistakeMessages: React.Dispatch<React.SetStateAction<any[]>>;
   setSliceTrail: React.Dispatch<React.SetStateAction<{points: Array<{x: number, y: number, time: number}>, width: number}>>;
   setCustomization: React.Dispatch<React.SetStateAction<any>>;
+  setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowHowToPlay: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowCustomization: React.Dispatch<React.SetStateAction<boolean>>;
   initializeGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -71,6 +79,9 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     points: [] as Array<{x: number, y: number, time: number}>,
     width: 5
   });
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [showCustomization, setShowCustomization] = useState(false);
 
   const [customization, setCustomization] = useState({
     difficulty: 'medium' as 'beginner' | 'medium' | 'expert',
@@ -80,7 +91,8 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     enableParticles: true,
     enableTrails: true,
     fruitSpawnRate: 1.0,
-    gameSpeed: 1.0
+    gameSpeed: 1.0,
+    soundVolume: 0.5
   });
 
   const initializeGame = useCallback(() => {
@@ -149,6 +161,9 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     mistakeMessages,
     sliceTrail,
     customization,
+    soundEnabled,
+    showHowToPlay,
+    showCustomization,
     canvasRef,
     setGameState,
     setScore,
@@ -161,6 +176,9 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     setMistakeMessages,
     setSliceTrail,
     setCustomization,
+    setSoundEnabled,
+    setShowHowToPlay,
+    setShowCustomization,
     initializeGame,
     pauseGame,
     resumeGame,

@@ -9,7 +9,7 @@ interface ChessGameActions {
   setSelectedPiece: React.Dispatch<React.SetStateAction<Position | null>>;
   setValidMoves: React.Dispatch<React.SetStateAction<Position[]>>;
   setCurrentPlayer: React.Dispatch<React.SetStateAction<PieceColor>>;
-  setCapturedPieces: React.Dispatch<React.SetStateAction<{ white: string[], black: string[] }>>;
+  setCapturedPieces: React.Dispatch<React.SetStateAction<{ white: Piece[], black: Piece[] }>>;
   setCustomization: React.Dispatch<React.SetStateAction<GameCustomization>>;
   setGameMode: React.Dispatch<React.SetStateAction<GameMode>>;
   setDifficulty: React.Dispatch<React.SetStateAction<Difficulty>>;
@@ -36,7 +36,7 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
   const [selectedPiece, setSelectedPiece] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Position[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<PieceColor>('white');
-  const [capturedPieces, setCapturedPieces] = useState({ white: [] as string[], black: [] as string[] });
+  const [capturedPieces, setCapturedPieces] = useState({ white: [] as Piece[], black: [] as Piece[] });
   const [isAiThinking, setIsAiThinking] = useState(false);
 
   const [customization, setCustomization] = useState<GameCustomization>({
@@ -69,16 +69,59 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
     setIsAiThinking(true);
     
     setTimeout(() => {
-      const bestMove = getBestMove(board, difficulty);
+      const allMoves = [];
+      
+      // Get all possible moves for AI (black)
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+          const piece = board[y][x];
+          if (piece && piece.color === 'black') {
+            const moves = getValidMoves(board, x, y);
+            moves.forEach(move => {
+              allMoves.push({
+                from: { x, y },
+                to: move
+              });
+            });
+          }
+        }
+      }
+      
+      let bestMove;
+      
+      if (difficulty === 'beginner') {
+        // Random move for beginner
+        bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+      } else {
+        // Get best move but add randomness
+        const calculatedBest = getBestMove(board, difficulty);
+        
+        if (difficulty === 'intermediate') {
+          // 70% chance to play best move, 30% random
+          if (Math.random() < 0.7 && calculatedBest) {
+            bestMove = calculatedBest;
+          } else {
+            bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+          }
+        } else {
+          // Expert: 90% best move, 10% random
+          if (Math.random() < 0.9 && calculatedBest) {
+            bestMove = calculatedBest;
+          } else {
+            bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+          }
+        }
+      }
       
       if (bestMove) {
         const newBoard = board.map(row => [...row]);
         const piece = newBoard[bestMove.from.y][bestMove.from.x];
+        const capturedPiece = newBoard[bestMove.to.y][bestMove.to.x];
         
-        if (newBoard[bestMove.to.y][bestMove.to.x]) {
+        if (capturedPiece) {
           setCapturedPieces(prev => ({
             ...prev,
-            [newBoard[bestMove.to.y][bestMove.to.x]!.color]: [...prev[newBoard[bestMove.to.y][bestMove.to.x]!.color], getPieceSymbol(newBoard[bestMove.to.y][bestMove.to.x]!.type, newBoard[bestMove.to.y][bestMove.to.x]!.color)]
+            [capturedPiece.color]: [...prev[capturedPiece.color], capturedPiece]
           }));
         }
         
@@ -90,8 +133,8 @@ export const ChessGameProvider: React.FC<{ children: React.ReactNode, onStatsUpd
       }
       
       setIsAiThinking(false);
-    }, 500);
-  }, [board, gameMode, currentPlayer, difficulty, isAiThinking, getPieceSymbol]);
+    }, 500 + Math.random() * 1000); // Random delay between 500-1500ms
+  }, [board, gameMode, currentPlayer, difficulty, isAiThinking]);
 
   useEffect(() => {
     if (gameMode === 'human-vs-ai' && currentPlayer === 'black' && !showVictory) {
