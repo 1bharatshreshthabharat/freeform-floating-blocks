@@ -8,6 +8,7 @@ interface CanvasRendererProps {
   gameState: string;
   fruits: any[];
   particles: any[];
+  mistakeMessages: any[];
   sliceTrail: any;
   score: number;
   level: number;
@@ -16,7 +17,6 @@ interface CanvasRendererProps {
   customization: any;
 }
 
-// Custom hook to get the draw function
 export const useFruitNinjaRenderer = (props: CanvasRendererProps) => {
   const draw = useCallback(() => {
     const canvas = props.canvasRef.current;
@@ -49,7 +49,6 @@ export const useFruitNinjaRenderer = (props: CanvasRendererProps) => {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw background pattern
     ctx.save();
     ctx.globalAlpha = 0.1;
     if (theme.pattern === 'bamboo') {
@@ -119,11 +118,24 @@ export const useFruitNinjaRenderer = (props: CanvasRendererProps) => {
         ctx.restore();
       });
 
+      // Draw mistake messages
+      props.mistakeMessages.forEach(message => {
+        ctx.save();
+        ctx.globalAlpha = message.life / message.maxLife;
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = message.color;
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 2;
+        ctx.strokeText(message.message, message.x, message.y);
+        ctx.fillText(message.message, message.x, message.y);
+        ctx.restore();
+      });
+
       // Draw slice trail with proper blade customization and alignment
       if (props.customization.enableTrails && props.sliceTrail.points.length > 1) {
         ctx.save();
         
-        // Apply blade type styling
         if (props.customization.bladeType === 'fire') {
           ctx.strokeStyle = '#FF4500';
           ctx.shadowColor = '#FF4500';
@@ -195,7 +207,6 @@ export const useFruitNinjaRenderer = (props: CanvasRendererProps) => {
       ctx.fillText('Click to Play Again', CANVAS_WIDTH/2, 360);
     }
 
-    // Game UI
     if (props.gameState === 'playing' || props.gameState === 'paused') {
       ctx.save();
       ctx.shadowColor = '#000';
@@ -208,7 +219,6 @@ export const useFruitNinjaRenderer = (props: CanvasRendererProps) => {
       ctx.fillText(`Level: ${props.level}`, 20, 70);
       ctx.fillText(`Combo: ${props.combo}x`, 20, 100);
       
-      // Lives
       ctx.textAlign = 'right';
       ctx.fillText('Lives:', CANVAS_WIDTH - 100, 40);
       for (let i = 0; i < props.lives; i++) {

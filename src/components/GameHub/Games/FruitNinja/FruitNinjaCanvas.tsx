@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFruitNinja } from './FruitNinjaProvider';
@@ -15,11 +14,13 @@ export const FruitNinjaCanvas: React.FC = () => {
     lives,
     fruits,
     particles,
+    mistakeMessages,
     sliceTrail,
     customization,
     canvasRef,
     setFruits,
     setParticles,
+    setMistakeMessages,
     setScore,
     setLevel,
     setCombo,
@@ -48,7 +49,8 @@ export const FruitNinjaCanvas: React.FC = () => {
     setCombo,
     setLives,
     setGameState,
-    score
+    score,
+    setMistakeMessages
   });
 
   const renderer = useFruitNinjaRenderer({
@@ -56,6 +58,7 @@ export const FruitNinjaCanvas: React.FC = () => {
     gameState,
     fruits,
     particles,
+    mistakeMessages,
     sliceTrail,
     score,
     level,

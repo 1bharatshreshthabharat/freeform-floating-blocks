@@ -1,51 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
 
-interface Fruit {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  type: string;
-  size: number;
-  rotation: number;
-  rotationSpeed: number;
-  sliced: boolean;
-  sliceTime: number;
-  isBomb: boolean;
-  isSpecial: boolean;
-  points: number;
-}
-
-interface SliceTrail {
-  points: Array<{x: number, y: number, time: number}>;
-  color: string;
-  width: number;
-}
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  maxLife: number;
-  color: string;
-  size: number;
-  type: 'juice' | 'spark' | 'explosion';
-}
-
-interface GameCustomization {
-  bladeType: string;
-  bladeColor: string;
-  backgroundTheme: string;
-  difficulty: 'beginner' | 'medium' | 'expert';
-  gameSpeed: number;
-  fruitSpawnRate: number;
-  enableParticles: boolean;
-  enableTrails: boolean;
-  soundVolume: number;
-}
+export const CANVAS_WIDTH = 800;
+export const CANVAS_HEIGHT = 600;
+export const GRAVITY = 0.6;
 
 interface FruitNinjaState {
   gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
@@ -54,51 +11,52 @@ interface FruitNinjaState {
   level: number;
   combo: number;
   lives: number;
-  fruits: Fruit[];
-  particles: Particle[];
-  sliceTrail: SliceTrail;
-  soundEnabled: boolean;
-  showCustomization: boolean;
-  showHowToPlay: boolean;
-  customization: GameCustomization;
-  capturedAnimation: {show: boolean, piece: string, position: {x: number, y: number}};
+  fruits: any[];
+  particles: any[];
+  mistakeMessages: any[];
+  sliceTrail: {
+    points: Array<{x: number, y: number, time: number}>;
+    width: number;
+  };
+  customization: {
+    difficulty: 'beginner' | 'medium' | 'expert';
+    backgroundTheme: string;
+    bladeType: string;
+    bladeColor: string;
+    enableParticles: boolean;
+    enableTrails: boolean;
+    fruitSpawnRate: number;
+    gameSpeed: number;
+  };
 }
 
 interface FruitNinjaActions {
+  canvasRef: React.RefObject<HTMLCanvasElement>;
   setGameState: React.Dispatch<React.SetStateAction<'menu' | 'playing' | 'paused' | 'gameOver'>>;
   setScore: React.Dispatch<React.SetStateAction<number>>;
   setHighScore: React.Dispatch<React.SetStateAction<number>>;
   setLevel: React.Dispatch<React.SetStateAction<number>>;
   setCombo: React.Dispatch<React.SetStateAction<number>>;
   setLives: React.Dispatch<React.SetStateAction<number>>;
-  setFruits: React.Dispatch<React.SetStateAction<Fruit[]>>;
-  setParticles: React.Dispatch<React.SetStateAction<Particle[]>>;
-  setSliceTrail: React.Dispatch<React.SetStateAction<SliceTrail>>;
-  setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
-  setShowCustomization: React.Dispatch<React.SetStateAction<boolean>>;
-  setShowHowToPlay: React.Dispatch<React.SetStateAction<boolean>>;
-  setCustomization: React.Dispatch<React.SetStateAction<GameCustomization>>;
-  setCapturedAnimation: React.Dispatch<React.SetStateAction<{show: boolean, piece: string, position: {x: number, y: number}}>>;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  gameLoopRef: React.RefObject<number>;
-  isSlicingRef: React.RefObject<boolean>;
+  setFruits: React.Dispatch<React.SetStateAction<any[]>>;
+  setParticles: React.Dispatch<React.SetStateAction<any[]>>;
+  setMistakeMessages: React.Dispatch<React.SetStateAction<any[]>>;
+  setSliceTrail: React.Dispatch<React.SetStateAction<{points: Array<{x: number, y: number, time: number}>, width: number}>>;
+  setCustomization: React.Dispatch<React.SetStateAction<any>>;
   initializeGame: () => void;
+  pauseGame: () => void;
+  resumeGame: () => void;
+  resetGame: () => void;
+  onStatsUpdate: (stats: any) => void;
   handleInteractionStart: (x: number, y: number) => void;
   handleInteractionMove: (x: number, y: number) => void;
   handleInteractionEnd: () => void;
-  onStatsUpdate: (stats: any) => void;
 }
 
 const FruitNinjaContext = createContext<(FruitNinjaState & FruitNinjaActions) | null>(null);
 
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
-const GRAVITY = 0.5;
-
 export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUpdate: (stats: any) => void }> = ({ children, onStatsUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number>();
-  const isSlicingRef = useRef(false);
   
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameOver'>('menu');
   const [score, setScore] = useState(0);
@@ -106,71 +64,77 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
   const [level, setLevel] = useState(1);
   const [combo, setCombo] = useState(0);
   const [lives, setLives] = useState(3);
-  const [fruits, setFruits] = useState<Fruit[]>([]);
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [sliceTrail, setSliceTrail] = useState<SliceTrail>({ points: [], color: '#FFD700', width: 5 });
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showCustomization, setShowCustomization] = useState(false);
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
-  const [capturedAnimation, setCapturedAnimation] = useState<{show: boolean, piece: string, position: {x: number, y: number}}>({
-    show: false, piece: '', position: {x: 0, y: 0}
+  const [fruits, setFruits] = useState<any[]>([]);
+  const [particles, setParticles] = useState<any[]>([]);
+  const [mistakeMessages, setMistakeMessages] = useState<any[]>([]);
+  const [sliceTrail, setSliceTrail] = useState({
+    points: [] as Array<{x: number, y: number, time: number}>,
+    width: 5
   });
 
-  const [customization, setCustomization] = useState<GameCustomization>({
+  const [customization, setCustomization] = useState({
+    difficulty: 'medium' as 'beginner' | 'medium' | 'expert',
+    backgroundTheme: 'dojo',
     bladeType: 'classic',
     bladeColor: '#FFD700',
-    backgroundTheme: 'dojo',
-    difficulty: 'medium',
-    gameSpeed: 1.0,
-    fruitSpawnRate: 1.0,
     enableParticles: true,
     enableTrails: true,
-    soundVolume: 0.7
+    fruitSpawnRate: 1.0,
+    gameSpeed: 1.0
   });
 
   const initializeGame = useCallback(() => {
-    setFruits([]);
-    setParticles([]);
-    setSliceTrail({ points: [], color: customization.bladeColor, width: 5 });
+    setGameState('playing');
     setScore(0);
     setLevel(1);
     setCombo(0);
     setLives(3);
-    setGameState('playing');
-  }, [customization.bladeColor]);
+    setFruits([]);
+    setParticles([]);
+    setMistakeMessages([]);
+    setSliceTrail({ points: [], width: 5 });
+  }, []);
 
-  const handleInteractionStart = useCallback((x: number, y: number) => {
-    if (gameState === 'menu') {
-      initializeGame();
-      return;
+  const pauseGame = useCallback(() => {
+    if (gameState === 'playing') {
+      setGameState('paused');
     }
-    
-    if (gameState === 'gameOver') {
-      initializeGame();
-      return;
-    }
-    
-    if (gameState !== 'playing') return;
-    
-    isSlicingRef.current = true;
-    
-    setSliceTrail(prev => ({
-      ...prev,
-      points: [{ x, y, time: 35 }]
-    }));
-  }, [gameState, initializeGame]);
-
-  const handleInteractionMove = useCallback((x: number, y: number) => {
-    if (!isSlicingRef.current || gameState !== 'playing') return;
-    
-    setSliceTrail(prev => ({
-      ...prev,
-      points: [...prev.points, { x, y, time: 35 }].slice(-15) // Keep more points for smoother trail
-    }));
   }, [gameState]);
 
+  const resumeGame = useCallback(() => {
+    if (gameState === 'paused') {
+      setGameState('playing');
+    }
+  }, [gameState]);
+
+  const resetGame = useCallback(() => {
+    setGameState('menu');
+    setScore(0);
+    setLevel(1);
+    setCombo(0);
+    setLives(3);
+    setFruits([]);
+    setParticles([]);
+    setMistakeMessages([]);
+    setSliceTrail({ points: [], width: 5 });
+  }, []);
+
+  const handleInteractionStart = useCallback((x: number, y: number) => {
+    setSliceTrail(prev => ({
+      ...prev,
+      points: [{ x, y, time: 30 }]
+    }));
+  }, []);
+
+  const handleInteractionMove = useCallback((x: number, y: number) => {
+    setSliceTrail(prev => ({
+      ...prev,
+      points: [...prev.points.slice(-10), { x, y, time: 30 }]
+    }));
+  }, []);
+
   const handleInteractionEnd = useCallback(() => {
-    isSlicingRef.current = false;
+    // Trail will fade naturally
   }, []);
 
   const value = {
@@ -182,12 +146,10 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     lives,
     fruits,
     particles,
+    mistakeMessages,
     sliceTrail,
-    soundEnabled,
-    showCustomization,
-    showHowToPlay,
     customization,
-    capturedAnimation,
+    canvasRef,
     setGameState,
     setScore,
     setHighScore,
@@ -196,20 +158,17 @@ export const FruitNinjaProvider: React.FC<{ children: React.ReactNode, onStatsUp
     setLives,
     setFruits,
     setParticles,
+    setMistakeMessages,
     setSliceTrail,
-    setSoundEnabled,
-    setShowCustomization,
-    setShowHowToPlay,
     setCustomization,
-    setCapturedAnimation,
-    canvasRef,
-    gameLoopRef,
-    isSlicingRef,
     initializeGame,
+    pauseGame,
+    resumeGame,
+    resetGame,
+    onStatsUpdate,
     handleInteractionStart,
     handleInteractionMove,
-    handleInteractionEnd,
-    onStatsUpdate
+    handleInteractionEnd
   };
 
   return (
@@ -226,5 +185,3 @@ export const useFruitNinja = () => {
   }
   return context;
 };
-
-export { CANVAS_WIDTH, CANVAS_HEIGHT, GRAVITY };

@@ -16,6 +16,7 @@ interface GameLogicProps {
   setLives: any;
   setGameState: any;
   score: number;
+  setMistakeMessages: any;
 }
 
 export const useFruitNinjaGameLogic = ({
@@ -30,17 +31,20 @@ export const useFruitNinjaGameLogic = ({
   setCombo,
   setLives,
   setGameState,
-  score
+  score,
+  setMistakeMessages
 }: GameLogicProps) => {
 
   const fruitTypesList = [
     'apple', 'orange', 'banana', 'watermelon', 'pineapple', 'strawberry', 'grape', 'kiwi',
-    'carrot', 'broccoli', 'tomato', 'eggplant', 'corn', 'pepper', 'onion', 'potato'
+    'peach', 'mango', 'coconut', 'lemon', 'cherry', 'blueberry',
+    'carrot', 'broccoli', 'tomato', 'eggplant', 'corn', 'pepper', 'onion', 'potato', 'cucumber', 'mushroom',
+    'avocado', 'pumpkin'
   ];
 
   const getDifficultyParams = useCallback(() => {
     const baseParams = {
-      beginner: { spawnRate: 0.008, bombChance: 0.03, speed: 0.7, specialChance: 0.12 },
+      beginner: { spawnRate: 0.008, bombChance: 0.05, speed: 0.7, specialChance: 0.12 },
       medium: { spawnRate: 0.012, bombChance: 0.08, speed: 1.0, specialChance: 0.09 },
       expert: { spawnRate: 0.018, bombChance: 0.12, speed: 1.4, specialChance: 0.06 }
     }[customization.difficulty];
@@ -74,6 +78,20 @@ export const useFruitNinjaGameLogic = ({
     setParticles((prev: any) => [...prev, ...newParticles]);
   }, [customization.enableParticles, setParticles]);
 
+  const createMistakeMessage = useCallback((x: number, y: number, message: string, pointsLost: number) => {
+    const newMessage = {
+      id: Date.now() + Math.random(),
+      x,
+      y,
+      message: `${message} -${pointsLost}`,
+      life: 120,
+      maxLife: 120,
+      color: '#FF0000'
+    };
+    
+    setMistakeMessages((prev: any) => [...prev, newMessage]);
+  }, [setMistakeMessages]);
+
   const sliceFruit = useCallback((fruitId: number) => {
     setFruits((prev: any) => {
       const fruitIndex = prev.findIndex((f: any) => f.id === fruitId);
@@ -86,6 +104,8 @@ export const useFruitNinjaGameLogic = ({
       newFruits[fruitIndex] = { ...fruit, sliced: true, sliceTime: Date.now() };
       
       if (fruit.isBomb) {
+        const pointsLost = Math.min(50, score);
+        setScore((current: number) => Math.max(0, current - pointsLost));
         setLives((current: number) => {
           const newLives = current - 1;
           if (newLives <= 0) {
@@ -94,6 +114,7 @@ export const useFruitNinjaGameLogic = ({
           return newLives;
         });
         createParticles(fruit.x, fruit.y, '#FF0000', 'explosion', 25);
+        createMistakeMessage(fruit.x, fruit.y, "BOMB HIT!", pointsLost);
         setCombo(0);
       } else {
         const points = fruit.points * (combo > 0 ? 1 + combo * 0.1 : 1);
@@ -111,37 +132,58 @@ export const useFruitNinjaGameLogic = ({
       
       return newFruits;
     });
-  }, [createParticles, score, combo, setCombo, setFruits, setGameState, setLevel, setLives, setScore]);
+  }, [createParticles, createMistakeMessage, score, combo, setCombo, setFruits, setGameState, setLevel, setLives, setScore]);
 
   const spawnFruit = useCallback(() => {
     const params = getDifficultyParams();
     
     if (Math.random() < params.spawnRate) {
-      const availableFruits = fruitTypesList.filter(type => fruitTypes[type as keyof typeof fruitTypes]);
-      const fruitType = availableFruits[Math.floor(Math.random() * availableFruits.length)];
-      const fruitData = fruitTypes[fruitType as keyof typeof fruitTypes] || fruitTypes.apple;
-      
       const isBomb = Math.random() < params.bombChance;
-      const isSpecial = !isBomb && Math.random() < params.specialChance;
       
-      const newFruit = {
-        id: Date.now() + Math.random(),
-        x: Math.random() * (CANVAS_WIDTH - 120) + 60,
-        y: CANVAS_HEIGHT + 60,
-        vx: (Math.random() - 0.5) * 5 * params.speed,
-        vy: -(Math.random() * 10 + 12) * params.speed,
-        type: isBomb ? 'bomb' : fruitType,
-        size: isBomb ? 45 : (35 + Math.random() * 25),
-        rotation: 0,
-        rotationSpeed: (Math.random() - 0.5) * 0.25,
-        sliced: false,
-        sliceTime: 0,
-        isBomb,
-        isSpecial,
-        points: isSpecial ? fruitData.points * 2 : fruitData.points
-      };
-      
-      setFruits((prev: any) => [...prev, newFruit]);
+      if (isBomb) {
+        const newBomb = {
+          id: Date.now() + Math.random(),
+          x: Math.random() * (CANVAS_WIDTH - 120) + 60,
+          y: CANVAS_HEIGHT + 60,
+          vx: (Math.random() - 0.5) * 5 * params.speed,
+          vy: -(Math.random() * 10 + 12) * params.speed,
+          type: 'bomb',
+          size: 45,
+          rotation: 0,
+          rotationSpeed: (Math.random() - 0.5) * 0.25,
+          sliced: false,
+          sliceTime: 0,
+          isBomb: true,
+          isSpecial: false,
+          points: 0
+        };
+        
+        setFruits((prev: any) => [...prev, newBomb]);
+      } else {
+        const availableFruits = fruitTypesList.filter(type => fruitTypes[type as keyof typeof fruitTypes]);
+        const fruitType = availableFruits[Math.floor(Math.random() * availableFruits.length)];
+        const fruitData = fruitTypes[fruitType as keyof typeof fruitTypes] || fruitTypes.apple;
+        const isSpecial = Math.random() < params.specialChance;
+        
+        const newFruit = {
+          id: Date.now() + Math.random(),
+          x: Math.random() * (CANVAS_WIDTH - 120) + 60,
+          y: CANVAS_HEIGHT + 60,
+          vx: (Math.random() - 0.5) * 5 * params.speed,
+          vy: -(Math.random() * 10 + 12) * params.speed,
+          type: fruitType,
+          size: 35 + Math.random() * 25,
+          rotation: 0,
+          rotationSpeed: (Math.random() - 0.5) * 0.25,
+          sliced: false,
+          sliceTime: 0,
+          isBomb: false,
+          isSpecial,
+          points: isSpecial ? fruitData.points * 2 : fruitData.points
+        };
+        
+        setFruits((prev: any) => [...prev, newFruit]);
+      }
     }
   }, [getDifficultyParams, setFruits, fruitTypesList]);
 
@@ -191,8 +233,18 @@ export const useFruitNinjaGameLogic = ({
         .filter((particle: any) => particle.life > 0);
     });
 
+    setMistakeMessages((prev: any) => {
+      return prev
+        .map((message: any) => ({
+          ...message,
+          y: message.y - 1,
+          life: message.life - 1
+        }))
+        .filter((message: any) => message.life > 0);
+    });
+
     spawnFruit();
-  }, [gameState, spawnFruit, setFruits, setGameState, setLives, setCombo, setParticles]);
+  }, [gameState, spawnFruit, setFruits, setGameState, setLives, setCombo, setParticles, setMistakeMessages]);
 
   return {
     sliceFruit,
