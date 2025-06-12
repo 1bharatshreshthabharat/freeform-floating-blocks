@@ -8,3 +8,4 @@ export * from './Games/ChessCustomization';
 export * from './Games/SnakeGame';
 export * from './Games/FlappyGame';
 export * from './Games/FruitNinjaGame';
+export * from './Games/BalloonPopGame';

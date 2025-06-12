@@ -1,15 +1,15 @@
-
 import React, { useState } from 'react';
 import { GameCard } from './GameCard';
 import { ChessGame } from './Games/ChessGame';
 import { SnakeGame } from './Games/SnakeGame';
 import { FlappyGame } from './Games/FlappyGame';
 import { FruitNinjaGame } from './Games/FruitNinjaGame';
+import { BalloonPopGame } from './Games/BalloonPopGame';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
 
-export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | null;
+export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -28,6 +28,15 @@ export const GameHub: React.FC = () => {
       difficulty: 'Advanced',
       category: 'Strategy',
       players: '1-2'
+    },
+    {
+      id: 'balloonpop' as const,
+      title: 'Balloon Pop Learning',
+      description: 'Educational balloon popping game with letters, numbers, math, and more!',
+      image: 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=400&h=300&fit=crop',
+      difficulty: 'Easy',
+      category: 'Educational',
+      players: '1'
     },
     {
       id: 'snake' as const,
@@ -62,6 +71,8 @@ export const GameHub: React.FC = () => {
     switch (currentGame) {
       case 'chess':
         return <ChessGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
+      case 'balloonpop':
+        return <BalloonPopGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'snake':
         return <SnakeGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'flappy':
@@ -155,23 +166,23 @@ export const GameHub: React.FC = () => {
         {/* Featured Sections */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Strategy Games</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Educational Games</h3>
             <div className="grid grid-cols-1 gap-4">
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-center space-x-4">
+                  <div className="text-4xl">🎈</div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Balloon Pop Learning</h4>
+                    <p className="text-gray-600">Interactive learning with letters, numbers, and more</p>
+                  </div>
+                </div>
+              </Card>
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center space-x-4">
                   <div className="text-4xl">♟️</div>
                   <div>
                     <h4 className="text-xl font-bold mb-2">Chess Mastery</h4>
                     <p className="text-gray-600">Advanced AI, customization, analysis tools</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🐍</div>
-                  <div>
-                    <h4 className="text-xl font-bold mb-2">Snake Adventure</h4>
-                    <p className="text-gray-600">Classic gameplay with modern twists</p>
                   </div>
                 </div>
               </Card>
@@ -183,19 +194,19 @@ export const GameHub: React.FC = () => {
             <div className="grid grid-cols-1 gap-4">
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🐦</div>
+                  <div className="text-4xl">🐍</div>
                   <div>
-                    <h4 className="text-xl font-bold mb-2">Flappy Challenge</h4>
-                    <p className="text-gray-600">Test your reflexes and precision</p>
+                    <h4 className="text-xl font-bold mb-2">Snake Adventure</h4>
+                    <p className="text-gray-600">Classic gameplay with modern twists</p>
                   </div>
                 </div>
               </Card>
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🍎</div>
+                  <div className="text-4xl">🐦</div>
                   <div>
-                    <h4 className="text-xl font-bold mb-2">Fruit Ninja</h4>
-                    <p className="text-gray-600">Slice fruits with speed and accuracy</p>
+                    <h4 className="text-xl font-bold mb-2">Flappy Challenge</h4>
+                    <p className="text-gray-600">Test your reflexes and precision</p>
                   </div>
                 </div>
               </Card>
