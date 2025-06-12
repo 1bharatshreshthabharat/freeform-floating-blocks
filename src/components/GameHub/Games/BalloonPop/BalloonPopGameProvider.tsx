@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme } from './types';
 import { generateQuestion, generateBalloons, getRandomColor } from './balloonPopUtils';
@@ -18,6 +17,109 @@ interface BalloonPopGameContextType {
 
 const BalloonPopGameContext = createContext<BalloonPopGameContextType | undefined>(undefined);
 
+const initialAchievements: Achievement[] = [
+  {
+    id: 'first_pop',
+    name: 'First Pop!',
+    description: 'Pop your first balloon',
+    icon: '🎈',
+    unlocked: false,
+    progress: 0,
+    target: 1
+  },
+  {
+    id: 'streak_master',
+    name: 'Streak Master',
+    description: 'Get 10 correct answers in a row',
+    icon: '🔥',
+    unlocked: false,
+    progress: 0,
+    target: 10
+  },
+  {
+    id: 'speed_demon',
+    name: 'Speed Demon',
+    description: 'Pop 20 balloons in 60 seconds',
+    icon: '⚡',
+    unlocked: false,
+    progress: 0,
+    target: 20
+  },
+  {
+    id: 'perfect_level',
+    name: 'Perfect Level',
+    description: 'Complete a level with 100% accuracy',
+    icon: '⭐',
+    unlocked: false,
+    progress: 0,
+    target: 1
+  },
+  {
+    id: 'powerup_master',
+    name: 'Power-up Master',
+    description: 'Use 25 power-ups',
+    icon: '💪',
+    unlocked: false,
+    progress: 0,
+    target: 25
+  },
+  {
+    id: 'time_champion',
+    name: 'Time Champion',
+    description: 'Win 5 time challenge games',
+    icon: '⏰',
+    unlocked: false,
+    progress: 0,
+    target: 5
+  },
+  {
+    id: 'category_expert',
+    name: 'Category Expert',
+    description: 'Master all learning categories',
+    icon: '🧠',
+    unlocked: false,
+    progress: 0,
+    target: 9
+  },
+  {
+    id: 'social_butterfly',
+    name: 'Social Butterfly',
+    description: 'Play 10 multiplayer games',
+    icon: '👥',
+    unlocked: false,
+    progress: 0,
+    target: 10
+  },
+  {
+    id: 'explorer',
+    name: 'World Explorer',
+    description: 'Play in all 8 themes',
+    icon: '🗺️',
+    unlocked: false,
+    progress: 0,
+    target: 8
+  },
+  {
+    id: 'persistent',
+    name: 'Never Give Up',
+    description: 'Play for 100 total minutes',
+    icon: '💎',
+    unlocked: false,
+    progress: 0,
+    target: 6000
+  }
+];
+
+const initialPowerUps: PowerUp[] = [
+  { type: 'slowTime', active: false, duration: 10, remaining: 0 },
+  { type: 'targetHelper', active: false, duration: 15, remaining: 0 },
+  { type: 'popAll', active: false, duration: 0, remaining: 0 },
+  { type: 'doublePoints', active: false, duration: 30, remaining: 0 },
+  { type: 'magnify', active: false, duration: 20, remaining: 0 },
+  { type: 'extraTime', active: false, duration: 0, remaining: 0 },
+  { type: 'shield', active: false, duration: 45, remaining: 0 }
+];
+
 const initialState: BalloonPopGameState = {
   balloons: [],
   currentQuestion: null,
@@ -27,7 +129,8 @@ const initialState: BalloonPopGameState = {
     correctAnswers: 0,
     wrongAnswers: 0,
     streak: 0,
-    timeElapsed: 0
+    timeElapsed: 0,
+    balloonsPoppedTotal: 0
   },
   isPlaying: false,
   isPaused: false,
@@ -40,7 +143,19 @@ const initialState: BalloonPopGameState = {
   multiplayer: false,
   showFeedback: false,
   feedbackMessage: '',
-  feedbackType: 'correct'
+  feedbackType: 'correct',
+  achievements: initialAchievements,
+  powerUps: initialPowerUps,
+  showAchievement: false,
+  currentAchievement: null,
+  difficulty: 'easy',
+  timeLimit: 120,
+  showHints: true,
+  particles: true,
+  showSettings: false,
+  showAchievements: false,
+  showLeaderboard: false,
+  gameMode: 'learning'
 };
 
 function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopGameState {
@@ -89,7 +204,8 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
           score: newScore,
           correctAnswers: isCorrect ? state.gameStats.correctAnswers + 1 : state.gameStats.correctAnswers,
           wrongAnswers: isCorrect ? state.gameStats.wrongAnswers : state.gameStats.wrongAnswers + 1,
-          streak: newStreak
+          streak: newStreak,
+          balloonsPoppedTotal: state.gameStats.balloonsPoppedTotal + 1
         },
         showFeedback: true,
         feedbackMessage: isCorrect ? 'Great job! 🎉' : 'Try again! 💪',
@@ -132,6 +248,72 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
         gameStats: { ...state.gameStats, timeElapsed: state.gameStats.timeElapsed + 1 }
       };
 
+    case 'HIDE_INSTRUCTIONS':
+      return { ...state, showInstructions: false };
+      
+    case 'TOGGLE_SETTINGS':
+      return { ...state, showSettings: !state.showSettings };
+      
+    case 'TOGGLE_ACHIEVEMENTS':
+      return { ...state, showAchievements: !state.showAchievements };
+      
+    case 'UPDATE_SETTING':
+      return { ...state, [action.payload.key]: action.payload.value };
+      
+    case 'USE_POWERUP':
+      return {
+        ...state,
+        powerUps: state.powerUps.map(powerUp =>
+          powerUp.type === action.payload && !powerUp.active
+            ? { ...powerUp, active: true, remaining: powerUp.duration }
+            : powerUp
+        ),
+        gameStats: {
+          ...state.gameStats,
+          powerUpsUsed: state.gameStats.powerUpsUsed + 1
+        }
+      };
+      
+    case 'UPDATE_POWERUPS':
+      return {
+        ...state,
+        powerUps: state.powerUps.map(powerUp =>
+          powerUp.active
+            ? {
+                ...powerUp,
+                remaining: Math.max(0, powerUp.remaining - 1),
+                active: powerUp.remaining > 1
+              }
+            : powerUp
+        )
+      };
+      
+    case 'CHECK_ACHIEVEMENTS':
+      const updatedAchievements = state.achievements.map(achievement => {
+        let newProgress = achievement.progress;
+        
+        switch (achievement.id) {
+          case 'first_pop':
+            newProgress = state.gameStats.balloonsPoppedTotal > 0 ? 1 : 0;
+            break;
+          case 'streak_master':
+            newProgress = Math.max(newProgress, state.gameStats.streak);
+            break;
+          case 'powerup_master':
+            newProgress = state.gameStats.powerUpsUsed;
+            break;
+          // Add more achievement logic here
+        }
+        
+        return {
+          ...achievement,
+          progress: Math.min(newProgress, achievement.target),
+          unlocked: newProgress >= achievement.target
+        };
+      });
+      
+      return { ...state, achievements: updatedAchievements };
+      
     default:
       return state;
   }

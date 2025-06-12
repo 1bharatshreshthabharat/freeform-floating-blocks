@@ -5,11 +5,13 @@ export interface Balloon {
   y: number;
   speed: number;
   content: string;
-  type: 'correct' | 'incorrect';
+  type: 'correct' | 'incorrect' | 'powerup' | 'bonus';
   color: string;
   size: number;
   popped: boolean;
   popAnimation: boolean;
+  trail?: boolean;
+  special?: boolean;
 }
 
 export interface Question {
@@ -17,11 +19,34 @@ export interface Question {
   correctAnswers: string[];
   category: LearningCategory;
   level: number;
+  hint?: string;
+  voiceInstruction?: string;
 }
 
-export type LearningCategory = 'letters' | 'numbers' | 'math' | 'colors' | 'shapes' | 'animals';
+export type LearningCategory = 'letters' | 'numbers' | 'math' | 'colors' | 'shapes' | 'animals' | 'words' | 'science' | 'geography';
 
-export type GameTheme = 'jungle' | 'space' | 'underwater' | 'rainbow';
+export type GameTheme = 'jungle' | 'space' | 'underwater' | 'rainbow' | 'castle' | 'farm' | 'ocean' | 'forest';
+
+export type GameMode = 'learning' | 'timeChallenge' | 'endless' | 'multiplayer' | 'story';
+
+export type PowerUpType = 'slowTime' | 'targetHelper' | 'popAll' | 'doublePoints' | 'magnify' | 'extraTime' | 'shield';
+
+export interface PowerUp {
+  type: PowerUpType;
+  active: boolean;
+  duration: number;
+  remaining: number;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  progress: number;
+  target: number;
+}
 
 export interface GameStats {
   score: number;
@@ -30,6 +55,10 @@ export interface GameStats {
   wrongAnswers: number;
   streak: number;
   timeElapsed: number;
+  balloonsPoppedTotal: number;
+  powerUpsUsed: number;
+  highScore: number;
+  averageAccuracy: number;
 }
 
 export interface BalloonPopGameState {
@@ -42,10 +71,22 @@ export interface BalloonPopGameState {
   showInstructions: boolean;
   category: LearningCategory;
   theme: GameTheme;
+  gameMode: GameMode;
   soundEnabled: boolean;
   voiceEnabled: boolean;
   multiplayer: boolean;
   showFeedback: boolean;
   feedbackMessage: string;
-  feedbackType: 'correct' | 'incorrect' | 'encouragement';
+  feedbackType: 'correct' | 'incorrect' | 'encouragement' | 'powerup' | 'achievement';
+  powerUps: PowerUp[];
+  achievements: Achievement[];
+  showAchievement: boolean;
+  currentAchievement: Achievement | null;
+  difficulty: 'easy' | 'medium' | 'hard';
+  timeLimit: number;
+  showHints: boolean;
+  particles: boolean;
+  showSettings: boolean;
+  showAchievements: boolean;
+  showLeaderboard: boolean;
 }
