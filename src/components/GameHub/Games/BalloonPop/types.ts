@@ -12,6 +12,8 @@ export interface Balloon {
   popAnimation: boolean;
   trail?: boolean;
   special?: boolean;
+  rotation: number;
+  bobOffset: number;
 }
 
 export interface Question {

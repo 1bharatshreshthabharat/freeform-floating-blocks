@@ -32,6 +32,21 @@ export const generateQuestion = (category: LearningCategory, level: number): Que
       { instruction: "Pop farm animals!", correctAnswers: ['Cow', 'Pig', 'Chicken'], category: 'animals', level },
       { instruction: "Find ocean animals", correctAnswers: ['Fish', 'Whale', 'Dolphin'], category: 'animals', level },
       { instruction: "Pop animals that fly", correctAnswers: ['Bird', 'Bee', 'Butterfly'], category: 'animals', level }
+    ],
+    words: [
+      { instruction: "Pop three-letter words", correctAnswers: ['Cat', 'Dog', 'Sun'], category: 'words', level },
+      { instruction: "Find rhyming words with 'Cat'", correctAnswers: ['Hat', 'Bat', 'Mat'], category: 'words', level },
+      { instruction: "Pop action words", correctAnswers: ['Run', 'Jump', 'Swim'], category: 'words', level }
+    ],
+    science: [
+      { instruction: "Pop planets!", correctAnswers: ['Mars', 'Earth', 'Venus'], category: 'science', level },
+      { instruction: "Find weather types", correctAnswers: ['Rain', 'Snow', 'Sun'], category: 'science', level },
+      { instruction: "Pop living things", correctAnswers: ['Tree', 'Fish', 'Bird'], category: 'science', level }
+    ],
+    geography: [
+      { instruction: "Pop continents!", correctAnswers: ['Asia', 'Africa', 'Europe'], category: 'geography', level },
+      { instruction: "Find oceans", correctAnswers: ['Pacific', 'Atlantic', 'Indian'], category: 'geography', level },
+      { instruction: "Pop countries", correctAnswers: ['USA', 'Canada', 'Mexico'], category: 'geography', level }
     ]
   };
 
@@ -41,7 +56,7 @@ export const generateQuestion = (category: LearningCategory, level: number): Que
 
 export const generateBalloons = (category: LearningCategory, level: number): Balloon[] => {
   const balloons: Balloon[] = [];
-  const colors = ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+  const colors = getCategoryColors(category);
   
   const content: Record<LearningCategory, string[]> = {
     letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
@@ -49,7 +64,10 @@ export const generateBalloons = (category: LearningCategory, level: number): Bal
     math: ['2+2', '3+3', '5+5', '6+4', '3+7', '1+9', '8-3', '9-4', '2×3', '3×2'],
     colors: ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Pink', 'Brown'],
     shapes: ['Circle', 'Square', 'Triangle', 'Rectangle', 'Star', 'Heart', 'Diamond', 'Oval'],
-    animals: ['Cat', 'Dog', 'Bird', 'Fish', 'Cow', 'Pig', 'Lion', 'Tiger', 'Elephant', 'Bee']
+    animals: ['Cat', 'Dog', 'Bird', 'Fish', 'Cow', 'Pig', 'Lion', 'Tiger', 'Elephant', 'Bee'],
+    words: ['Cat', 'Dog', 'Sun', 'Hat', 'Bat', 'Mat', 'Run', 'Jump', 'Swim', 'Book'],
+    science: ['Mars', 'Earth', 'Venus', 'Rain', 'Snow', 'Sun', 'Tree', 'Rock', 'Water', 'Air'],
+    geography: ['Asia', 'Africa', 'Europe', 'Pacific', 'Atlantic', 'Indian', 'USA', 'Canada', 'Mexico', 'River']
   };
 
   const availableContent = content[category];
@@ -59,20 +77,38 @@ export const generateBalloons = (category: LearningCategory, level: number): Bal
     const randomContent = availableContent[Math.floor(Math.random() * availableContent.length)];
     
     balloons.push({
-      id: `balloon-${i}`,
+      id: `balloon-${i}-${Date.now()}`,
       x: Math.random() * 700 + 50,
-      y: Math.random() * 200 + 500,
-      speed: Math.random() * 2 + 1 + (level * 0.2),
+      y: Math.random() * 100 + 500,
+      speed: Math.random() * 1.5 + 0.8 + (level * 0.1),
       content: randomContent,
       type: Math.random() > 0.3 ? 'correct' : 'incorrect',
       color: colors[Math.floor(Math.random() * colors.length)],
-      size: Math.random() * 20 + 60,
+      size: Math.random() * 15 + 50,
       popped: false,
-      popAnimation: false
+      popAnimation: false,
+      rotation: Math.random() * 360,
+      bobOffset: Math.random() * Math.PI * 2
     });
   }
 
   return balloons;
+};
+
+export const getCategoryColors = (category: LearningCategory): string[] => {
+  const categoryColorMap: Record<LearningCategory, string[]> = {
+    letters: ['#FF6B9D', '#C44569', '#F8B500', '#FF7675'],
+    numbers: ['#45B7D1', '#0984e3', '#74B9FF', '#00B894'],
+    math: ['#96CEB4', '#00B894', '#55A3FF', '#26C281'],
+    colors: ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'],
+    shapes: ['#A29BFE', '#6C5CE7', '#FD79A8', '#FDCB6E'],
+    animals: ['#F39C12', '#E67E22', '#D63031', '#74B9FF'],
+    words: ['#E17055', '#81ECEC', '#FD79A8', '#FDCB6E'],
+    science: ['#00B894', '#0984E3', '#6C5CE7', '#A29BFE'],
+    geography: ['#00B894', '#74B9FF', '#0984E3', '#55A3FF']
+  };
+  
+  return categoryColorMap[category] || ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7'];
 };
 
 export const getRandomColor = (): string => {

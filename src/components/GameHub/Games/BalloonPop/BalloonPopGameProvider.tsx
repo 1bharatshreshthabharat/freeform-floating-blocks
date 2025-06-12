@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme } from './types';
-import { generateQuestion, generateBalloons, getRandomColor } from './balloonPopUtils';
+import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme, Achievement, PowerUp } from './types';
+import { generateQuestion, generateBalloons } from './balloonPopUtils';
 
 interface BalloonPopGameContextType {
   state: BalloonPopGameState;
@@ -130,7 +130,10 @@ const initialState: BalloonPopGameState = {
     wrongAnswers: 0,
     streak: 0,
     timeElapsed: 0,
-    balloonsPoppedTotal: 0
+    balloonsPoppedTotal: 0,
+    powerUpsUsed: 0,
+    highScore: 0,
+    averageAccuracy: 0
   },
   isPlaying: false,
   isPaused: false,
@@ -138,14 +141,15 @@ const initialState: BalloonPopGameState = {
   showInstructions: true,
   category: 'letters',
   theme: 'rainbow',
+  gameMode: 'learning',
   soundEnabled: true,
   voiceEnabled: true,
   multiplayer: false,
   showFeedback: false,
   feedbackMessage: '',
   feedbackType: 'correct',
-  achievements: initialAchievements,
   powerUps: initialPowerUps,
+  achievements: initialAchievements,
   showAchievement: false,
   currentAchievement: null,
   difficulty: 'easy',
@@ -154,37 +158,50 @@ const initialState: BalloonPopGameState = {
   particles: true,
   showSettings: false,
   showAchievements: false,
-  showLeaderboard: false,
-  gameMode: 'learning'
+  showLeaderboard: false
 };
 
 function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopGameState {
   switch (action.type) {
     case 'START_GAME':
+      const newQuestion = generateQuestion(state.category, state.gameStats.level);
       return {
         ...state,
         isPlaying: true,
         isPaused: false,
         gameOver: false,
         showInstructions: false,
-        currentQuestion: generateQuestion(state.category, state.gameStats.level),
+        currentQuestion: newQuestion,
         balloons: generateBalloons(state.category, state.gameStats.level)
       };
 
-    case 'PAUSE_GAME':
-      return { ...state, isPaused: !state.isPaused };
-
-    case 'RESET_GAME':
-      return {
-        ...initialState,
-        category: state.category,
-        theme: state.theme,
-        soundEnabled: state.soundEnabled,
-        voiceEnabled: state.voiceEnabled
-      };
-
     case 'UPDATE_BALLOONS':
-      return { ...state, balloons: action.balloons };
+      const updatedBalloons = state.balloons
+        .filter(balloon => balloon.y > -100 && !balloon.popped)
+        .map(balloon => {
+          const time = Date.now() * 0.003;
+          const slowTimeMultiplier = state.powerUps.find(p => p.type === 'slowTime' && p.active) ? 0.3 : 1;
+          const magnifyMultiplier = state.powerUps.find(p => p.type === 'magnify' && p.active) ? 1.5 : 1;
+          
+          return {
+            ...balloon,
+            y: balloon.y - (balloon.speed * slowTimeMultiplier),
+            x: balloon.x + Math.sin(time + balloon.bobOffset) * 0.8,
+            rotation: balloon.rotation + 1,
+            size: balloon.size * magnifyMultiplier
+          };
+        });
+
+      // Add new balloons periodically
+      if (Math.random() < 0.02 && updatedBalloons.length < 8) {
+        const newBalloon = generateBalloons(state.category, state.gameStats.level)[0];
+        if (newBalloon) {
+          newBalloon.id = `balloon-${Date.now()}-${Math.random()}`;
+          updatedBalloons.push(newBalloon);
+        }
+      }
+
+      return { ...state, balloons: updatedBalloons };
 
     case 'POP_BALLOON':
       const balloon = state.balloons.find(b => b.id === action.balloonId);
@@ -224,10 +241,12 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
       };
 
     case 'CHANGE_CATEGORY':
+      const categoryQuestion = generateQuestion(action.category, state.gameStats.level);
       return { 
         ...state, 
         category: action.category,
-        currentQuestion: state.isPlaying ? generateQuestion(action.category, state.gameStats.level) : null
+        currentQuestion: state.isPlaying ? categoryQuestion : null,
+        balloons: state.isPlaying ? generateBalloons(action.category, state.gameStats.level) : state.balloons
       };
 
     case 'CHANGE_THEME':
@@ -357,24 +376,16 @@ export const BalloonPopGameProvider: React.FC<{ children: React.ReactNode }> = (
     dispatch({ type: 'TOGGLE_VOICE' });
   }, []);
 
-  // Game loop for balloon movement
+  // Enhanced game loop for smooth balloon movement
   useEffect(() => {
     if (!state.isPlaying || state.isPaused) return;
 
     const interval = setInterval(() => {
-      dispatch(prevState => ({
-        type: 'UPDATE_BALLOONS',
-        balloons: prevState.balloons
-          .filter(balloon => balloon.y > -100 && !balloon.popped)
-          .map(balloon => ({
-            ...balloon,
-            y: balloon.y - balloon.speed
-          }))
-      }));
-    }, 50);
+      dispatch({ type: 'UPDATE_BALLOONS' });
+    }, 32); // ~60fps for smooth animation
 
     return () => clearInterval(interval);
-  }, [state.isPlaying, state.isPaused]);
+  }, [state.isPlaying, state.isPaused, state.category, state.powerUps]);
 
   // Timer
   useEffect(() => {
