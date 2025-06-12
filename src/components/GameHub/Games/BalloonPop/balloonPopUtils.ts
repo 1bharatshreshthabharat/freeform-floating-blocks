@@ -6,32 +6,36 @@ export const generateQuestion = (category: LearningCategory, level: number): Que
     letters: [
       { instruction: "Pop all vowels!", correctAnswers: ['A', 'E', 'I', 'O', 'U'], category: 'letters', level },
       { instruction: "Find the letter 'B'", correctAnswers: ['B'], category: 'letters', level },
-      { instruction: "Pop consonants only", correctAnswers: ['B', 'C', 'D', 'F', 'G'], category: 'letters', level }
+      { instruction: "Pop consonants only", correctAnswers: ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'], category: 'letters', level }
     ],
     numbers: [
-      { instruction: "Pop the number 5", correctAnswers: ['5'], category: 'numbers', level },
-      { instruction: "Find even numbers", correctAnswers: ['2', '4', '6', '8'], category: 'numbers', level },
-      { instruction: "Pop numbers greater than 5", correctAnswers: ['6', '7', '8', '9'], category: 'numbers', level }
+      { instruction: "Pop numbers greater than 5", correctAnswers: ['6', '7', '8', '9', '10'], category: 'numbers', level },
+      { instruction: "Find even numbers", correctAnswers: ['2', '4', '6', '8', '10'], category: 'numbers', level },
+      { instruction: "Pop odd numbers", correctAnswers: ['1', '3', '5', '7', '9'], category: 'numbers', level }
     ],
     math: [
-      { instruction: "Pop balloons that equal 10", correctAnswers: ['5+5', '6+4', '3+7'], category: 'math', level },
-      { instruction: "Find 2×3", correctAnswers: ['6'], category: 'math', level },
-      { instruction: "Pop results of 15-7", correctAnswers: ['8'], category: 'math', level }
+      { instruction: "5 + 3 = ?", correctAnswers: ['8'], category: 'math', level },
+      { instruction: "10 - 4 = ?", correctAnswers: ['6'], category: 'math', level },
+      { instruction: "3 × 2 = ?", correctAnswers: ['6'], category: 'math', level },
+      { instruction: "12 ÷ 3 = ?", correctAnswers: ['4'], category: 'math', level },
+      { instruction: "7 + 2 = ?", correctAnswers: ['9'], category: 'math', level }
     ],
     colors: [
-      { instruction: "Pop red balloons!", correctAnswers: ['Red'], category: 'colors', level },
-      { instruction: "Find primary colors", correctAnswers: ['Red', 'Blue', 'Yellow'], category: 'colors', level },
-      { instruction: "Pop warm colors", correctAnswers: ['Red', 'Orange', 'Yellow'], category: 'colors', level }
+      { instruction: "Pop RED balloons!", correctAnswers: ['Red'], category: 'colors', level },
+      { instruction: "Find BLUE balloons", correctAnswers: ['Blue'], category: 'colors', level },
+      { instruction: "Pop GREEN balloons", correctAnswers: ['Green'], category: 'colors', level },
+      { instruction: "Find YELLOW balloons", correctAnswers: ['Yellow'], category: 'colors', level }
     ],
     shapes: [
-      { instruction: "Pop circles!", correctAnswers: ['Circle'], category: 'shapes', level },
-      { instruction: "Find triangles", correctAnswers: ['Triangle'], category: 'shapes', level },
-      { instruction: "Pop 4-sided shapes", correctAnswers: ['Square', 'Rectangle'], category: 'shapes', level }
+      { instruction: "Pop CIRCLES!", correctAnswers: ['●'], category: 'shapes', level },
+      { instruction: "Find TRIANGLES", correctAnswers: ['▲'], category: 'shapes', level },
+      { instruction: "Pop SQUARES", correctAnswers: ['■'], category: 'shapes', level },
+      { instruction: "Find STARS", correctAnswers: ['★'], category: 'shapes', level }
     ],
     animals: [
-      { instruction: "Pop farm animals!", correctAnswers: ['Cow', 'Pig', 'Chicken'], category: 'animals', level },
-      { instruction: "Find ocean animals", correctAnswers: ['Fish', 'Whale', 'Dolphin'], category: 'animals', level },
-      { instruction: "Pop animals that fly", correctAnswers: ['Bird', 'Bee', 'Butterfly'], category: 'animals', level }
+      { instruction: "Pop farm animals!", correctAnswers: ['🐄', '🐷', '🐓'], category: 'animals', level },
+      { instruction: "Find ocean animals", correctAnswers: ['🐟', '🐋', '🐬'], category: 'animals', level },
+      { instruction: "Pop animals that fly", correctAnswers: ['🦅', '🐝', '🦋'], category: 'animals', level }
     ],
     words: [
       { instruction: "Pop three-letter words", correctAnswers: ['Cat', 'Dog', 'Sun'], category: 'words', level },
@@ -44,9 +48,10 @@ export const generateQuestion = (category: LearningCategory, level: number): Que
       { instruction: "Pop living things", correctAnswers: ['Tree', 'Fish', 'Bird'], category: 'science', level }
     ],
     geography: [
-      { instruction: "Pop continents!", correctAnswers: ['Asia', 'Africa', 'Europe'], category: 'geography', level },
-      { instruction: "Find oceans", correctAnswers: ['Pacific', 'Atlantic', 'Indian'], category: 'geography', level },
-      { instruction: "Pop countries", correctAnswers: ['USA', 'Canada', 'Mexico'], category: 'geography', level }
+      { instruction: "Capital of France?", correctAnswers: ['Paris'], category: 'geography', level },
+      { instruction: "Longest river in world?", correctAnswers: ['Nile'], category: 'geography', level },
+      { instruction: "Largest continent?", correctAnswers: ['Asia'], category: 'geography', level },
+      { instruction: "Capital of Japan?", correctAnswers: ['Tokyo'], category: 'geography', level }
     ]
   };
 
@@ -54,36 +59,52 @@ export const generateQuestion = (category: LearningCategory, level: number): Que
   return categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
 };
 
-export const generateBalloons = (category: LearningCategory, level: number): Balloon[] => {
+export const generateBalloons = (category: LearningCategory, level: number, question: Question): Balloon[] => {
   const balloons: Balloon[] = [];
   const colors = getCategoryColors(category);
   
   const content: Record<LearningCategory, string[]> = {
     letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
     numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-    math: ['2+2', '3+3', '5+5', '6+4', '3+7', '1+9', '8-3', '9-4', '2×3', '3×2'],
+    math: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
     colors: ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Pink', 'Brown'],
-    shapes: ['Circle', 'Square', 'Triangle', 'Rectangle', 'Star', 'Heart', 'Diamond', 'Oval'],
-    animals: ['Cat', 'Dog', 'Bird', 'Fish', 'Cow', 'Pig', 'Lion', 'Tiger', 'Elephant', 'Bee'],
-    words: ['Cat', 'Dog', 'Sun', 'Hat', 'Bat', 'Mat', 'Run', 'Jump', 'Swim', 'Book'],
-    science: ['Mars', 'Earth', 'Venus', 'Rain', 'Snow', 'Sun', 'Tree', 'Rock', 'Water', 'Air'],
-    geography: ['Asia', 'Africa', 'Europe', 'Pacific', 'Atlantic', 'Indian', 'USA', 'Canada', 'Mexico', 'River']
+    shapes: ['●', '▲', '■', '★', '♦', '♥', '♠', '♣'],
+    animals: ['🐄', '🐷', '🐓', '🐟', '🐋', '🐬', '🦅', '🐝', '🦋', '🐱', '🐶', '🐰'],
+    words: ['Cat', 'Dog', 'Sun', 'Hat', 'Bat', 'Mat', 'Run', 'Jump', 'Swim', 'Book', 'Tree', 'Car'],
+    science: ['Mars', 'Earth', 'Venus', 'Rain', 'Snow', 'Sun', 'Tree', 'Rock', 'Water', 'Air', 'Fire', 'Moon'],
+    geography: ['Paris', 'Tokyo', 'London', 'Berlin', 'Rome', 'Madrid', 'Nile', 'Amazon', 'Asia', 'Europe', 'Africa', 'America']
   };
 
   const availableContent = content[category];
   const balloonCount = Math.min(8 + level, 12);
 
+  // Ensure at least 2-3 correct answers are in the balloons
+  const correctCount = Math.min(3, question.correctAnswers.length);
+  const correctBalloons = question.correctAnswers.slice(0, correctCount);
+
   for (let i = 0; i < balloonCount; i++) {
-    const randomContent = availableContent[Math.floor(Math.random() * availableContent.length)];
+    let balloonContent: string;
+    let balloonType: 'correct' | 'incorrect';
     
+    if (i < correctCount) {
+      balloonContent = correctBalloons[i];
+      balloonType = 'correct';
+    } else {
+      // Add some incorrect options
+      do {
+        balloonContent = availableContent[Math.floor(Math.random() * availableContent.length)];
+      } while (question.correctAnswers.includes(balloonContent));
+      balloonType = 'incorrect';
+    }
+
     balloons.push({
       id: `balloon-${i}-${Date.now()}`,
       x: Math.random() * 700 + 50,
       y: Math.random() * 100 + 500,
       speed: Math.random() * 1.5 + 0.8 + (level * 0.1),
-      content: randomContent,
-      type: Math.random() > 0.3 ? 'correct' : 'incorrect',
-      color: colors[Math.floor(Math.random() * colors.length)],
+      content: balloonContent,
+      type: balloonType,
+      color: getCategorySpecificColor(category, balloonContent, balloonType),
       size: Math.random() * 15 + 50,
       popped: false,
       popAnimation: false,
@@ -92,7 +113,38 @@ export const generateBalloons = (category: LearningCategory, level: number): Bal
     });
   }
 
-  return balloons;
+  return balloons.sort(() => Math.random() - 0.5); // Shuffle the balloons
+};
+
+export const getCategorySpecificColor = (category: LearningCategory, content: string, type: 'correct' | 'incorrect'): string => {
+  if (category === 'colors') {
+    const colorMap: { [key: string]: string } = {
+      'Red': '#FF0000',
+      'Blue': '#0000FF',
+      'Green': '#00FF00',
+      'Yellow': '#FFFF00',
+      'Purple': '#800080',
+      'Orange': '#FFA500',
+      'Pink': '#FFC0CB',
+      'Brown': '#A52A2A'
+    };
+    return colorMap[content] || '#FF6B9D';
+  }
+  
+  const categoryColorMap: Record<LearningCategory, string[]> = {
+    letters: ['#FF6B9D', '#C44569', '#F8B500', '#FF7675'],
+    numbers: ['#45B7D1', '#0984e3', '#74B9FF', '#00B894'],
+    math: ['#96CEB4', '#00B894', '#55A3FF', '#26C281'],
+    colors: ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'],
+    shapes: ['#A29BFE', '#6C5CE7', '#FD79A8', '#FDCB6E'],
+    animals: ['#F39C12', '#E67E22', '#D63031', '#74B9FF'],
+    words: ['#E17055', '#81ECEC', '#FD79A8', '#FDCB6E'],
+    science: ['#00B894', '#0984E3', '#6C5CE7', '#A29BFE'],
+    geography: ['#00B894', '#74B9FF', '#0984E3', '#55A3FF']
+  };
+  
+  const colors = categoryColorMap[category] || ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7'];
+  return colors[Math.floor(Math.random() * colors.length)];
 };
 
 export const getCategoryColors = (category: LearningCategory): string[] => {
@@ -109,11 +161,6 @@ export const getCategoryColors = (category: LearningCategory): string[] => {
   };
   
   return categoryColorMap[category] || ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7'];
-};
-
-export const getRandomColor = (): string => {
-  const colors = ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE'];
-  return colors[Math.floor(Math.random() * colors.length)];
 };
 
 export const getThemeColors = (theme: string) => {
@@ -133,6 +180,22 @@ export const getThemeColors = (theme: string) => {
     underwater: {
       background: 'linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%)',
       accent: '#00BCD4'
+    },
+    castle: {
+      background: 'linear-gradient(135deg, #8B4513 0%, #DAA520 100%)',
+      accent: '#DAA520'
+    },
+    farm: {
+      background: 'linear-gradient(135deg, #228B22 0%, #ADFF2F 100%)',
+      accent: '#228B22'
+    },
+    ocean: {
+      background: 'linear-gradient(135deg, #006994 0%, #00A8CC 100%)',
+      accent: '#00A8CC'
+    },
+    forest: {
+      background: 'linear-gradient(135deg, #2F4F2F 0%, #8FBC8F 100%)',
+      accent: '#2F4F2F'
     }
   };
   

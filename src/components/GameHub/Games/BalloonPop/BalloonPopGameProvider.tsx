@@ -147,7 +147,7 @@ const initialState: BalloonPopGameState = {
   multiplayer: false,
   showFeedback: false,
   feedbackMessage: '',
-  feedbackType: 'correct',
+  feedbackType: 'correct' | 'incorrect' | 'encouragement' | 'powerup' | 'achievement',
   powerUps: initialPowerUps,
   achievements: initialAchievements,
   showAchievement: false,
@@ -172,10 +172,28 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
         gameOver: false,
         showInstructions: false,
         currentQuestion: newQuestion,
-        balloons: generateBalloons(state.category, state.gameStats.level)
+        balloons: generateBalloons(state.category, state.gameStats.level, newQuestion),
+        gameStats: { ...state.gameStats, timeElapsed: 0 }
+      };
+
+    case 'PAUSE_GAME':
+      return {
+        ...state,
+        isPaused: !state.isPaused
+      };
+
+    case 'RESET_GAME':
+      return {
+        ...initialState,
+        category: state.category,
+        theme: state.theme,
+        soundEnabled: state.soundEnabled,
+        voiceEnabled: state.voiceEnabled
       };
 
     case 'UPDATE_BALLOONS':
+      if (state.isPaused || !state.isPlaying) return state;
+      
       const updatedBalloons = state.balloons
         .filter(balloon => balloon.y > -100 && !balloon.popped)
         .map(balloon => {
@@ -193,8 +211,8 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
         });
 
       // Add new balloons periodically
-      if (Math.random() < 0.02 && updatedBalloons.length < 8) {
-        const newBalloon = generateBalloons(state.category, state.gameStats.level)[0];
+      if (Math.random() < 0.02 && updatedBalloons.length < 8 && state.currentQuestion) {
+        const newBalloon = generateBalloons(state.category, state.gameStats.level, state.currentQuestion)[0];
         if (newBalloon) {
           newBalloon.id = `balloon-${Date.now()}-${Math.random()}`;
           updatedBalloons.push(newBalloon);
@@ -205,20 +223,34 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
 
     case 'POP_BALLOON':
       const balloon = state.balloons.find(b => b.id === action.balloonId);
-      if (!balloon) return state;
+      if (!balloon || !state.currentQuestion) return state;
 
-      const isCorrect = balloon.type === 'correct';
+      const isCorrect = state.currentQuestion.correctAnswers.includes(balloon.content);
       const newScore = isCorrect ? state.gameStats.score + 10 : Math.max(0, state.gameStats.score - 5);
       const newStreak = isCorrect ? state.gameStats.streak + 1 : 0;
 
+      // Check if level should advance
+      const shouldAdvance = isCorrect && (state.gameStats.correctAnswers + 1) % 5 === 0;
+      const newLevel = shouldAdvance ? state.gameStats.level + 1 : state.gameStats.level;
+
+      let nextQuestion = state.currentQuestion;
+      let newBalloons = state.balloons;
+
+      if (shouldAdvance) {
+        nextQuestion = generateQuestion(state.category, newLevel);
+        newBalloons = generateBalloons(state.category, newLevel, nextQuestion);
+      }
+
       return {
         ...state,
-        balloons: state.balloons.map(b => 
+        balloons: newBalloons.map(b => 
           b.id === action.balloonId ? { ...b, popped: true, popAnimation: true } : b
         ),
+        currentQuestion: nextQuestion,
         gameStats: {
           ...state.gameStats,
           score: newScore,
+          level: newLevel,
           correctAnswers: isCorrect ? state.gameStats.correctAnswers + 1 : state.gameStats.correctAnswers,
           wrongAnswers: isCorrect ? state.gameStats.wrongAnswers : state.gameStats.wrongAnswers + 1,
           streak: newStreak,
@@ -229,24 +261,13 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
         feedbackType: isCorrect ? 'correct' : 'incorrect'
       };
 
-    case 'NEXT_QUESTION':
-      const nextLevel = state.gameStats.correctAnswers > 0 && state.gameStats.correctAnswers % 5 === 0 
-        ? state.gameStats.level + 1 : state.gameStats.level;
-      
-      return {
-        ...state,
-        currentQuestion: generateQuestion(state.category, nextLevel),
-        balloons: generateBalloons(state.category, nextLevel),
-        gameStats: { ...state.gameStats, level: nextLevel }
-      };
-
     case 'CHANGE_CATEGORY':
       const categoryQuestion = generateQuestion(action.category, state.gameStats.level);
       return { 
         ...state, 
         category: action.category,
         currentQuestion: state.isPlaying ? categoryQuestion : null,
-        balloons: state.isPlaying ? generateBalloons(action.category, state.gameStats.level) : state.balloons
+        balloons: state.isPlaying ? generateBalloons(action.category, state.gameStats.level, categoryQuestion) : state.balloons
       };
 
     case 'CHANGE_THEME':
@@ -262,9 +283,16 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
       return { ...state, showFeedback: false };
 
     case 'UPDATE_TIME':
+      if (!state.isPlaying || state.isPaused) return state;
+      
+      const newTimeElapsed = state.gameStats.timeElapsed + 1;
+      const timeUp = newTimeElapsed >= state.timeLimit;
+      
       return {
         ...state,
-        gameStats: { ...state.gameStats, timeElapsed: state.gameStats.timeElapsed + 1 }
+        gameStats: { ...state.gameStats, timeElapsed: newTimeElapsed },
+        gameOver: timeUp,
+        isPlaying: !timeUp
       };
 
     case 'HIDE_INSTRUCTIONS':

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LearningCategory, GameTheme } from './types';
+import { Clock } from 'lucide-react';
 
 export const BalloonPopControls: React.FC = () => {
   const { state, changeCategory, changeTheme, startGame, pauseGame, resetGame } = useBalloonPopGame();
@@ -32,105 +33,127 @@ export const BalloonPopControls: React.FC = () => {
     { key: 'forest', label: 'Forest', icon: '🌲' }
   ];
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const timeRemaining = Math.max(0, state.timeLimit - state.gameStats.timeElapsed);
+
   return (
-    <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg">
-      <div className="space-y-4">
-        {/* Game Controls */}
-        <div className="flex gap-2">
-          {!state.isPlaying ? (
-            <Button
-              onClick={startGame}
-              className="flex-1 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold"
-            >
-              🎈 Start Game
-            </Button>
-          ) : (
-            <>
+    <div className="space-y-4">
+      {/* Current Question - Prominent Display */}
+      {state.currentQuestion && (
+        <Card className="p-4 bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300">
+          <h3 className="font-bold text-orange-700 mb-2 text-lg text-center">🎯 Your Mission:</h3>
+          <p className="text-orange-800 font-bold text-center text-xl">{state.currentQuestion.instruction}</p>
+          
+          {/* Time Display */}
+          <div className="flex items-center justify-center mt-3 text-red-600">
+            <Clock className="h-5 w-5 mr-2" />
+            <span className="font-bold text-lg">
+              {formatTime(timeRemaining)}
+            </span>
+          </div>
+        </Card>
+      )}
+
+      {/* Game Controls */}
+      <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg">
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {!state.isPlaying ? (
               <Button
-                onClick={pauseGame}
-                variant="outline"
-                className="flex-1"
+                onClick={startGame}
+                className="flex-1 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold"
               >
-                {state.isPaused ? '▶️ Resume' : '⏸️ Pause'}
+                🎈 Start Game
               </Button>
-              <Button
-                onClick={resetGame}
-                variant="outline"
-                className="flex-1"
-              >
-                🔄 Reset
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Category Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-purple-700">📚 Learning Category</label>
-          <Select value={state.category} onValueChange={(value: LearningCategory) => changeCategory(value)}>
-            <SelectTrigger className="w-full bg-white border-purple-300">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border border-purple-300 shadow-lg z-50">
-              {categories.map((category) => (
-                <SelectItem 
-                  key={category.key} 
-                  value={category.key}
-                  className="hover:bg-purple-50 cursor-pointer"
+            ) : (
+              <>
+                <Button
+                  onClick={pauseGame}
+                  variant="outline"
+                  className="flex-1"
                 >
-                  <span className="flex items-center gap-2">
-                    <span>{category.icon}</span>
-                    <span>{category.label}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Theme Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-purple-700">🎨 Game Theme</label>
-          <Select value={state.theme} onValueChange={(value: GameTheme) => changeTheme(value)}>
-            <SelectTrigger className="w-full bg-white border-purple-300">
-              <SelectValue placeholder="Select theme" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border border-purple-300 shadow-lg z-50">
-              {themes.map((theme) => (
-                <SelectItem 
-                  key={theme.key} 
-                  value={theme.key}
-                  className="hover:bg-blue-50 cursor-pointer"
+                  {state.isPaused ? '▶️ Resume' : '⏸️ Pause'}
+                </Button>
+                <Button
+                  onClick={resetGame}
+                  variant="outline"
+                  className="flex-1"
                 >
-                  <span className="flex items-center gap-2">
-                    <span>{theme.icon}</span>
-                    <span>{theme.label}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+                  🔄 Reset
+                </Button>
+              </>
+            )}
+          </div>
 
-        {/* Game Stats */}
-        <div className="bg-white/80 p-3 rounded-lg">
-          <h4 className="font-bold text-purple-700 mb-2">📊 Game Stats</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>Score: <span className="font-bold text-green-600">{state.gameStats.score}</span></div>
-            <div>Level: <span className="font-bold text-blue-600">{state.gameStats.level}</span></div>
-            <div>Streak: <span className="font-bold text-orange-600">{state.gameStats.streak}</span></div>
-            <div>Time: <span className="font-bold text-purple-600">{Math.floor(state.gameStats.timeElapsed / 60)}:{(state.gameStats.timeElapsed % 60).toString().padStart(2, '0')}</span></div>
+          {/* Category Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-purple-700">📚 Learning Category</label>
+            <Select value={state.category} onValueChange={(value: LearningCategory) => changeCategory(value)}>
+              <SelectTrigger className="w-full bg-white border-purple-300">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-purple-300 shadow-lg z-50">
+                {categories.map((category) => (
+                  <SelectItem 
+                    key={category.key} 
+                    value={category.key}
+                    className="hover:bg-purple-50 cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{category.icon}</span>
+                      <span>{category.label}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Theme Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-purple-700">🎨 Game Theme</label>
+            <Select value={state.theme} onValueChange={(value: GameTheme) => changeTheme(value)}>
+              <SelectTrigger className="w-full bg-white border-purple-300">
+                <SelectValue placeholder="Select theme" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-purple-300 shadow-lg z-50">
+                {themes.map((theme) => (
+                  <SelectItem 
+                    key={theme.key} 
+                    value={theme.key}
+                    className="hover:bg-blue-50 cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{theme.icon}</span>
+                      <span>{theme.label}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Game Stats */}
+          <div className="bg-white/80 p-3 rounded-lg">
+            <h4 className="font-bold text-purple-700 mb-2">📊 Game Stats</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>Score: <span className="font-bold text-green-600">{state.gameStats.score}</span></div>
+              <div>Level: <span className="font-bold text-blue-600">{state.gameStats.level}</span></div>
+              <div>Streak: <span className="font-bold text-orange-600">{state.gameStats.streak}</span></div>
+              <div>Accuracy: <span className="font-bold text-purple-600">
+                {state.gameStats.correctAnswers + state.gameStats.wrongAnswers > 0 
+                  ? Math.round((state.gameStats.correctAnswers / (state.gameStats.correctAnswers + state.gameStats.wrongAnswers)) * 100)
+                  : 0}%
+              </span></div>
+            </div>
           </div>
         </div>
-
-        {/* Current Question */}
-        {state.currentQuestion && (
-          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 p-3 rounded-lg border-2 border-yellow-300">
-            <h4 className="font-bold text-orange-700 mb-1">🎯 Mission:</h4>
-            <p className="text-orange-800 font-semibold">{state.currentQuestion.instruction}</p>
-          </div>
-        )}
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 };

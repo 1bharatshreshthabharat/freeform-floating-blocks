@@ -2,6 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useBalloonPopGame } from './BalloonPopGameProvider';
 import { Balloon } from './types';
+import { getThemeColors } from './balloonPopUtils';
 
 export const BalloonPopCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -33,7 +34,7 @@ export const BalloonPopCanvas: React.FC = () => {
       return;
     }
 
-    // Balloon shadow with category-specific effects
+    // Balloon shadow
     ctx.save();
     ctx.globalAlpha = 0.2;
     ctx.fillStyle = '#000';
@@ -42,43 +43,14 @@ export const BalloonPopCanvas: React.FC = () => {
     ctx.fill();
     ctx.restore();
 
-    // Category-specific balloon effects
-    const categoryEffects = {
-      letters: () => {
-        const gradient = ctx.createRadialGradient(-size * 0.3, -size * 0.3, 0, 0, 0, size);
-        gradient.addColorStop(0, '#FFFFFF');
-        gradient.addColorStop(0.4, color);
-        gradient.addColorStop(1, color);
-        return gradient;
-      },
-      numbers: () => {
-        const gradient = ctx.createLinearGradient(-size, -size, size, size);
-        gradient.addColorStop(0, '#FFFFFF');
-        gradient.addColorStop(0.5, color);
-        gradient.addColorStop(1, '#000080');
-        return gradient;
-      },
-      math: () => {
-        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
-        gradient.addColorStop(0, '#FFD700');
-        gradient.addColorStop(0.3, color);
-        gradient.addColorStop(1, color);
-        return gradient;
-      }
-    };
-
-    // Apply category-specific gradient or default
-    const gradientFunction = categoryEffects[state.category as keyof typeof categoryEffects];
-    const balloonGradient = gradientFunction ? gradientFunction() : (() => {
-      const gradient = ctx.createRadialGradient(-size * 0.3, -size * 0.3, 0, 0, 0, size);
-      gradient.addColorStop(0, '#FFFFFF');
-      gradient.addColorStop(0.3, color);
-      gradient.addColorStop(1, color);
-      return gradient;
-    })();
+    // Category-specific balloon styling
+    const gradient = ctx.createRadialGradient(-size * 0.3, -size * 0.3, 0, 0, 0, size);
+    gradient.addColorStop(0, '#FFFFFF');
+    gradient.addColorStop(0.3, color);
+    gradient.addColorStop(1, color);
 
     // Main balloon body
-    ctx.fillStyle = balloonGradient;
+    ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.arc(0, 0, size, 0, Math.PI * 2);
     ctx.fill();
@@ -109,6 +81,13 @@ export const BalloonPopCanvas: React.FC = () => {
       ctx.moveTo(0, -size * 0.4);
       ctx.lineTo(0, size * 0.4);
       ctx.stroke();
+    } else if (state.category === 'math') {
+      // Add math symbols around balloon
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '8px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('+', -size * 0.6, -size * 0.2);
+      ctx.fillText('×', size * 0.6, size * 0.2);
     }
 
     // Balloon string
@@ -137,47 +116,85 @@ export const BalloonPopCanvas: React.FC = () => {
 
   const drawBackground = (ctx: CanvasRenderingContext2D) => {
     const canvas = ctx.canvas;
+    const themeColors = getThemeColors(state.theme);
     
-    // Theme-based background
-    const themeBackgrounds = {
-      rainbow: () => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    // Apply theme background
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    
+    switch (state.theme) {
+      case 'jungle':
+        gradient.addColorStop(0, '#87CEEB');
+        gradient.addColorStop(1, '#98FB98');
+        break;
+      case 'space':
+        gradient.addColorStop(0, '#000428');
+        gradient.addColorStop(1, '#004e92');
+        break;
+      case 'underwater':
+        gradient.addColorStop(0, '#36d1dc');
+        gradient.addColorStop(1, '#5b86e5');
+        break;
+      case 'castle':
+        gradient.addColorStop(0, '#8B4513');
+        gradient.addColorStop(1, '#DAA520');
+        break;
+      case 'farm':
+        gradient.addColorStop(0, '#228B22');
+        gradient.addColorStop(1, '#ADFF2F');
+        break;
+      case 'ocean':
+        gradient.addColorStop(0, '#006994');
+        gradient.addColorStop(1, '#00A8CC');
+        break;
+      case 'forest':
+        gradient.addColorStop(0, '#2F4F2F');
+        gradient.addColorStop(1, '#8FBC8F');
+        break;
+      default: // rainbow
         gradient.addColorStop(0, '#FF6B9D');
         gradient.addColorStop(0.25, '#45B7D1');
         gradient.addColorStop(0.5, '#96CEB4');
         gradient.addColorStop(0.75, '#FFEAA7');
         gradient.addColorStop(1, '#DDA0DD');
-        return gradient;
-      },
-      jungle: () => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, '#87CEEB');
-        gradient.addColorStop(1, '#98FB98');
-        return gradient;
-      },
-      space: () => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, '#000428');
-        gradient.addColorStop(1, '#004e92');
-        return gradient;
-      }
-    };
+    }
 
-    const bgFunction = themeBackgrounds[state.theme as keyof typeof themeBackgrounds];
-    ctx.fillStyle = bgFunction ? bgFunction() : themeBackgrounds.rainbow();
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Animated background elements
     const time = Date.now() * 0.001;
     
-    // Floating particles
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    for (let i = 0; i < 15; i++) {
-      const x = (i * 60 + Math.sin(time + i) * 20) % canvas.width;
-      const y = (i * 40 + Math.cos(time * 0.7 + i) * 30) % canvas.height;
-      ctx.beginPath();
-      ctx.arc(x, y, 2 + Math.sin(time + i) * 1, 0, Math.PI * 2);
-      ctx.fill();
+    // Theme-specific background elements
+    if (state.theme === 'space') {
+      // Stars
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      for (let i = 0; i < 20; i++) {
+        const x = (i * 40 + Math.sin(time + i) * 10) % canvas.width;
+        const y = (i * 30 + Math.cos(time * 0.5 + i) * 20) % canvas.height;
+        ctx.beginPath();
+        ctx.arc(x, y, 1 + Math.sin(time + i) * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (state.theme === 'underwater') {
+      // Bubbles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      for (let i = 0; i < 15; i++) {
+        const x = (i * 60 + Math.sin(time + i) * 20) % canvas.width;
+        const y = (i * 40 + Math.cos(time * 0.7 + i) * 30) % canvas.height;
+        ctx.beginPath();
+        ctx.arc(x, y, 3 + Math.sin(time + i) * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Default floating particles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      for (let i = 0; i < 15; i++) {
+        const x = (i * 60 + Math.sin(time + i) * 20) % canvas.width;
+        const y = (i * 40 + Math.cos(time * 0.7 + i) * 30) % canvas.height;
+        ctx.beginPath();
+        ctx.arc(x, y, 2 + Math.sin(time + i) * 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   };
 
@@ -233,9 +250,9 @@ export const BalloonPopCanvas: React.FC = () => {
       <canvas
         ref={canvasRef}
         width={800}
-        height={400}
+        height={300}
         onClick={handleCanvasClick}
-        className="border-4 border-white rounded-xl shadow-2xl cursor-crosshair bg-gradient-to-b from-blue-200 to-blue-50 transition-all duration-300"
+        className="border-4 border-white rounded-xl shadow-2xl cursor-crosshair transition-all duration-300"
         style={{ maxWidth: '100%', height: 'auto' }}
       />
     </div>
