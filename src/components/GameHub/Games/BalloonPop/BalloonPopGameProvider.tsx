@@ -67,7 +67,7 @@ const initialState: BalloonPopGameState = {
   isPaused: false,
   gameOver: false,
   showInstructions: true,
-  category: 'letters',
+  category: 'random',
   theme: 'space',
   gameMode: 'learning',
   soundEnabled: true,
@@ -76,7 +76,6 @@ const initialState: BalloonPopGameState = {
   showFeedback: false,
   feedbackMessage: '',
   feedbackType: 'correct',
-  powerUps: [],
   achievements: initialAchievements,
   showAchievement: false,
   currentAchievement: null,
@@ -116,7 +115,8 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
         category: state.category,
         theme: state.theme,
         soundEnabled: state.soundEnabled,
-        voiceEnabled: state.voiceEnabled
+        voiceEnabled: state.voiceEnabled,
+        showInstructions: false
       };
 
     case 'UPDATE_BALLOONS':
@@ -225,6 +225,9 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
 
     case 'HIDE_INSTRUCTIONS':
       return { ...state, showInstructions: false };
+      
+    case 'SHOW_INSTRUCTIONS':
+      return { ...state, showInstructions: true };
       
     case 'TOGGLE_SETTINGS':
       return { ...state, showSettings: !state.showSettings };

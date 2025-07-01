@@ -11,6 +11,7 @@ export const BalloonPopControls: React.FC = () => {
   const { state, changeCategory, changeTheme, startGame, pauseGame, resetGame } = useBalloonPopGame();
 
   const categories: { key: LearningCategory; label: string; icon: string }[] = [
+    { key: 'random', label: 'Random Mix', icon: '🎲' },
     { key: 'letters', label: 'Letters', icon: '🔤' },
     { key: 'numbers', label: 'Numbers', icon: '🔢' },
     { key: 'math', label: 'Math', icon: '➕' },
@@ -35,6 +36,10 @@ export const BalloonPopControls: React.FC = () => {
   };
 
   const timeRemaining = Math.max(0, state.timeLimit - state.gameStats.timeElapsed);
+
+  const handleReset = () => {
+    resetGame();
+  };
 
   return (
     <div className="space-y-4">
@@ -75,7 +80,7 @@ export const BalloonPopControls: React.FC = () => {
                   {state.isPaused ? '▶️ Resume' : '⏸️ Pause'}
                 </Button>
                 <Button
-                  onClick={resetGame}
+                  onClick={handleReset}
                   variant="outline"
                   className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
                 >

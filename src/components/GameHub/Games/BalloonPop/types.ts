@@ -25,7 +25,7 @@ export interface Question {
   voiceInstruction?: string;
 }
 
-export type LearningCategory = 'letters' | 'numbers' | 'math' | 'colors' | 'shapes' | 'animals' | 'words' | 'science' | 'geography';
+export type LearningCategory = 'random' | 'letters' | 'numbers' | 'math' | 'colors' | 'shapes' | 'animals' | 'words' | 'science' | 'geography';
 
 export type GameTheme = 'space' | 'underwater' | 'forest';
 
@@ -71,7 +71,6 @@ export interface BalloonPopGameState {
   showFeedback: boolean;
   feedbackMessage: string;
   feedbackType: 'correct' | 'incorrect' | 'encouragement' | 'powerup' | 'achievement';
-  powerUps: any[];
   achievements: Achievement[];
   showAchievement: boolean;
   currentAchievement: Achievement | null;

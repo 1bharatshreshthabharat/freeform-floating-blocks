@@ -17,7 +17,7 @@ interface BalloonPopGameProps {
 export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsUpdate }) => {
   return (
     <BalloonPopGameProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      <div className="min-h-screen bg-white relative overflow-hidden">
         {/* Clean animated background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-10 left-10 w-3 h-3 bg-blue-300 rounded-full animate-bounce opacity-40"></div>
@@ -28,7 +28,7 @@ export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsU
 
         <BalloonPopHeader onBack={onBack} />
         
-        <div className="max-w-7xl mx-auto p-2 lg:p-4">
+        <div className="max-w-7xl mx-auto p-2 lg:p-4 pt-2">
           <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
             {/* Main Game Area */}
             <div className="lg:col-span-2 xl:col-span-3 order-2 lg:order-1">
