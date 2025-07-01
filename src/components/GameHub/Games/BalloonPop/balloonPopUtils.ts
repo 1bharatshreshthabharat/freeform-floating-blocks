@@ -1,4 +1,3 @@
-
 import { Question, LearningCategory, Balloon } from './types';
 
 export const generateQuestion = (category: LearningCategory, level: number): Question => {
@@ -88,9 +87,9 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
   // Use the actual question category for random mode
   const actualCategory = category === 'random' ? question.category : category;
   const availableContent = content[actualCategory];
-  const balloonCount = Math.min(8 + level, 12); // Increased balloon count
+  const balloonCount = Math.min(8 + level, 12);
 
-  // Ensure more correct answers are in the balloons (increased from 2-3 to 4-6)
+  // Ensure more correct answers and better positioning
   const correctCount = Math.min(6, question.correctAnswers.length);
   const correctBalloons: string[] = [];
   
@@ -99,6 +98,9 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
     const correctAnswer = question.correctAnswers[i % question.correctAnswers.length];
     correctBalloons.push(correctAnswer);
   }
+
+  // Track positions to avoid overlap
+  const positions: { x: number; y: number }[] = [];
 
   for (let i = 0; i < balloonCount; i++) {
     let balloonContent: string;
@@ -115,11 +117,24 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
       balloonType = 'incorrect';
     }
 
+    // Generate position that doesn't overlap with existing balloons
+    let x: number, y: number;
+    let attempts = 0;
+    do {
+      x = Math.random() * 600 + 50;
+      y = Math.random() * 150 + 600;
+      attempts++;
+    } while (attempts < 20 && positions.some(pos => 
+      Math.sqrt(Math.pow(pos.x - x, 2) + Math.pow(pos.y - y, 2)) < 100
+    ));
+
+    positions.push({ x, y });
+
     balloons.push({
       id: `balloon-${i}-${Date.now()}`,
-      x: Math.random() * 600 + 50,
-      y: Math.random() * 100 + 600,
-      speed: Math.random() * 2.0 + 2.5 + (level * 0.15), // Increased speed significantly
+      x,
+      y,
+      speed: Math.random() * 2.5 + 3.0 + (level * 0.2),
       content: balloonContent,
       type: balloonType,
       color: getCategorySpecificColor(actualCategory, balloonContent, balloonType),
@@ -131,7 +146,7 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
     });
   }
 
-  return balloons.sort(() => Math.random() - 0.5); // Shuffle the balloons
+  return balloons.sort(() => Math.random() - 0.5);
 };
 
 export const getCategorySpecificColor = (category: LearningCategory, content: string, type: 'correct' | 'incorrect' | 'bonus'): string => {
@@ -186,22 +201,36 @@ export const getCategoryColors = (category: LearningCategory): string[] => {
 export const getThemeColors = (theme: string) => {
   const themes = {
     space: {
-      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-      accent: '#9C27B0'
+      background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
+      accent: '#9C27B0',
+      particles: 'white'
     },
     underwater: {
       background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      accent: '#00BCD4'
+      accent: '#00BCD4',
+      particles: 'rgba(255,255,255,0.4)'
     },
     forest: {
       background: 'linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%)',
-      accent: '#2F4F2F'
+      accent: '#2F4F2F',
+      particles: 'rgba(139,195,74,0.3)'
     },
     white: {
       background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-      accent: '#6366F1'
+      accent: '#6366F1',
+      particles: 'rgba(99,102,241,0.1)'
+    },
+    neon: {
+      background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a2a2a 100%)',
+      accent: '#00ff88',
+      particles: 'rgba(0,255,136,0.3)'
+    },
+    rainbow: {
+      background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 25%, #fecfef 50%, #a8edea 75%, #fed6e3 100%)',
+      accent: '#ff6b6b',
+      particles: 'rgba(255,255,255,0.6)'
     }
   };
   
-  return themes[theme as keyof typeof themes] || themes.white;
+  return themes[theme as keyof typeof themes] || themes.space;
 };

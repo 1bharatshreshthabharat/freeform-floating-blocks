@@ -27,7 +27,7 @@ export interface Question {
 
 export type LearningCategory = 'random' | 'letters' | 'numbers' | 'math' | 'colors' | 'shapes' | 'animals' | 'words' | 'science' | 'geography';
 
-export type GameTheme = 'space' | 'underwater' | 'forest' | 'white';
+export type GameTheme = 'space' | 'underwater' | 'forest' | 'white' | 'neon' | 'rainbow';
 
 export type GameMode = 'learning' | 'timeChallenge' | 'endless' | 'multiplayer' | 'story';
 
@@ -59,6 +59,8 @@ export interface GameStats {
   powerUpsUsed: number;
   highScore: number;
   averageAccuracy: number;
+  lastAnswer?: string;
+  expectedAnswer?: string;
 }
 
 export interface BalloonPopGameState {

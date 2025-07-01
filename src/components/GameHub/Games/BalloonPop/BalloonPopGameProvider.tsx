@@ -70,14 +70,16 @@ const initialState: BalloonPopGameState = {
     balloonsPoppedTotal: 0,
     powerUpsUsed: 0,
     highScore: 0,
-    averageAccuracy: 0
+    averageAccuracy: 0,
+    lastAnswer: undefined,
+    expectedAnswer: undefined
   },
   isPlaying: false,
   isPaused: false,
   gameOver: false,
   showInstructions: true,
   category: 'random',
-  theme: 'white',
+  theme: 'space',
   gameMode: 'learning',
   soundEnabled: true,
   voiceEnabled: true,
@@ -110,7 +112,11 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
         showInstructions: false,
         currentQuestion: newQuestion,
         balloons: generateBalloons(state.category, state.gameStats.level, newQuestion),
-        gameStats: { ...state.gameStats, timeElapsed: 0 }
+        gameStats: { 
+          ...state.gameStats, 
+          timeElapsed: 0,
+          expectedAnswer: newQuestion.correctAnswers.join(' or ')
+        }
       };
 
     case 'PAUSE_GAME':
@@ -130,7 +136,7 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
       };
 
     case 'UPDATE_BALLOONS':
-      if (state.isPaused || !state.isPlaying) return state;
+      if (state.isPaused || !state.isPlaying || state.gameOver) return state;
       
       const updatedBalloons = state.balloons
         .filter(balloon => balloon.y > -100 && !balloon.popped)
@@ -145,8 +151,18 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
           };
         });
 
-      // Add new balloons more frequently (increased from 0.015 to 0.035)
-      if (Math.random() < 0.035 && updatedBalloons.length < 10 && state.currentQuestion) {
+      // Check if correct balloons have flown out - trigger new mission
+      const correctBalloonsLeft = updatedBalloons.filter(b => 
+        state.currentQuestion?.correctAnswers.includes(b.content)
+      );
+
+      let shouldStartNewMission = false;
+      if (state.currentQuestion && correctBalloonsLeft.length === 0) {
+        shouldStartNewMission = true;
+      }
+
+      // Add new balloons more frequently
+      if (Math.random() < 0.045 && updatedBalloons.length < 10 && state.currentQuestion) {
         const newBalloon = generateBalloons(state.category, state.gameStats.level, state.currentQuestion)[0];
         if (newBalloon) {
           newBalloon.id = `balloon-${Date.now()}-${Math.random()}`;
@@ -154,9 +170,26 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
         }
       }
 
+      if (shouldStartNewMission) {
+        const nextLevel = state.gameStats.level + 1;
+        const nextQuestion = generateQuestion(state.category, nextLevel);
+        return {
+          ...state,
+          balloons: generateBalloons(state.category, nextLevel, nextQuestion),
+          currentQuestion: nextQuestion,
+          gameStats: {
+            ...state.gameStats,
+            level: nextLevel,
+            expectedAnswer: nextQuestion.correctAnswers.join(' or ')
+          }
+        };
+      }
+
       return { ...state, balloons: updatedBalloons };
 
     case 'POP_BALLOON':
+      if (state.gameOver) return state; // Prevent popping after time over
+      
       const balloon = state.balloons.find(b => b.id === action.balloonId);
       if (!balloon || !state.currentQuestion) return state;
 
@@ -164,21 +197,21 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
       const newScore = isCorrect ? state.gameStats.score + 10 : Math.max(0, state.gameStats.score - 5);
       const newStreak = isCorrect ? state.gameStats.streak + 1 : 0;
 
-      // Change mission immediately after popping correct balloon (reduced from 5 to 2)
-      const shouldAdvance = isCorrect && (state.gameStats.correctAnswers + 1) % 2 === 0;
-      const newLevel = shouldAdvance ? state.gameStats.level + 1 : state.gameStats.level;
+      // Immediate mission change after correct answer
+      const shouldAdvanceImmediately = isCorrect;
+      const newLevel = shouldAdvanceImmediately ? state.gameStats.level + 1 : state.gameStats.level;
 
       let nextQuestion = state.currentQuestion;
       let newBalloons = state.balloons;
 
-      if (shouldAdvance) {
+      if (shouldAdvanceImmediately) {
         nextQuestion = generateQuestion(state.category, newLevel);
         newBalloons = generateBalloons(state.category, newLevel, nextQuestion);
       }
 
       return {
         ...state,
-        balloons: newBalloons.map(b => 
+        balloons: shouldAdvanceImmediately ? newBalloons : newBalloons.map(b => 
           b.id === action.balloonId ? { ...b, popped: true, popAnimation: true } : b
         ),
         currentQuestion: nextQuestion,
@@ -192,10 +225,12 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
           balloonsPoppedTotal: state.gameStats.balloonsPoppedTotal + 1,
           averageAccuracy: state.gameStats.correctAnswers + state.gameStats.wrongAnswers > 0 
             ? Math.round((state.gameStats.correctAnswers / (state.gameStats.correctAnswers + state.gameStats.wrongAnswers)) * 100)
-            : 0
+            : 0,
+          lastAnswer: balloon.content,
+          expectedAnswer: nextQuestion.correctAnswers.join(' or ')
         },
         showFeedback: true,
-        feedbackMessage: isCorrect ? 'Great job! 🎉' : 'Try again! 💪',
+        feedbackMessage: isCorrect ? 'Excellent! New Mission! 🎉' : 'Try again! 💪',
         feedbackType: isCorrect ? 'correct' : 'incorrect'
       };
 

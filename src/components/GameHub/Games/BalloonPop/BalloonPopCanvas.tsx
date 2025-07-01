@@ -96,8 +96,21 @@ export const BalloonPopCanvas: React.FC = () => {
     
     switch (state.theme) {
       case 'space':
-        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(0, '#0f0f23');
+        gradient.addColorStop(0.5, '#1a1a2e');
         gradient.addColorStop(1, '#16213e');
+        break;
+      case 'neon':
+        gradient.addColorStop(0, '#0a0a0a');
+        gradient.addColorStop(0.5, '#1a1a1a');
+        gradient.addColorStop(1, '#2a2a2a');
+        break;
+      case 'rainbow':
+        gradient.addColorStop(0, '#ff9a9e');
+        gradient.addColorStop(0.25, '#fecfef');
+        gradient.addColorStop(0.5, '#a8edea');
+        gradient.addColorStop(0.75, '#fed6e3');
+        gradient.addColorStop(1, '#ffd1ff');
         break;
       case 'underwater':
         gradient.addColorStop(0, '#4facfe');
@@ -112,30 +125,60 @@ export const BalloonPopCanvas: React.FC = () => {
         gradient.addColorStop(1, '#f8f9fa');
         break;
       default:
-        gradient.addColorStop(0, '#ffffff');
-        gradient.addColorStop(1, '#f8f9fa');
+        gradient.addColorStop(0, '#0f0f23');
+        gradient.addColorStop(1, '#16213e');
     }
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Animated background elements
+    // Enhanced animated background elements
     const time = Date.now() * 0.001;
     
     if (state.theme === 'space') {
-      // Stars
+      // Twinkling stars
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      for (let i = 0; i < 25; i++) {
+      for (let i = 0; i < 30; i++) {
         const x = (i * 45 + Math.sin(time + i) * 8) % canvas.width;
         const y = (i * 35 + Math.cos(time * 0.6 + i) * 15) % canvas.height;
+        const twinkle = Math.sin(time * 3 + i) * 0.5 + 0.5;
+        ctx.globalAlpha = twinkle;
         ctx.beginPath();
         ctx.arc(x, y, 1 + Math.sin(time + i) * 0.5, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.globalAlpha = 1;
+    } else if (state.theme === 'neon') {
+      // Neon grid effect
+      ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < canvas.width; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+      }
+      for (let i = 0; i < canvas.height; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+    } else if (state.theme === 'rainbow') {
+      // Floating colorful particles
+      const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'];
+      for (let i = 0; i < 20; i++) {
+        const x = (i * 50 + Math.sin(time + i) * 30) % canvas.width;
+        const y = (i * 40 + Math.cos(time * 0.7 + i) * 25) % canvas.height;
+        ctx.fillStyle = colors[i % colors.length] + '40';
+        ctx.beginPath();
+        ctx.arc(x, y, 3 + Math.sin(time + i) * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else if (state.theme === 'underwater') {
-      // Bubbles
+      // Enhanced bubbles
       ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 15; i++) {
         const x = (i * 70 + Math.sin(time + i) * 25) % canvas.width;
         const y = (i * 50 + Math.cos(time * 0.8 + i) * 35) % canvas.height;
         ctx.beginPath();
@@ -145,7 +188,7 @@ export const BalloonPopCanvas: React.FC = () => {
     } else if (state.theme === 'forest') {
       // Floating leaves
       ctx.fillStyle = 'rgba(139, 195, 74, 0.3)';
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 12; i++) {
         const x = (i * 80 + Math.sin(time + i) * 30) % canvas.width;
         const y = (i * 60 + Math.cos(time * 0.5 + i) * 40) % canvas.height;
         ctx.beginPath();
@@ -153,9 +196,9 @@ export const BalloonPopCanvas: React.FC = () => {
         ctx.fill();
       }
     } else if (state.theme === 'white') {
-      // Subtle floating dots for white theme
+      // Subtle floating dots
       ctx.fillStyle = 'rgba(99, 102, 241, 0.1)';
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 18; i++) {
         const x = (i * 60 + Math.sin(time + i) * 20) % canvas.width;
         const y = (i * 45 + Math.cos(time * 0.7 + i) * 25) % canvas.height;
         ctx.beginPath();
@@ -166,6 +209,8 @@ export const BalloonPopCanvas: React.FC = () => {
   };
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (state.gameOver) return; // Prevent clicks after time over
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
