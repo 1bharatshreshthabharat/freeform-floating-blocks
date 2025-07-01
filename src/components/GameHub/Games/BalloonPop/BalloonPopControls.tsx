@@ -26,7 +26,10 @@ export const BalloonPopControls: React.FC = () => {
   const themes: { key: GameTheme; label: string; icon: string }[] = [
     { key: 'space', label: 'Space', icon: '🚀' },
     { key: 'underwater', label: 'Ocean', icon: '🌊' },
-    { key: 'forest', label: 'Forest', icon: '🌲' }
+    { key: 'forest', label: 'Forest', icon: '🌲' },
+    { key: 'white', label: 'Classic', icon: '⚪' },
+    { key: 'neon', label: 'Neon', icon: '🎆' },
+    { key: 'rainbow', label: 'Rainbow', icon: '🌈' }
   ];
 
   const formatTime = (seconds: number) => {

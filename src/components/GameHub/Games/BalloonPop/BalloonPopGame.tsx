@@ -32,20 +32,20 @@ export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsU
         <BalloonPopHeader onBack={onBack} />
         
         <div className="max-w-7xl mx-auto p-2 lg:p-4">
-          {/* Game Stats - Above Canvas */}
-          <BalloonPopGameStats />
-          
           {/* Canvas */}
           <div className="mb-4">
             <BalloonPopCanvas />
           </div>
           
           {/* Controls below canvas */}
-          <div className="flex justify-center">
+          <div className="flex justify-center mb-4">
             <div className="w-full max-w-md">
               <BalloonPopControls />
             </div>
           </div>
+          
+          {/* Enhanced Game Stats - Moved to Bottom */}
+          <BalloonPopGameStats />
         </div>
 
         {/* Modals and Overlays */}

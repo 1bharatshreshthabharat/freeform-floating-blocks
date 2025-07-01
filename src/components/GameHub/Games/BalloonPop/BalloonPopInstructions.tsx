@@ -44,7 +44,7 @@ export const BalloonPopInstructions: React.FC = () => {
               <li>• Pop only the correct balloons</li>
               <li>• Wrong answers lose points</li>
               <li>• Complete levels to advance</li>
-              <li>• Use power-ups to help you!</li>
+              <li>• Race against the clock!</li>
             </ul>
           </div>
 
@@ -59,30 +59,6 @@ export const BalloonPopInstructions: React.FC = () => {
               <div>🐾 Animals & Nature</div>
               <div>🎨 Creative Themes</div>
             </div>
-          </div>
-
-          {/* Power-ups */}
-          <div className="bg-white/80 p-4 rounded-lg shadow-md">
-            <h3 className="text-xl font-bold text-purple-600 mb-3">⚡ Power-ups:</h3>
-            <ul className="space-y-1 text-sm text-gray-700">
-              <li>🕒 <strong>Slow Time:</strong> Slows balloon movement</li>
-              <li>🎯 <strong>Target Helper:</strong> Highlights correct balloons</li>
-              <li>💥 <strong>Pop All:</strong> Pops all wrong balloons</li>
-              <li>⭐ <strong>Double Points:</strong> 2x score for next 5 balloons</li>
-              <li>🔍 <strong>Magnify:</strong> Makes balloons bigger</li>
-            </ul>
-          </div>
-
-          {/* Game Modes */}
-          <div className="bg-white/80 p-4 rounded-lg shadow-md">
-            <h3 className="text-xl font-bold text-orange-600 mb-3">🎲 Game Modes:</h3>
-            <ul className="space-y-1 text-sm text-gray-700">
-              <li>📚 <strong>Learning Mode:</strong> Practice with hints</li>
-              <li>⏱️ <strong>Time Challenge:</strong> Race against clock</li>
-              <li>🏆 <strong>Endless Mode:</strong> Keep going for high score</li>
-              <li>👥 <strong>Multiplayer:</strong> Compete with friends</li>
-              <li>🎭 <strong>Story Mode:</strong> Adventure through worlds</li>
-            </ul>
           </div>
         </div>
 
