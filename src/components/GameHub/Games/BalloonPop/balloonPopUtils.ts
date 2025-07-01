@@ -1,7 +1,9 @@
+
 import { Question, LearningCategory, Balloon } from './types';
 
 export const generateQuestion = (category: LearningCategory, level: number): Question => {
   const questions: Record<LearningCategory, Question[]> = {
+    random: [], // Will be populated dynamically
     letters: [
       { instruction: "Pop all vowels!", correctAnswers: ['A', 'E', 'I', 'O', 'U'], category: 'letters', level },
       { instruction: "Find the letter 'B'", correctAnswers: ['B'], category: 'letters', level },
@@ -54,6 +56,14 @@ export const generateQuestion = (category: LearningCategory, level: number): Que
     ]
   };
 
+  // Handle random category by selecting from all other categories
+  if (category === 'random') {
+    const allCategories = Object.keys(questions).filter(cat => cat !== 'random') as LearningCategory[];
+    const randomCategory = allCategories[Math.floor(Math.random() * allCategories.length)];
+    const categoryQuestions = questions[randomCategory];
+    return categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
+  }
+
   const categoryQuestions = questions[category];
   return categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
 };
@@ -63,6 +73,7 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
   const colors = getCategoryColors(category);
   
   const content: Record<LearningCategory, string[]> = {
+    random: [], // Will use the actual question category
     letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
     numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
     math: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
@@ -74,7 +85,9 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
     geography: ['Paris', 'Tokyo', 'London', 'Berlin', 'Rome', 'Madrid', 'Nile', 'Amazon', 'Asia', 'Europe', 'Africa', 'America']
   };
 
-  const availableContent = content[category];
+  // Use the actual question category for random mode
+  const actualCategory = category === 'random' ? question.category : category;
+  const availableContent = content[actualCategory];
   const balloonCount = Math.min(6 + level, 10);
 
   // Ensure at least 2-3 correct answers are in the balloons
@@ -103,7 +116,7 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
       speed: Math.random() * 1.2 + 1.0 + (level * 0.08),
       content: balloonContent,
       type: balloonType,
-      color: getCategorySpecificColor(category, balloonContent, balloonType),
+      color: getCategorySpecificColor(actualCategory, balloonContent, balloonType),
       size: Math.random() * 12 + 45,
       popped: false,
       popAnimation: false,
@@ -131,6 +144,7 @@ export const getCategorySpecificColor = (category: LearningCategory, content: st
   }
   
   const categoryColorMap: Record<LearningCategory, string[]> = {
+    random: ['#5352ED', '#3742FA', '#2ED573', '#FFA502'],
     letters: ['#5352ED', '#3742FA', '#70A1FF', '#7BED9F'],
     numbers: ['#2ED573', '#20BF6B', '#0BE881', '#26C281'],
     math: ['#FFA502', '#FF6348', '#FF4757', '#FF3838'],
@@ -148,6 +162,7 @@ export const getCategorySpecificColor = (category: LearningCategory, content: st
 
 export const getCategoryColors = (category: LearningCategory): string[] => {
   const categoryColorMap: Record<LearningCategory, string[]> = {
+    random: ['#5352ED', '#3742FA', '#2ED573', '#FFA502'],
     letters: ['#5352ED', '#3742FA', '#70A1FF', '#7BED9F'],
     numbers: ['#2ED573', '#20BF6B', '#0BE881', '#26C281'],
     math: ['#FFA502', '#FF6348', '#FF4757', '#FF3838'],
@@ -175,8 +190,12 @@ export const getThemeColors = (theme: string) => {
     forest: {
       background: 'linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%)',
       accent: '#2F4F2F'
+    },
+    white: {
+      background: '#FFFFFF',
+      accent: '#6366F1'
     }
   };
   
-  return themes[theme as keyof typeof themes] || themes.space;
+  return themes[theme as keyof typeof themes] || themes.white;
 };

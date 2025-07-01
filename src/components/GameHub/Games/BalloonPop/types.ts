@@ -27,7 +27,7 @@ export interface Question {
 
 export type LearningCategory = 'random' | 'letters' | 'numbers' | 'math' | 'colors' | 'shapes' | 'animals' | 'words' | 'science' | 'geography';
 
-export type GameTheme = 'space' | 'underwater' | 'forest';
+export type GameTheme = 'space' | 'underwater' | 'forest' | 'white';
 
 export type GameMode = 'learning' | 'timeChallenge' | 'endless' | 'multiplayer' | 'story';
 
@@ -39,6 +39,13 @@ export interface Achievement {
   unlocked: boolean;
   progress: number;
   target: number;
+}
+
+export interface PowerUp {
+  type: string;
+  active: boolean;
+  duration: number;
+  remaining: number;
 }
 
 export interface GameStats {
@@ -81,4 +88,5 @@ export interface BalloonPopGameState {
   showSettings: boolean;
   showAchievements: boolean;
   showLeaderboard: boolean;
+  powerUps: PowerUp[];
 }

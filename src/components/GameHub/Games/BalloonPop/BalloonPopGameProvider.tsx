@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme, Achievement } from './types';
+import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme, Achievement, PowerUp } from './types';
 import { generateQuestion, generateBalloons } from './balloonPopUtils';
 
 interface BalloonPopGameContextType {
@@ -48,6 +47,16 @@ const initialAchievements: Achievement[] = [
   }
 ];
 
+const initialPowerUps: PowerUp[] = [
+  { type: 'slowTime', active: false, duration: 10, remaining: 0 },
+  { type: 'targetHelper', active: false, duration: 15, remaining: 0 },
+  { type: 'popAll', active: false, duration: 0, remaining: 0 },
+  { type: 'doublePoints', active: false, duration: 20, remaining: 0 },
+  { type: 'magnify', active: false, duration: 12, remaining: 0 },
+  { type: 'extraTime', active: false, duration: 0, remaining: 0 },
+  { type: 'shield', active: false, duration: 30, remaining: 0 }
+];
+
 const initialState: BalloonPopGameState = {
   balloons: [],
   currentQuestion: null,
@@ -68,7 +77,7 @@ const initialState: BalloonPopGameState = {
   gameOver: false,
   showInstructions: true,
   category: 'random',
-  theme: 'space',
+  theme: 'white',
   gameMode: 'learning',
   soundEnabled: true,
   voiceEnabled: true,
@@ -85,7 +94,8 @@ const initialState: BalloonPopGameState = {
   particles: true,
   showSettings: false,
   showAchievements: false,
-  showLeaderboard: false
+  showLeaderboard: false,
+  powerUps: initialPowerUps
 };
 
 function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopGameState {
@@ -238,6 +248,43 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
     case 'UPDATE_SETTING':
       return { ...state, [action.payload.key]: action.payload.value };
       
+    case 'USE_POWERUP':
+      const powerUpType = action.payload;
+      const updatedPowerUps = state.powerUps.map(powerUp => 
+        powerUp.type === powerUpType && !powerUp.active
+          ? { ...powerUp, active: true, remaining: powerUp.duration }
+          : powerUp
+      );
+      
+      return {
+        ...state,
+        powerUps: updatedPowerUps,
+        gameStats: {
+          ...state.gameStats,
+          powerUpsUsed: state.gameStats.powerUpsUsed + 1
+        }
+      };
+
+    case 'UPDATE_POWERUPS':
+      if (state.isPaused || !state.isPlaying) return state;
+      
+      const decreasedPowerUps = state.powerUps.map(powerUp => {
+        if (powerUp.active && powerUp.remaining > 0) {
+          const newRemaining = powerUp.remaining - 1;
+          return {
+            ...powerUp,
+            remaining: newRemaining,
+            active: newRemaining > 0
+          };
+        }
+        return powerUp;
+      });
+
+      return {
+        ...state,
+        powerUps: decreasedPowerUps
+      };
+
     default:
       return state;
   }
