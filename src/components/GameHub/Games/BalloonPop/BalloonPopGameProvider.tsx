@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme, Achievement, PowerUp } from './types';
+import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme, Achievement } from './types';
 import { generateQuestion, generateBalloons } from './balloonPopUtils';
 
 interface BalloonPopGameContextType {
