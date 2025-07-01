@@ -107,9 +107,13 @@ export const BalloonPopCanvas: React.FC = () => {
         gradient.addColorStop(0, '#56ab2f');
         gradient.addColorStop(1, '#a8e6cf');
         break;
+      case 'white':
+        gradient.addColorStop(0, '#ffffff');
+        gradient.addColorStop(1, '#f8f9fa');
+        break;
       default:
-        gradient.addColorStop(0, '#667eea');
-        gradient.addColorStop(1, '#764ba2');
+        gradient.addColorStop(0, '#ffffff');
+        gradient.addColorStop(1, '#f8f9fa');
     }
 
     ctx.fillStyle = gradient;
@@ -146,6 +150,16 @@ export const BalloonPopCanvas: React.FC = () => {
         const y = (i * 60 + Math.cos(time * 0.5 + i) * 40) % canvas.height;
         ctx.beginPath();
         ctx.ellipse(x, y, 3, 1.5, time + i, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (state.theme === 'white') {
+      // Subtle floating dots for white theme
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.1)';
+      for (let i = 0; i < 15; i++) {
+        const x = (i * 60 + Math.sin(time + i) * 20) % canvas.width;
+        const y = (i * 45 + Math.cos(time * 0.7 + i) * 25) % canvas.height;
+        ctx.beginPath();
+        ctx.arc(x, y, 1 + Math.sin(time + i) * 1, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -216,11 +230,11 @@ export const BalloonPopCanvas: React.FC = () => {
   }, [state.balloons, state.theme, state.category]);
 
   return (
-    <div className="flex justify-center p-4">
+    <div className="flex justify-center p-2">
       <canvas
         ref={canvasRef}
         onClick={handleCanvasClick}
-        className="border-4 border-white rounded-2xl shadow-2xl cursor-crosshair bg-gradient-to-br from-blue-100 to-purple-100 transition-all duration-300 hover:shadow-3xl"
+        className="border-4 border-gray-200 rounded-2xl shadow-lg cursor-crosshair bg-white transition-all duration-300 hover:shadow-xl"
         style={{ maxWidth: '100%', height: 'auto' }}
       />
     </div>

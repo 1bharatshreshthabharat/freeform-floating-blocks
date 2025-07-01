@@ -28,15 +28,15 @@ export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsU
 
         <BalloonPopHeader onBack={onBack} />
         
-        <div className="max-w-7xl mx-auto p-2 lg:p-4 pt-2">
-          <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-            {/* Main Game Area */}
-            <div className="lg:col-span-2 xl:col-span-3 order-2 lg:order-1">
-              <BalloonPopCanvas />
-            </div>
-            
-            {/* Sidebar Controls */}
-            <div className="space-y-4 order-1 lg:order-2">
+        <div className="max-w-7xl mx-auto p-2 lg:p-4">
+          {/* Canvas first - above everything */}
+          <div className="mb-4">
+            <BalloonPopCanvas />
+          </div>
+          
+          {/* Controls below canvas */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-md">
               <BalloonPopControls />
             </div>
           </div>

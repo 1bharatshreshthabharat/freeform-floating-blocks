@@ -88,11 +88,17 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
   // Use the actual question category for random mode
   const actualCategory = category === 'random' ? question.category : category;
   const availableContent = content[actualCategory];
-  const balloonCount = Math.min(6 + level, 10);
+  const balloonCount = Math.min(8 + level, 12); // Increased balloon count
 
-  // Ensure at least 2-3 correct answers are in the balloons
-  const correctCount = Math.min(3, question.correctAnswers.length);
-  const correctBalloons = question.correctAnswers.slice(0, correctCount);
+  // Ensure more correct answers are in the balloons (increased from 2-3 to 4-6)
+  const correctCount = Math.min(6, question.correctAnswers.length);
+  const correctBalloons: string[] = [];
+  
+  // Add multiple instances of correct answers
+  for (let i = 0; i < correctCount; i++) {
+    const correctAnswer = question.correctAnswers[i % question.correctAnswers.length];
+    correctBalloons.push(correctAnswer);
+  }
 
   for (let i = 0; i < balloonCount; i++) {
     let balloonContent: string;
@@ -113,7 +119,7 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
       id: `balloon-${i}-${Date.now()}`,
       x: Math.random() * 600 + 50,
       y: Math.random() * 100 + 600,
-      speed: Math.random() * 1.2 + 1.0 + (level * 0.08),
+      speed: Math.random() * 2.0 + 2.5 + (level * 0.15), // Increased speed significantly
       content: balloonContent,
       type: balloonType,
       color: getCategorySpecificColor(actualCategory, balloonContent, balloonType),
@@ -192,7 +198,7 @@ export const getThemeColors = (theme: string) => {
       accent: '#2F4F2F'
     },
     white: {
-      background: '#FFFFFF',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
       accent: '#6366F1'
     }
   };

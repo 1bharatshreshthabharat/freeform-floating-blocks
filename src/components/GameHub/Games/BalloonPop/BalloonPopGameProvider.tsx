@@ -145,8 +145,8 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
           };
         });
 
-      // Add new balloons periodically
-      if (Math.random() < 0.015 && updatedBalloons.length < 6 && state.currentQuestion) {
+      // Add new balloons more frequently (increased from 0.015 to 0.035)
+      if (Math.random() < 0.035 && updatedBalloons.length < 10 && state.currentQuestion) {
         const newBalloon = generateBalloons(state.category, state.gameStats.level, state.currentQuestion)[0];
         if (newBalloon) {
           newBalloon.id = `balloon-${Date.now()}-${Math.random()}`;
@@ -164,8 +164,8 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
       const newScore = isCorrect ? state.gameStats.score + 10 : Math.max(0, state.gameStats.score - 5);
       const newStreak = isCorrect ? state.gameStats.streak + 1 : 0;
 
-      // Check if level should advance
-      const shouldAdvance = isCorrect && (state.gameStats.correctAnswers + 1) % 5 === 0;
+      // Change mission immediately after popping correct balloon (reduced from 5 to 2)
+      const shouldAdvance = isCorrect && (state.gameStats.correctAnswers + 1) % 2 === 0;
       const newLevel = shouldAdvance ? state.gameStats.level + 1 : state.gameStats.level;
 
       let nextQuestion = state.currentQuestion;
@@ -328,13 +328,13 @@ export const BalloonPopGameProvider: React.FC<{ children: React.ReactNode }> = (
     dispatch({ type: 'TOGGLE_VOICE' });
   }, []);
 
-  // Enhanced game loop for smooth balloon movement
+  // Enhanced game loop for smoother and faster balloon movement
   useEffect(() => {
     if (!state.isPlaying || state.isPaused) return;
 
     const interval = setInterval(() => {
       dispatch({ type: 'UPDATE_BALLOONS' });
-    }, 50); // Smoother animation at 20fps
+    }, 30); // Increased to 33fps for smoother animation
 
     return () => clearInterval(interval);
   }, [state.isPlaying, state.isPaused, state.category]);
