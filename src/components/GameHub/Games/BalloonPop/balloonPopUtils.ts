@@ -1,4 +1,3 @@
-
 import { Question, LearningCategory, Balloon } from './types';
 
 export const generateQuestion = (category: LearningCategory, level: number): Question => {
@@ -76,7 +75,7 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
   };
 
   const availableContent = content[category];
-  const balloonCount = Math.min(8 + level, 12);
+  const balloonCount = Math.min(6 + level, 10);
 
   // Ensure at least 2-3 correct answers are in the balloons
   const correctCount = Math.min(3, question.correctAnswers.length);
@@ -84,7 +83,7 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
 
   for (let i = 0; i < balloonCount; i++) {
     let balloonContent: string;
-    let balloonType: 'correct' | 'incorrect';
+    let balloonType: 'correct' | 'incorrect' | 'bonus';
     
     if (i < correctCount) {
       balloonContent = correctBalloons[i];
@@ -99,13 +98,13 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
 
     balloons.push({
       id: `balloon-${i}-${Date.now()}`,
-      x: Math.random() * 700 + 50,
-      y: Math.random() * 100 + 500,
-      speed: Math.random() * 1.5 + 0.8 + (level * 0.1),
+      x: Math.random() * 600 + 50,
+      y: Math.random() * 100 + 600,
+      speed: Math.random() * 1.2 + 1.0 + (level * 0.08),
       content: balloonContent,
       type: balloonType,
       color: getCategorySpecificColor(category, balloonContent, balloonType),
-      size: Math.random() * 15 + 50,
+      size: Math.random() * 12 + 45,
       popped: false,
       popAnimation: false,
       rotation: Math.random() * 360,
@@ -116,88 +115,68 @@ export const generateBalloons = (category: LearningCategory, level: number, ques
   return balloons.sort(() => Math.random() - 0.5); // Shuffle the balloons
 };
 
-export const getCategorySpecificColor = (category: LearningCategory, content: string, type: 'correct' | 'incorrect'): string => {
+export const getCategorySpecificColor = (category: LearningCategory, content: string, type: 'correct' | 'incorrect' | 'bonus'): string => {
   if (category === 'colors') {
     const colorMap: { [key: string]: string } = {
-      'Red': '#FF0000',
-      'Blue': '#0000FF',
-      'Green': '#00FF00',
-      'Yellow': '#FFFF00',
-      'Purple': '#800080',
-      'Orange': '#FFA500',
-      'Pink': '#FFC0CB',
-      'Brown': '#A52A2A'
+      'Red': '#FF4757',
+      'Blue': '#3742FA',
+      'Green': '#2ED573',
+      'Yellow': '#FFA502',
+      'Purple': '#A55EEA',
+      'Orange': '#FF6348',
+      'Pink': '#FF3838',
+      'Brown': '#8B4513'
     };
-    return colorMap[content] || '#FF6B9D';
+    return colorMap[content] || '#5352ED';
   }
   
   const categoryColorMap: Record<LearningCategory, string[]> = {
-    letters: ['#FF6B9D', '#C44569', '#F8B500', '#FF7675'],
-    numbers: ['#45B7D1', '#0984e3', '#74B9FF', '#00B894'],
-    math: ['#96CEB4', '#00B894', '#55A3FF', '#26C281'],
-    colors: ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'],
-    shapes: ['#A29BFE', '#6C5CE7', '#FD79A8', '#FDCB6E'],
-    animals: ['#F39C12', '#E67E22', '#D63031', '#74B9FF'],
-    words: ['#E17055', '#81ECEC', '#FD79A8', '#FDCB6E'],
-    science: ['#00B894', '#0984E3', '#6C5CE7', '#A29BFE'],
-    geography: ['#00B894', '#74B9FF', '#0984E3', '#55A3FF']
+    letters: ['#5352ED', '#3742FA', '#70A1FF', '#7BED9F'],
+    numbers: ['#2ED573', '#20BF6B', '#0BE881', '#26C281'],
+    math: ['#FFA502', '#FF6348', '#FF4757', '#FF3838'],
+    colors: ['#5352ED', '#3742FA', '#2ED573', '#FFA502', '#A55EEA'],
+    shapes: ['#A55EEA', '#8E44AD', '#9B59B6', '#E74C3C'],
+    animals: ['#F39C12', '#E67E22', '#D35400', '#3498DB'],
+    words: ['#1ABC9C', '#16A085', '#2ECC71', '#27AE60'],
+    science: ['#3498DB', '#2980B9', '#9B59B6', '#8E44AD'],
+    geography: ['#2ECC71', '#27AE60', '#3498DB', '#2980B9']
   };
   
-  const colors = categoryColorMap[category] || ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7'];
+  const colors = categoryColorMap[category] || ['#5352ED', '#3742FA', '#2ED573', '#FFA502'];
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
 export const getCategoryColors = (category: LearningCategory): string[] => {
   const categoryColorMap: Record<LearningCategory, string[]> = {
-    letters: ['#FF6B9D', '#C44569', '#F8B500', '#FF7675'],
-    numbers: ['#45B7D1', '#0984e3', '#74B9FF', '#00B894'],
-    math: ['#96CEB4', '#00B894', '#55A3FF', '#26C281'],
-    colors: ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'],
-    shapes: ['#A29BFE', '#6C5CE7', '#FD79A8', '#FDCB6E'],
-    animals: ['#F39C12', '#E67E22', '#D63031', '#74B9FF'],
-    words: ['#E17055', '#81ECEC', '#FD79A8', '#FDCB6E'],
-    science: ['#00B894', '#0984E3', '#6C5CE7', '#A29BFE'],
-    geography: ['#00B894', '#74B9FF', '#0984E3', '#55A3FF']
+    letters: ['#5352ED', '#3742FA', '#70A1FF', '#7BED9F'],
+    numbers: ['#2ED573', '#20BF6B', '#0BE881', '#26C281'],
+    math: ['#FFA502', '#FF6348', '#FF4757', '#FF3838'],
+    colors: ['#5352ED', '#3742FA', '#2ED573', '#FFA502', '#A55EEA'],
+    shapes: ['#A55EEA', '#8E44AD', '#9B59B6', '#E74C3C'],
+    animals: ['#F39C12', '#E67E22', '#D35400', '#3498DB'],
+    words: ['#1ABC9C', '#16A085', '#2ECC71', '#27AE60'],
+    science: ['#3498DB', '#2980B9', '#9B59B6', '#8E44AD'],
+    geography: ['#2ECC71', '#27AE60', '#3498DB', '#2980B9']
   };
   
-  return categoryColorMap[category] || ['#FF6B9D', '#45B7D1', '#96CEB4', '#FFEAA7'];
+  return categoryColorMap[category] || ['#5352ED', '#3742FA', '#2ED573', '#FFA502'];
 };
 
 export const getThemeColors = (theme: string) => {
   const themes = {
-    rainbow: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      accent: '#FF6B9D'
-    },
-    jungle: {
-      background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-      accent: '#4CAF50'
-    },
     space: {
-      background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
       accent: '#9C27B0'
     },
     underwater: {
-      background: 'linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%)',
+      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
       accent: '#00BCD4'
     },
-    castle: {
-      background: 'linear-gradient(135deg, #8B4513 0%, #DAA520 100%)',
-      accent: '#DAA520'
-    },
-    farm: {
-      background: 'linear-gradient(135deg, #228B22 0%, #ADFF2F 100%)',
-      accent: '#228B22'
-    },
-    ocean: {
-      background: 'linear-gradient(135deg, #006994 0%, #00A8CC 100%)',
-      accent: '#00A8CC'
-    },
     forest: {
-      background: 'linear-gradient(135deg, #2F4F2F 0%, #8FBC8F 100%)',
+      background: 'linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%)',
       accent: '#2F4F2F'
     }
   };
   
-  return themes[theme as keyof typeof themes] || themes.rainbow;
+  return themes[theme as keyof typeof themes] || themes.space;
 };

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { BalloonPopGameState, Balloon, Question, LearningCategory, GameTheme, Achievement, PowerUp } from './types';
 import { generateQuestion, generateBalloons } from './balloonPopUtils';
@@ -44,80 +45,7 @@ const initialAchievements: Achievement[] = [
     unlocked: false,
     progress: 0,
     target: 20
-  },
-  {
-    id: 'perfect_level',
-    name: 'Perfect Level',
-    description: 'Complete a level with 100% accuracy',
-    icon: '⭐',
-    unlocked: false,
-    progress: 0,
-    target: 1
-  },
-  {
-    id: 'powerup_master',
-    name: 'Power-up Master',
-    description: 'Use 25 power-ups',
-    icon: '💪',
-    unlocked: false,
-    progress: 0,
-    target: 25
-  },
-  {
-    id: 'time_champion',
-    name: 'Time Champion',
-    description: 'Win 5 time challenge games',
-    icon: '⏰',
-    unlocked: false,
-    progress: 0,
-    target: 5
-  },
-  {
-    id: 'category_expert',
-    name: 'Category Expert',
-    description: 'Master all learning categories',
-    icon: '🧠',
-    unlocked: false,
-    progress: 0,
-    target: 9
-  },
-  {
-    id: 'social_butterfly',
-    name: 'Social Butterfly',
-    description: 'Play 10 multiplayer games',
-    icon: '👥',
-    unlocked: false,
-    progress: 0,
-    target: 10
-  },
-  {
-    id: 'explorer',
-    name: 'World Explorer',
-    description: 'Play in all 8 themes',
-    icon: '🗺️',
-    unlocked: false,
-    progress: 0,
-    target: 8
-  },
-  {
-    id: 'persistent',
-    name: 'Never Give Up',
-    description: 'Play for 100 total minutes',
-    icon: '💎',
-    unlocked: false,
-    progress: 0,
-    target: 6000
   }
-];
-
-const initialPowerUps: PowerUp[] = [
-  { type: 'slowTime', active: false, duration: 10, remaining: 0 },
-  { type: 'targetHelper', active: false, duration: 15, remaining: 0 },
-  { type: 'popAll', active: false, duration: 0, remaining: 0 },
-  { type: 'doublePoints', active: false, duration: 30, remaining: 0 },
-  { type: 'magnify', active: false, duration: 20, remaining: 0 },
-  { type: 'extraTime', active: false, duration: 0, remaining: 0 },
-  { type: 'shield', active: false, duration: 45, remaining: 0 }
 ];
 
 const initialState: BalloonPopGameState = {
@@ -140,15 +68,15 @@ const initialState: BalloonPopGameState = {
   gameOver: false,
   showInstructions: true,
   category: 'letters',
-  theme: 'rainbow',
+  theme: 'space',
   gameMode: 'learning',
   soundEnabled: true,
   voiceEnabled: true,
   multiplayer: false,
   showFeedback: false,
   feedbackMessage: '',
-  feedbackType: 'correct' | 'incorrect' | 'encouragement' | 'powerup' | 'achievement',
-  powerUps: initialPowerUps,
+  feedbackType: 'correct',
+  powerUps: [],
   achievements: initialAchievements,
   showAchievement: false,
   currentAchievement: null,
@@ -197,21 +125,18 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
       const updatedBalloons = state.balloons
         .filter(balloon => balloon.y > -100 && !balloon.popped)
         .map(balloon => {
-          const time = Date.now() * 0.003;
-          const slowTimeMultiplier = state.powerUps.find(p => p.type === 'slowTime' && p.active) ? 0.3 : 1;
-          const magnifyMultiplier = state.powerUps.find(p => p.type === 'magnify' && p.active) ? 1.5 : 1;
+          const time = Date.now() * 0.001;
           
           return {
             ...balloon,
-            y: balloon.y - (balloon.speed * slowTimeMultiplier),
-            x: balloon.x + Math.sin(time + balloon.bobOffset) * 0.8,
-            rotation: balloon.rotation + 1,
-            size: balloon.size * magnifyMultiplier
+            y: balloon.y - balloon.speed,
+            x: balloon.x + Math.sin(time + balloon.bobOffset) * 0.5,
+            rotation: balloon.rotation + 0.5
           };
         });
 
       // Add new balloons periodically
-      if (Math.random() < 0.02 && updatedBalloons.length < 8 && state.currentQuestion) {
+      if (Math.random() < 0.015 && updatedBalloons.length < 6 && state.currentQuestion) {
         const newBalloon = generateBalloons(state.category, state.gameStats.level, state.currentQuestion)[0];
         if (newBalloon) {
           newBalloon.id = `balloon-${Date.now()}-${Math.random()}`;
@@ -254,7 +179,10 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
           correctAnswers: isCorrect ? state.gameStats.correctAnswers + 1 : state.gameStats.correctAnswers,
           wrongAnswers: isCorrect ? state.gameStats.wrongAnswers : state.gameStats.wrongAnswers + 1,
           streak: newStreak,
-          balloonsPoppedTotal: state.gameStats.balloonsPoppedTotal + 1
+          balloonsPoppedTotal: state.gameStats.balloonsPoppedTotal + 1,
+          averageAccuracy: state.gameStats.correctAnswers + state.gameStats.wrongAnswers > 0 
+            ? Math.round((state.gameStats.correctAnswers / (state.gameStats.correctAnswers + state.gameStats.wrongAnswers)) * 100)
+            : 0
         },
         showFeedback: true,
         feedbackMessage: isCorrect ? 'Great job! 🎉' : 'Try again! 💪',
@@ -307,60 +235,6 @@ function balloonPopReducer(state: BalloonPopGameState, action: any): BalloonPopG
     case 'UPDATE_SETTING':
       return { ...state, [action.payload.key]: action.payload.value };
       
-    case 'USE_POWERUP':
-      return {
-        ...state,
-        powerUps: state.powerUps.map(powerUp =>
-          powerUp.type === action.payload && !powerUp.active
-            ? { ...powerUp, active: true, remaining: powerUp.duration }
-            : powerUp
-        ),
-        gameStats: {
-          ...state.gameStats,
-          powerUpsUsed: state.gameStats.powerUpsUsed + 1
-        }
-      };
-      
-    case 'UPDATE_POWERUPS':
-      return {
-        ...state,
-        powerUps: state.powerUps.map(powerUp =>
-          powerUp.active
-            ? {
-                ...powerUp,
-                remaining: Math.max(0, powerUp.remaining - 1),
-                active: powerUp.remaining > 1
-              }
-            : powerUp
-        )
-      };
-      
-    case 'CHECK_ACHIEVEMENTS':
-      const updatedAchievements = state.achievements.map(achievement => {
-        let newProgress = achievement.progress;
-        
-        switch (achievement.id) {
-          case 'first_pop':
-            newProgress = state.gameStats.balloonsPoppedTotal > 0 ? 1 : 0;
-            break;
-          case 'streak_master':
-            newProgress = Math.max(newProgress, state.gameStats.streak);
-            break;
-          case 'powerup_master':
-            newProgress = state.gameStats.powerUpsUsed;
-            break;
-          // Add more achievement logic here
-        }
-        
-        return {
-          ...achievement,
-          progress: Math.min(newProgress, achievement.target),
-          unlocked: newProgress >= achievement.target
-        };
-      });
-      
-      return { ...state, achievements: updatedAchievements };
-      
     default:
       return state;
   }
@@ -410,10 +284,10 @@ export const BalloonPopGameProvider: React.FC<{ children: React.ReactNode }> = (
 
     const interval = setInterval(() => {
       dispatch({ type: 'UPDATE_BALLOONS' });
-    }, 32); // ~60fps for smooth animation
+    }, 50); // Smoother animation at 20fps
 
     return () => clearInterval(interval);
-  }, [state.isPlaying, state.isPaused, state.category, state.powerUps]);
+  }, [state.isPlaying, state.isPaused, state.category]);
 
   // Timer
   useEffect(() => {

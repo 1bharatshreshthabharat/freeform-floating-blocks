@@ -5,7 +5,7 @@ export interface Balloon {
   y: number;
   speed: number;
   content: string;
-  type: 'correct' | 'incorrect' | 'powerup' | 'bonus';
+  type: 'correct' | 'incorrect' | 'bonus';
   color: string;
   size: number;
   popped: boolean;
@@ -27,18 +27,9 @@ export interface Question {
 
 export type LearningCategory = 'letters' | 'numbers' | 'math' | 'colors' | 'shapes' | 'animals' | 'words' | 'science' | 'geography';
 
-export type GameTheme = 'jungle' | 'space' | 'underwater' | 'rainbow' | 'castle' | 'farm' | 'ocean' | 'forest';
+export type GameTheme = 'space' | 'underwater' | 'forest';
 
 export type GameMode = 'learning' | 'timeChallenge' | 'endless' | 'multiplayer' | 'story';
-
-export type PowerUpType = 'slowTime' | 'targetHelper' | 'popAll' | 'doublePoints' | 'magnify' | 'extraTime' | 'shield';
-
-export interface PowerUp {
-  type: PowerUpType;
-  active: boolean;
-  duration: number;
-  remaining: number;
-}
 
 export interface Achievement {
   id: string;
@@ -80,7 +71,7 @@ export interface BalloonPopGameState {
   showFeedback: boolean;
   feedbackMessage: string;
   feedbackType: 'correct' | 'incorrect' | 'encouragement' | 'powerup' | 'achievement';
-  powerUps: PowerUp[];
+  powerUps: any[];
   achievements: Achievement[];
   showAchievement: boolean;
   currentAchievement: Achievement | null;

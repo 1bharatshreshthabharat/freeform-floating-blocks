@@ -23,13 +23,8 @@ export const BalloonPopControls: React.FC = () => {
   ];
 
   const themes: { key: GameTheme; label: string; icon: string }[] = [
-    { key: 'rainbow', label: 'Rainbow', icon: '🌈' },
-    { key: 'jungle', label: 'Jungle', icon: '🌿' },
     { key: 'space', label: 'Space', icon: '🚀' },
     { key: 'underwater', label: 'Ocean', icon: '🌊' },
-    { key: 'castle', label: 'Castle', icon: '🏰' },
-    { key: 'farm', label: 'Farm', icon: '🚜' },
-    { key: 'ocean', label: 'Deep Ocean', icon: '🐠' },
     { key: 'forest', label: 'Forest', icon: '🌲' }
   ];
 
@@ -45,12 +40,12 @@ export const BalloonPopControls: React.FC = () => {
     <div className="space-y-4">
       {/* Current Question - Prominent Display */}
       {state.currentQuestion && (
-        <Card className="p-4 bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300">
-          <h3 className="font-bold text-orange-700 mb-2 text-lg text-center">🎯 Your Mission:</h3>
-          <p className="text-orange-800 font-bold text-center text-xl">{state.currentQuestion.instruction}</p>
+        <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 shadow-lg">
+          <h3 className="font-bold text-blue-700 mb-2 text-lg text-center">🎯 Your Mission:</h3>
+          <p className="text-blue-800 font-bold text-center text-xl">{state.currentQuestion.instruction}</p>
           
           {/* Time Display */}
-          <div className="flex items-center justify-center mt-3 text-red-600">
+          <div className="flex items-center justify-center mt-3 text-red-500">
             <Clock className="h-5 w-5 mr-2" />
             <span className="font-bold text-lg">
               {formatTime(timeRemaining)}
@@ -60,13 +55,13 @@ export const BalloonPopControls: React.FC = () => {
       )}
 
       {/* Game Controls */}
-      <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg">
+      <Card className="p-4 bg-gradient-to-br from-green-50 to-blue-50 shadow-lg border border-green-200">
         <div className="space-y-4">
           <div className="flex gap-2">
             {!state.isPlaying ? (
               <Button
                 onClick={startGame}
-                className="flex-1 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold"
+                className="flex-1 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-bold shadow-md"
               >
                 🎈 Start Game
               </Button>
@@ -75,14 +70,14 @@ export const BalloonPopControls: React.FC = () => {
                 <Button
                   onClick={pauseGame}
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
                 >
                   {state.isPaused ? '▶️ Resume' : '⏸️ Pause'}
                 </Button>
                 <Button
                   onClick={resetGame}
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
                 >
                   🔄 Reset
                 </Button>
@@ -94,10 +89,10 @@ export const BalloonPopControls: React.FC = () => {
           <div className="space-y-2">
             <label className="text-sm font-semibold text-purple-700">📚 Learning Category</label>
             <Select value={state.category} onValueChange={(value: LearningCategory) => changeCategory(value)}>
-              <SelectTrigger className="w-full bg-white border-purple-300">
+              <SelectTrigger className="w-full bg-white border-purple-200 shadow-sm">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
-              <SelectContent className="bg-white border border-purple-300 shadow-lg z-50">
+              <SelectContent className="bg-white border border-purple-200 shadow-lg z-50">
                 {categories.map((category) => (
                   <SelectItem 
                     key={category.key} 
@@ -116,12 +111,12 @@ export const BalloonPopControls: React.FC = () => {
 
           {/* Theme Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-purple-700">🎨 Game Theme</label>
+            <label className="text-sm font-semibold text-blue-700">🎨 Game Theme</label>
             <Select value={state.theme} onValueChange={(value: GameTheme) => changeTheme(value)}>
-              <SelectTrigger className="w-full bg-white border-purple-300">
+              <SelectTrigger className="w-full bg-white border-blue-200 shadow-sm">
                 <SelectValue placeholder="Select theme" />
               </SelectTrigger>
-              <SelectContent className="bg-white border border-purple-300 shadow-lg z-50">
+              <SelectContent className="bg-white border border-blue-200 shadow-lg z-50">
                 {themes.map((theme) => (
                   <SelectItem 
                     key={theme.key} 
@@ -139,8 +134,8 @@ export const BalloonPopControls: React.FC = () => {
           </div>
 
           {/* Game Stats */}
-          <div className="bg-white/80 p-3 rounded-lg">
-            <h4 className="font-bold text-purple-700 mb-2">📊 Game Stats</h4>
+          <div className="bg-white/90 p-3 rounded-lg border border-indigo-200 shadow-sm">
+            <h4 className="font-bold text-indigo-700 mb-2">📊 Game Stats</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>Score: <span className="font-bold text-green-600">{state.gameStats.score}</span></div>
               <div>Level: <span className="font-bold text-blue-600">{state.gameStats.level}</span></div>
