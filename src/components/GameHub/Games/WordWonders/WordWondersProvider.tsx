@@ -183,7 +183,8 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
       payload: { mode: actualMode, wordData, letters }
     });
 
-    speakText(`Let's play ${actualMode.replace('-', ' ')}! ${wordData.riddle || wordData.sentence || 'Find the word!'}`);
+    const gameText = `Let's play ${actualMode.replace('-', ' ')}! ${(wordData as any).riddle || (wordData as any).sentence || 'Find the word!'}`;
+    speakText(gameText);
   }, [speakText]);
 
   const resetGame = useCallback(() => {
