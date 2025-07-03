@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { GameCard } from './GameCard';
 import { ChessGame } from './Games/ChessGame';
@@ -5,11 +6,12 @@ import { SnakeGame } from './Games/SnakeGame';
 import { FlappyGame } from './Games/FlappyGame';
 import { FruitNinjaGame } from './Games/FruitNinjaGame';
 import { BalloonPopGame } from './Games/BalloonPopGame';
+import { WordWondersGame } from './Games/WordWondersGame';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
 
-export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | null;
+export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | 'wordwonders' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -20,6 +22,15 @@ export const GameHub: React.FC = () => {
   });
 
   const games = [
+    {
+      id: 'wordwonders' as const,
+      title: 'Word Wonders',
+      description: 'Interactive wordplay and literacy-building with animated floating letters, drag-and-drop gameplay, and 7 exciting game modes!',
+      image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
+      difficulty: 'Easy',
+      category: 'Educational',
+      players: '1'
+    },
     {
       id: 'chess' as const,
       title: 'Master Chess',
@@ -69,6 +80,8 @@ export const GameHub: React.FC = () => {
 
   const renderGame = () => {
     switch (currentGame) {
+      case 'wordwonders':
+        return <WordWondersGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'chess':
         return <ChessGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'balloonpop':
@@ -153,7 +166,7 @@ export const GameHub: React.FC = () => {
           <p className="text-gray-600 text-lg">Experience games with professional-grade features and customization!</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {games.map((game) => (
             <GameCard
               key={game.id}
@@ -168,6 +181,15 @@ export const GameHub: React.FC = () => {
           <div>
             <h3 className="text-2xl font-bold text-gray-800 mb-6">Educational Games</h3>
             <div className="grid grid-cols-1 gap-4">
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-center space-x-4">
+                  <div className="text-4xl">📚</div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Word Wonders</h4>
+                    <p className="text-gray-600">Interactive wordplay with floating letters and 7 game modes</p>
+                  </div>
+                </div>
+              </Card>
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center space-x-4">
                   <div className="text-4xl">🎈</div>
