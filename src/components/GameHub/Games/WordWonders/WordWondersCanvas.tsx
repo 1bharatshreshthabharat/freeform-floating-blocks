@@ -102,7 +102,7 @@ export const WordWondersCanvas: React.FC = () => {
             x: startX + i * (boxWidth + spacing),
             y: startY,
             width: boxWidth,
-            height: boxBoxWidth,
+            height: boxWidth,
             filled: false
           });
         }
