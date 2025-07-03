@@ -164,15 +164,16 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
       : mode;
     
     const wordData = getRandomWord();
-    const letterStrings = generateLetters(wordData.word, 8);
+    const letterStrings = generateLetters(wordData.word, 6); // Reduced from 8 to 6 for cleaner layout
     
+    // Create letters with much slower initial velocities
     const letters: FloatingLetter[] = letterStrings.map((letter, index) => ({
       id: `letter-${index}`,
       letter,
-      x: Math.random() * 600 + 50,
-      y: Math.random() * 200 + 100,
-      vx: (Math.random() - 0.5) * 2,
-      vy: (Math.random() - 0.5) * 2,
+      x: Math.random() * 400 + 50, // Smaller area
+      y: Math.random() * 150 + 50, // Smaller area
+      vx: (Math.random() - 0.5) * 0.5, // Much slower movement
+      vy: (Math.random() - 0.5) * 0.3, // Much slower movement
       isCorrect: wordData.word.includes(letter),
       isDragging: false,
       isPlaced: false
