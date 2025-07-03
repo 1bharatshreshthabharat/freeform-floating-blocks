@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { useWordWonders } from './WordWondersProvider';
 import { FloatingLetter } from './types';
@@ -321,7 +322,7 @@ export const WordWondersCanvas: React.FC = () => {
         }
         
         if (isCorrect) {
-          dispatch({ type: 'PLACE_LETTER', payload: { letterId: draggedLetter, position: zoneIndex } });
+          dispatch({ type: 'PLACE_LETTER_IN_BOX', payload: { letterId: draggedLetter, boxIndex: zoneIndex } });
           dispatch({ type: 'ADD_SCORE', payload: 10 });
           playSound('correct');
           speakText(letter.letter);
