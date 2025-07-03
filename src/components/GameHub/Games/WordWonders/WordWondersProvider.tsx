@@ -156,11 +156,27 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, currentInput: action.payload };
     case 'TICK_TIMER':
       if (state.isPaused || state.isComplete) return state;
-      return { ...state, timeLeft: Math.max(0, state.timeLeft - 1) };
+      const newTimeLeft = Math.max(0, state.timeLeft - 1);
+      if (newTimeLeft === 0) {
+        return { ...state, timeLeft: 0, isGameActive: false };
+      }
+      return { ...state, timeLeft: newTimeLeft };
     case 'NEXT_QUESTION':
       // Start a new question automatically
       const wordData = getRandomWord();
-      const letterStrings = generateLetters(wordData.word, 6);
+      let letterStrings: string[] = [];
+      let possibleWords: string[] = [];
+      
+      if (state.mode === 'make-words') {
+        letterStrings = wordData.word.split('').concat(['A', 'E', 'I', 'O', 'U'].slice(0, 3));
+        possibleWords = getWordsByLetters(letterStrings);
+      } else if (state.mode === 'fix-word') {
+        // For fix-word mode, shuffle the letters of the target word
+        letterStrings = wordData.word.split('').sort(() => Math.random() - 0.5);
+      } else {
+        letterStrings = generateLetters(wordData.word, 6);
+      }
+      
       const letters = letterStrings.map((letter, index) => ({
         id: `letter-${index}`,
         letter,
@@ -168,7 +184,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         y: Math.random() * 100 + 50,
         vx: (Math.random() - 0.5) * 0.3,
         vy: (Math.random() - 0.5) * 0.2,
-        isCorrect: wordData.word.includes(letter),
+        isCorrect: state.mode === 'fix-word' ? true : wordData.word.includes(letter),
         isDragging: false,
         isPlaced: false
       }));
@@ -179,6 +195,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         riddle: (wordData as any).riddle,
         sentence: (wordData as any).sentence,
         letters,
+        possibleWords,
         placedLetters: new Array(wordData.word.length).fill(''),
         isComplete: false,
         showHint: false,
@@ -283,6 +300,7 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isPlaced: false
       }));
     } else if (actualMode === 'fix-word') {
+      // For fix-word mode, use shuffled letters from the target word
       const shuffled = wordData.word.split('').sort(() => Math.random() - 0.5);
       letters = shuffled.map((letter, index) => ({
         id: `letter-${index}`,
@@ -329,10 +347,10 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Auto-start game when mode changes (real-time switching)
   useEffect(() => {
-    if (state.mode && state.mode !== 'random') {
+    if (state.mode && state.mode !== 'random' && !state.isGameActive) {
       startGame(state.mode);
     }
-  }, [state.mode, startGame]);
+  }, [state.mode, startGame, state.isGameActive]);
 
   // Timer effect
   useEffect(() => {
@@ -346,11 +364,11 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Game over effect
   useEffect(() => {
-    if (state.lives === 0) {
+    if (state.lives === 0 || state.timeLeft === 0) {
+      dispatch({ type: 'GAME_OVER' });
       speakText('Game Over! Try again!');
-      setTimeout(() => resetGame(), 2000);
     }
-  }, [state.lives, speakText, resetGame]);
+  }, [state.lives, state.timeLeft, speakText]);
 
   return (
     <WordWondersContext.Provider value={{

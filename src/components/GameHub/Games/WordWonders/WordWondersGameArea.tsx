@@ -19,6 +19,41 @@ export const WordWondersGameArea: React.FC = () => {
     removeLetterFromBox 
   } = useWordWonders();
 
+  const getThemeStyles = () => {
+    switch (state.theme) {
+      case 'forest':
+        return {
+          background: 'linear-gradient(135deg, #a8e6cf 0%, #dcedc1 50%, #ffd3a5 100%)',
+          primaryColor: '#4a7c59',
+          accentColor: '#81c784'
+        };
+      case 'sky':
+        return {
+          background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)',
+          primaryColor: '#1976d2',
+          accentColor: '#42a5f5'
+        };
+      case 'candyland':
+        return {
+          background: 'linear-gradient(135deg, #fce4ec 0%, #f8bbd9 50%, #f48fb1 100%)',
+          primaryColor: '#e91e63',
+          accentColor: '#f06292'
+        };
+      case 'underwater':
+        return {
+          background: 'linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 50%, #80cbc4 100%)',
+          primaryColor: '#00695c',
+          accentColor: '#4db6ac'
+        };
+      default:
+        return {
+          background: 'linear-gradient(135deg, #f3e5f5 0%, #e1bee7 50%, #ce93d8 100%)',
+          primaryColor: '#7b1fa2',
+          accentColor: '#ab47bc'
+        };
+    }
+  };
+
   const handleLetterClick = (letterId: string) => {
     const letter = state.letters.find(l => l.id === letterId);
     if (!letter || letter.isPlaced) return;
@@ -50,6 +85,28 @@ export const WordWondersGameArea: React.FC = () => {
             dispatch({ type: 'RESET_PLACEMENT' });
           }, 1500);
         }
+      } else if (state.mode === 'fix-word') {
+        // For fix-word mode, check if the formed word matches the target
+        if (formedWord === state.targetWord.toLowerCase()) {
+          dispatch({ type: 'COMPLETE_WORD' });
+          dispatch({ type: 'ADD_SCORE', payload: 100 });
+          speakText(`Excellent! You fixed the word ${state.targetWord}!`);
+          playSound('complete');
+          
+          // Start next question automatically
+          setTimeout(() => {
+            dispatch({ type: 'NEXT_QUESTION' });
+          }, 2000);
+        } else {
+          speakText('Not quite right! Try again!');
+          playSound('wrong');
+          dispatch({ type: 'WRONG_ANSWER' });
+          
+          // Reset placement after a delay
+          setTimeout(() => {
+            dispatch({ type: 'RESET_PLACEMENT' });
+          }, 1000);
+        }
       } else if (formedWord === state.targetWord.toLowerCase()) {
         dispatch({ type: 'COMPLETE_WORD' });
         dispatch({ type: 'ADD_SCORE', payload: 100 });
@@ -64,6 +121,11 @@ export const WordWondersGameArea: React.FC = () => {
         speakText('Try again!');
         playSound('wrong');
         dispatch({ type: 'WRONG_ANSWER' });
+        
+        // Reset placement after a delay for wrong answers
+        setTimeout(() => {
+          dispatch({ type: 'RESET_PLACEMENT' });
+        }, 1000);
       }
     }
   };
@@ -76,8 +138,16 @@ export const WordWondersGameArea: React.FC = () => {
     }
   };
 
+  const themeStyles = getThemeStyles();
+
   return (
-    <div className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-lg border-2 border-purple-200 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div 
+      className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-lg border-2"
+      style={{ 
+        background: themeStyles.background,
+        borderColor: themeStyles.primaryColor 
+      }}
+    >
       
       {/* Letter Boxes */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">

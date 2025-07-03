@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FloatingLetter } from './types';
 
 interface FloatingLetterProps {
@@ -13,6 +13,41 @@ export const WordWondersFloatingLetter: React.FC<FloatingLetterProps> = ({
   onClick,
   isHinted = false
 }) => {
+  const [position, setPosition] = useState({ x: letter.x, y: letter.y });
+  const [velocity, setVelocity] = useState({ vx: letter.vx, vy: letter.vy });
+
+  useEffect(() => {
+    if (letter.isPlaced) return;
+
+    const animate = () => {
+      setPosition(prev => {
+        let newX = prev.x + velocity.vx;
+        let newY = prev.y + velocity.vy;
+        let newVx = velocity.vx;
+        let newVy = velocity.vy;
+
+        // Bounce off walls
+        if (newX < 20 || newX > 350) {
+          newVx *= -0.8;
+          newX = Math.max(20, Math.min(350, newX));
+        }
+        if (newY < 20 || newY > 150) {
+          newVy *= -0.8;
+          newY = Math.max(20, Math.min(150, newY));
+        }
+
+        // Add floating effect
+        newY += Math.sin(Date.now() * 0.002 + parseInt(letter.id.replace('letter-', ''))) * 0.3;
+
+        setVelocity({ vx: newVx, vy: newVy });
+        return { x: newX, y: newY };
+      });
+    };
+
+    const interval = setInterval(animate, 50);
+    return () => clearInterval(interval);
+  }, [letter.isPlaced, velocity, letter.id]);
+
   const handleClick = () => {
     if (!letter.isPlaced) {
       onClick(letter.id);
@@ -30,8 +65,8 @@ export const WordWondersFloatingLetter: React.FC<FloatingLetterProps> = ({
           : 'bg-white border-purple-300 hover:border-purple-400 shadow-md'
       }`}
       style={{
-        left: letter.x,
-        top: letter.y,
+        left: position.x,
+        top: position.y,
         width: 50,
         height: 50,
       }}
