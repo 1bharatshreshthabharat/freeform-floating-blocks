@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { WordWondersProvider } from './WordWondersProvider';
-import { WordWondersCanvas } from './WordWondersCanvas';
+import { WordWondersGameArea } from './WordWondersGameArea';
 import { WordWondersControls } from './WordWondersControls';
+import { WordWondersGameTimer } from './WordWondersGameTimer';
+import { WordWondersGameOverModal } from './WordWondersGameOverModal';
 import { useWordWonders } from './WordWondersProvider';
 
 const GameContent: React.FC = () => {
@@ -107,7 +109,7 @@ const GameContent: React.FC = () => {
         {/* Game Canvas */}
         {state.isGameActive && (
           <div className="mb-6">
-            <WordWondersCanvas />
+            <WordWondersGameArea />
           </div>
         )}
 
@@ -119,14 +121,14 @@ const GameContent: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="text-3xl mb-2">🖱️</div>
-                <div className="font-semibold text-blue-700">Drag Letters</div>
-                <div className="text-sm text-blue-600">Click and drag the floating letters</div>
+                <div className="text-3xl mb-2">👆</div>
+                <div className="font-semibold text-blue-700">Click Letters</div>
+                <div className="text-sm text-blue-600">Click on floating letters to select them</div>
               </div>
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="text-3xl mb-2">🎯</div>
-                <div className="font-semibold text-green-700">Drop in Boxes</div>
-                <div className="text-sm text-green-600">Place letters in the correct order</div>
+                <div className="text-3xl mb-2">📍</div>
+                <div className="font-semibold text-green-700">Place on Lines</div>
+                <div className="text-sm text-green-600">Letters will appear on colorful lines</div>
               </div>
               <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <div className="text-3xl mb-2">⭐</div>
@@ -162,6 +164,12 @@ const GameContent: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* Game Timer Component */}
+      <WordWondersGameTimer />
+      
+      {/* Game Over Modal */}
+      <WordWondersGameOverModal />
     </div>
   );
 };

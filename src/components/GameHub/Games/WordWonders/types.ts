@@ -55,3 +55,15 @@ export interface WordData {
   riddle?: string;
   sentence?: string;
 }
+
+export interface WordWondersContextType {
+  state: GameState;
+  dispatch: React.Dispatch<any>;
+  startGame: (mode: GameMode) => void;
+  pauseGame: () => void;
+  resetGame: () => void;
+  speakText: (text: string) => void;
+  playSound: (type: 'correct' | 'wrong' | 'hint' | 'complete') => void;
+  placeLetterInBox: (letterId: string, boxIndex: number) => void;
+  removeLetterFromBox: (boxIndex: number) => void;
+}

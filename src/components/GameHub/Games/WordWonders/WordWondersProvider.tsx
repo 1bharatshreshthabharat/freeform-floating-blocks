@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { GameState, GameMode, FloatingLetter, WordData } from './types';
 import { getRandomWord, generateLetters, getWordsByLetters } from './wordData';
@@ -11,13 +10,16 @@ interface WordWondersContextType {
   resetGame: () => void;
   speakText: (text: string) => void;
   playSound: (type: 'correct' | 'wrong' | 'hint' | 'complete') => void;
+  placeLetterInBox: (letterId: string, boxIndex: number) => void;
+  removeLetterFromBox: (boxIndex: number) => void;
 }
 
 type GameAction = 
   | { type: 'SET_MODE'; payload: GameMode }
   | { type: 'SET_THEME'; payload: string }
   | { type: 'UPDATE_LETTERS'; payload: FloatingLetter[] }
-  | { type: 'PLACE_LETTER'; payload: { letterId: string; position: number } }
+  | { type: 'PLACE_LETTER_IN_BOX'; payload: { letterId: string; boxIndex: number } }
+  | { type: 'REMOVE_LETTER_FROM_BOX'; payload: number }
   | { type: 'ADD_SCORE'; payload: number }
   | { type: 'SHOW_HINT' }
   | { type: 'COMPLETE_WORD' }
@@ -30,7 +32,11 @@ type GameAction =
   | { type: 'UPDATE_INPUT'; payload: string }
   | { type: 'TICK_TIMER' }
   | { type: 'LOSE_LIFE' }
-  | { type: 'SET_HINT'; payload: string };
+  | { type: 'SET_HINT'; payload: string }
+  | { type: 'NEXT_QUESTION' }
+  | { type: 'RESET_PLACEMENT' }
+  | { type: 'GAME_OVER' }
+  | { type: 'RESET_TIMER' };
 
 const initialState: GameState = {
   mode: 'random',
@@ -61,13 +67,42 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, theme: action.payload as any };
     case 'UPDATE_LETTERS':
       return { ...state, letters: action.payload };
-    case 'PLACE_LETTER':
-      const updatedLetters = state.letters.map(letter => 
+    case 'PLACE_LETTER_IN_BOX':
+      const letterToPlace = state.letters.find(l => l.id === action.payload.letterId);
+      if (!letterToPlace) return state;
+      
+      const updatedLettersForPlace = state.letters.map(letter => 
         letter.id === action.payload.letterId 
           ? { ...letter, isPlaced: true } 
           : letter
       );
-      return { ...state, letters: updatedLetters };
+      
+      const newPlacedLetters = [...state.placedLetters];
+      newPlacedLetters[action.payload.boxIndex] = letterToPlace.letter;
+      
+      return { 
+        ...state, 
+        letters: updatedLettersForPlace,
+        placedLetters: newPlacedLetters
+      };
+    case 'REMOVE_LETTER_FROM_BOX':
+      const letterToRemove = state.placedLetters[action.payload];
+      if (!letterToRemove) return state;
+      
+      const updatedLettersForRemove = state.letters.map(letter => 
+        letter.letter === letterToRemove && letter.isPlaced
+          ? { ...letter, isPlaced: false } 
+          : letter
+      );
+      
+      const newPlacedLettersAfterRemove = [...state.placedLetters];
+      newPlacedLettersAfterRemove[action.payload] = '';
+      
+      return {
+        ...state,
+        letters: updatedLettersForRemove,
+        placedLetters: newPlacedLettersAfterRemove
+      };
     case 'ADD_SCORE':
       return { ...state, score: state.score + action.payload };
     case 'SHOW_HINT':
@@ -98,11 +133,11 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         sentence: (action.payload.wordData as any).sentence,
         letters: action.payload.letters,
         possibleWords: action.payload.possibleWords,
+        placedLetters: new Array(action.payload.wordData.word.length).fill(''),
         isGameActive: true,
         isPaused: false,
         isComplete: false,
         showHint: false,
-        placedLetters: [],
         currentInput: '',
         foundWords: [],
         timeLeft: 60,
@@ -120,12 +155,45 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     case 'UPDATE_INPUT':
       return { ...state, currentInput: action.payload };
     case 'TICK_TIMER':
-      if (state.isPaused) return state;
-      const newTime = Math.max(0, state.timeLeft - 1);
-      if (newTime === 0) {
-        return { ...state, timeLeft: 0, lives: Math.max(0, state.lives - 1) };
-      }
-      return { ...state, timeLeft: newTime };
+      if (state.isPaused || state.isComplete) return state;
+      return { ...state, timeLeft: Math.max(0, state.timeLeft - 1) };
+    case 'NEXT_QUESTION':
+      // Start a new question automatically
+      const wordData = getRandomWord();
+      const letterStrings = generateLetters(wordData.word, 6);
+      const letters = letterStrings.map((letter, index) => ({
+        id: `letter-${index}`,
+        letter,
+        x: Math.random() * 300 + 50,
+        y: Math.random() * 100 + 50,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.2,
+        isCorrect: wordData.word.includes(letter),
+        isDragging: false,
+        isPlaced: false
+      }));
+      
+      return {
+        ...state,
+        targetWord: wordData.word,
+        riddle: (wordData as any).riddle,
+        sentence: (wordData as any).sentence,
+        letters,
+        placedLetters: new Array(wordData.word.length).fill(''),
+        isComplete: false,
+        showHint: false,
+        timeLeft: 60
+      };
+    case 'RESET_PLACEMENT':
+      return {
+        ...state,
+        placedLetters: new Array(state.targetWord.length).fill(''),
+        letters: state.letters.map(letter => ({ ...letter, isPlaced: false }))
+      };
+    case 'GAME_OVER':
+      return { ...state, isGameActive: false, isPaused: false };
+    case 'RESET_TIMER':
+      return { ...state, timeLeft: 60 };
     case 'RESET_GAME':
       return { ...initialState, theme: state.theme, soundEnabled: state.soundEnabled };
     default:
@@ -182,6 +250,14 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.3);
   }, [state.soundEnabled]);
+
+  const placeLetterInBox = useCallback((letterId: string, boxIndex: number) => {
+    dispatch({ type: 'PLACE_LETTER_IN_BOX', payload: { letterId, boxIndex } });
+  }, []);
+
+  const removeLetterFromBox = useCallback((boxIndex: number) => {
+    dispatch({ type: 'REMOVE_LETTER_FROM_BOX', payload: boxIndex });
+  }, []);
 
   const startGame = useCallback((mode: GameMode) => {
     const actualMode = mode === 'random' ? 
@@ -251,12 +327,12 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dispatch({ type: 'RESET_GAME' });
   }, []);
 
-  // Auto-start game when mode changes
+  // Auto-start game when mode changes (real-time switching)
   useEffect(() => {
-    if (state.mode && state.mode !== 'random' && !state.isGameActive) {
+    if (state.mode && state.mode !== 'random') {
       startGame(state.mode);
     }
-  }, [state.mode, startGame, state.isGameActive]);
+  }, [state.mode, startGame]);
 
   // Timer effect
   useEffect(() => {
@@ -284,7 +360,9 @@ export const WordWondersProvider: React.FC<{ children: React.ReactNode }> = ({ c
       pauseGame,
       resetGame,
       speakText,
-      playSound
+      playSound,
+      placeLetterInBox,
+      removeLetterFromBox
     }}>
       {children}
     </WordWondersContext.Provider>

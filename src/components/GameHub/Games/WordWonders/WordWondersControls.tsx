@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GameMode } from './types';
 import { HowToPlayModal } from './HowToPlayModal';
-import { Volume2, VolumeX, HelpCircle, Play, Pause } from 'lucide-react';
+import { Volume2, VolumeX, HelpCircle, Play, Pause, Clock, Heart } from 'lucide-react';
 
 export const WordWondersControls: React.FC = () => {
   const { state, dispatch, startGame, pauseGame, resetGame, speakText } = useWordWonders();
@@ -23,10 +23,10 @@ export const WordWondersControls: React.FC = () => {
   ];
 
   const themes = [
-    { key: 'forest', label: 'Forest', icon: '🌲', color: 'bg-green-100 border-green-400 text-green-700' },
-    { key: 'sky', label: 'Sky', icon: '☁️', color: 'bg-blue-100 border-blue-400 text-blue-700' },
-    { key: 'candyland', label: 'Candy', icon: '🍭', color: 'bg-pink-100 border-pink-400 text-pink-700' },
-    { key: 'underwater', label: 'Ocean', icon: '🌊', color: 'bg-teal-100 border-teal-400 text-teal-700' }
+    { key: 'forest', label: 'Forest', icon: '🌲', colors: 'from-green-400 to-green-600 text-white' },
+    { key: 'sky', label: 'Sky', icon: '☁️', colors: 'from-blue-400 to-blue-600 text-white' },
+    { key: 'candyland', label: 'Candy', icon: '🍭', colors: 'from-pink-400 to-pink-600 text-white' },
+    { key: 'underwater', label: 'Ocean', icon: '🌊', colors: 'from-teal-400 to-teal-600 text-white' }
   ];
 
   const handleModeChange = (mode: string) => {
@@ -38,20 +38,21 @@ export const WordWondersControls: React.FC = () => {
     speakText(`Switching to ${theme} theme!`);
   };
 
-  const handleStartGame = () => {
+  const handleStartPause = () => {
     if (!state.isGameActive) {
       startGame(state.mode);
+      speakText('Game started!');
+    } else {
+      pauseGame();
+      speakText(state.isPaused ? 'Game resumed!' : 'Game paused!');
     }
-  };
-
-  const handlePauseGame = () => {
-    pauseGame();
-    speakText(state.isPaused ? 'Game resumed!' : 'Game paused!');
   };
 
   const handleSoundToggle = () => {
     dispatch({ type: 'TOGGLE_SOUND' });
-    speakText(state.soundEnabled ? 'Sound disabled' : 'Sound enabled');
+    if (state.soundEnabled) {
+      speakText('Sound disabled');
+    }
   };
 
   const handleHint = () => {
@@ -88,10 +89,12 @@ export const WordWondersControls: React.FC = () => {
           {/* Game Stats */}
           {state.isGameActive && (
             <div className="flex gap-2 text-sm">
-              <div className="bg-red-100 px-2 py-1 rounded border border-red-300">
-                <span className="font-bold text-red-700">{'❤️'.repeat(state.lives)}</span>
+              <div className="bg-red-100 px-3 py-2 rounded-lg border border-red-300 flex items-center gap-1">
+                <Heart className="h-4 w-4 text-red-600" />
+                <span className="font-bold text-red-700">{state.lives}</span>
               </div>
-              <div className="bg-blue-100 px-2 py-1 rounded border border-blue-300">
+              <div className="bg-blue-100 px-3 py-2 rounded-lg border border-blue-300 flex items-center gap-1">
+                <Clock className="h-4 w-4 text-blue-600" />
                 <span className="font-bold text-blue-700">{state.timeLeft}s</span>
               </div>
             </div>
@@ -108,7 +111,7 @@ export const WordWondersControls: React.FC = () => {
               <SelectTrigger className="w-full bg-white border-purple-300">
                 <SelectValue placeholder="Select a game mode" />
               </SelectTrigger>
-              <SelectContent className="bg-white max-h-60 overflow-y-auto">
+              <SelectContent className="bg-white max-h-60 overflow-y-auto z-50">
                 {gameModes.map((mode) => (
                   <SelectItem key={mode.key} value={mode.key}>
                     <div className="flex items-center gap-2">
@@ -135,10 +138,10 @@ export const WordWondersControls: React.FC = () => {
               <SelectTrigger className="w-full bg-white border-purple-300">
                 <SelectValue placeholder="Select a theme" />
               </SelectTrigger>
-              <SelectContent className="bg-white">
+              <SelectContent className="bg-white z-50">
                 {themes.map((theme) => (
                   <SelectItem key={theme.key} value={theme.key}>
-                    <div className={`flex items-center gap-2 px-2 py-1 rounded ${theme.color}`}>
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r ${theme.colors}`}>
                       <span>{theme.icon}</span>
                       <span className="font-medium">{theme.label}</span>
                     </div>
@@ -151,27 +154,33 @@ export const WordWondersControls: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {!state.isGameActive ? (
-            <Button
-              onClick={handleStartGame}
-              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 text-base"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Start Game!
-            </Button>
-          ) : (
-            <Button
-              onClick={handlePauseGame}
-              className={`flex-1 font-bold py-3 text-base ${
-                state.isPaused 
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
-                  : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white'
-              }`}
-            >
-              {state.isPaused ? <Play className="h-4 w-4 mr-2" /> : <Pause className="h-4 w-4 mr-2" />}
-              {state.isPaused ? 'Resume' : 'Pause'}
-            </Button>
-          )}
+          <Button
+            onClick={handleStartPause}
+            className={`flex-1 font-bold py-3 text-base ${
+              !state.isGameActive 
+                ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
+                : state.isPaused
+                ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
+                : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white'
+            }`}
+          >
+            {!state.isGameActive ? (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Start Game!
+              </>
+            ) : state.isPaused ? (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Resume
+              </>
+            ) : (
+              <>
+                <Pause className="h-4 w-4 mr-2" />
+                Pause
+              </>
+            )}
+          </Button>
           
           {state.isGameActive && (
             <Button
