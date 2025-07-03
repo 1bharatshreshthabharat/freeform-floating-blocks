@@ -4,8 +4,7 @@ export type GameMode =
   | 'make-words' 
   | 'fix-word'
   | 'word-riddle'
-  | 'magic-trays'
-  | 'sentence-picker'
+  | 'guess-word'
   | 'hidden-word'
   | 'random';
 
@@ -41,8 +40,12 @@ export interface GameState {
   lives: number;
   timeLeft: number;
   isGameActive: boolean;
+  isPaused: boolean;
   foundWords: string[];
   currentInput: string;
+  possibleWords?: string[];
+  hintText?: string;
+  soundEnabled: boolean;
 }
 
 export interface WordData {
