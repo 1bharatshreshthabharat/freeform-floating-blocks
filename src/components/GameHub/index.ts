@@ -9,3 +9,4 @@ export * from './Games/SnakeGame';
 export * from './Games/FlappyGame';
 export * from './Games/FruitNinjaGame';
 export * from './Games/BalloonPopGame';
+export * from './Games/ColorMyWorldGame';

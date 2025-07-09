@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GameCard } from './GameCard';
 import { ChessGame } from './Games/ChessGame';
@@ -10,8 +9,9 @@ import { WordWondersGame } from './Games/WordWondersGame';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
+import { ColorMyWorldGame } from './Games/ColorMyWorldGame';
 
-export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | 'wordwonders' | null;
+export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | 'wordwonders' | 'colormyworld' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -22,6 +22,15 @@ export const GameHub: React.FC = () => {
   });
 
   const games = [
+    {
+      id: 'colormyworld' as const,
+      title: 'Color My World',
+      description: 'Interactive coloring game with vibrant outlines of animals, fruits, vehicles, and more! Choose realistic or creative mode.',
+      image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
+      difficulty: 'Easy',
+      category: 'Educational',
+      players: '1'
+    },
     {
       id: 'wordwonders' as const,
       title: 'Word Wonders',
@@ -80,6 +89,8 @@ export const GameHub: React.FC = () => {
 
   const renderGame = () => {
     switch (currentGame) {
+      case 'colormyworld':
+        return <ColorMyWorldGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'wordwonders':
         return <WordWondersGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'chess':
