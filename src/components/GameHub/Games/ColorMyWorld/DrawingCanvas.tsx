@@ -98,8 +98,10 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
               onMouseEnter={() => setHoveredSection(section.id)}
               onMouseLeave={() => setHoveredSection(null)}
               onClick={() => handleSectionClick(section.id)}
-              title={`${section.name}${gameMode === 'realistic' && showHint ? ` (Try ${section.suggestedColor})` : ''}`}
             >
+              <title>
+                {`${section.name}${gameMode === 'realistic' && showHint ? ` (Try ${section.suggestedColor})` : ''}`}
+              </title>
               <animate
                 attributeName="stroke-width"
                 values="2;4;2"
