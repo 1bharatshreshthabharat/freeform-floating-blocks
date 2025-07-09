@@ -39,24 +39,28 @@ export const CreativeCanvas: React.FC<CreativeCanvasProps> = ({
     setSectionPositions(newPositions);
   }, [outline]);
 
-  const handleSectionDragStart = (sectionId: string) => {
-    setDraggedSection(sectionId);
-  };
-
-  const handleSectionDragEnd = () => {
-    setDraggedSection(null);
-  };
-
-  const handleSectionDrop = (e: React.DragEvent) => {
+  const handleSectionMouseDown = (sectionId: string, e: React.MouseEvent) => {
     e.preventDefault();
-    if (!draggedSection || !svgRef.current) return;
-
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    setSectionPositions(prev => new Map(prev.set(draggedSection, { x, y })));
-    setDraggedSection(null);
+    setDraggedSection(sectionId);
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!svgRef.current) return;
+      
+      const rect = svgRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      
+      setSectionPositions(prev => new Map(prev.set(sectionId, { x, y })));
+    };
+    
+    const handleMouseUp = () => {
+      setDraggedSection(null);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   const handleSectionClick = (sectionId: string) => {
@@ -109,11 +113,7 @@ export const CreativeCanvas: React.FC<CreativeCanvasProps> = ({
       )}
 
       {/* Main Canvas */}
-      <div 
-        className="relative bg-white rounded-2xl shadow-2xl p-8 min-h-96"
-        onDrop={handleSectionDrop}
-        onDragOver={(e) => e.preventDefault()}
-      >
+      <div className="relative bg-white rounded-2xl shadow-2xl p-8 min-h-96">
         <svg
           ref={svgRef}
           viewBox={outline.viewBox}
@@ -128,10 +128,8 @@ export const CreativeCanvas: React.FC<CreativeCanvasProps> = ({
               <g
                 key={section.id}
                 transform={`translate(${position.x}, ${position.y})`}
-                draggable
-                onDragStart={() => handleSectionDragStart(section.id)}
-                onDragEnd={handleSectionDragEnd}
-                style={{ cursor: 'grab' }}
+                onMouseDown={(e) => handleSectionMouseDown(section.id, e)}
+                style={{ cursor: draggedSection === section.id ? 'grabbing' : 'grab' }}
               >
                 <path
                   d={section.path}
@@ -145,7 +143,7 @@ export const CreativeCanvas: React.FC<CreativeCanvasProps> = ({
                   x="0"
                   y="-10"
                   textAnchor="middle"
-                  className="fill-gray-600 text-xs font-medium"
+                  className="fill-gray-600 text-xs font-medium pointer-events-none"
                 >
                   {section.name}
                 </text>

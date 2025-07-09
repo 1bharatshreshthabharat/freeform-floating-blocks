@@ -80,58 +80,60 @@ export const AnimatedCompletion: React.FC<AnimatedCompletionProps> = ({
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes fly-away {
-          0% { transform: translateY(0) scale(1) rotate(0deg); }
-          50% { transform: translateY(-100px) scale(1.1) rotate(10deg); }
-          100% { transform: translateY(-300px) scale(0.5) rotate(20deg); opacity: 0; }
-        }
-        
-        @keyframes run-away {
-          0% { transform: translateX(0) scale(1); }
-          100% { transform: translateX(400px) scale(0.8); opacity: 0; }
-        }
-        
-        @keyframes walk-away {
-          0% { transform: translateX(0) scale(1); }
-          100% { transform: translateX(300px) scale(0.9); opacity: 0; }
-        }
-        
-        @keyframes jump-away {
-          0% { transform: translateY(0) scale(1); }
-          25% { transform: translateY(-50px) scale(1.1); }
-          50% { transform: translateY(-100px) scale(1.2); }
-          75% { transform: translateY(-150px) scale(1.1); }
-          100% { transform: translateY(-200px) scale(0.5); opacity: 0; }
-        }
-        
-        @keyframes spin-away {
-          0% { transform: rotate(0deg) scale(1); }
-          100% { transform: rotate(720deg) scale(0.3); opacity: 0; }
-        }
-        
-        @keyframes bounce-away {
-          0% { transform: translateY(0) scale(1); }
-          20% { transform: translateY(-30px) scale(1.1); }
-          40% { transform: translateY(0) scale(1); }
-          60% { transform: translateY(-60px) scale(1.2); }
-          80% { transform: translateY(0) scale(1); }
-          100% { transform: translateY(-200px) scale(0.5); opacity: 0; }
-        }
-        
-        @keyframes fade-away {
-          0% { transform: scale(1); opacity: 1; }
-          100% { transform: scale(1.2); opacity: 0; }
-        }
-        
-        .animate-fly-away { animation: fly-away 3s ease-in-out forwards; }
-        .animate-run-away { animation: run-away 2s ease-in-out forwards; }
-        .animate-walk-away { animation: walk-away 2.5s ease-in-out forwards; }
-        .animate-jump-away { animation: jump-away 2s ease-in-out forwards; }
-        .animate-spin-away { animation: spin-away 2s ease-in-out forwards; }
-        .animate-bounce-away { animation: bounce-away 2.5s ease-in-out forwards; }
-        .animate-fade-away { animation: fade-away 2s ease-in-out forwards; }
-      `}</style>
+      <style>
+        {`
+          @keyframes fly-away {
+            0% { transform: translateY(0) scale(1) rotate(0deg); }
+            50% { transform: translateY(-100px) scale(1.1) rotate(10deg); }
+            100% { transform: translateY(-300px) scale(0.5) rotate(20deg); opacity: 0; }
+          }
+          
+          @keyframes run-away {
+            0% { transform: translateX(0) scale(1); }
+            100% { transform: translateX(400px) scale(0.8); opacity: 0; }
+          }
+          
+          @keyframes walk-away {
+            0% { transform: translateX(0) scale(1); }
+            100% { transform: translateX(300px) scale(0.9); opacity: 0; }
+          }
+          
+          @keyframes jump-away {
+            0% { transform: translateY(0) scale(1); }
+            25% { transform: translateY(-50px) scale(1.1); }
+            50% { transform: translateY(-100px) scale(1.2); }
+            75% { transform: translateY(-150px) scale(1.1); }
+            100% { transform: translateY(-200px) scale(0.5); opacity: 0; }
+          }
+          
+          @keyframes spin-away {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(720deg) scale(0.3); opacity: 0; }
+          }
+          
+          @keyframes bounce-away {
+            0% { transform: translateY(0) scale(1); }
+            20% { transform: translateY(-30px) scale(1.1); }
+            40% { transform: translateY(0) scale(1); }
+            60% { transform: translateY(-60px) scale(1.2); }
+            80% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-200px) scale(0.5); opacity: 0; }
+          }
+          
+          @keyframes fade-away {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
+          }
+          
+          .animate-fly-away { animation: fly-away 3s ease-in-out forwards; }
+          .animate-run-away { animation: run-away 2s ease-in-out forwards; }
+          .animate-walk-away { animation: walk-away 2.5s ease-in-out forwards; }
+          .animate-jump-away { animation: jump-away 2s ease-in-out forwards; }
+          .animate-spin-away { animation: spin-away 2s ease-in-out forwards; }
+          .animate-bounce-away { animation: bounce-away 2.5s ease-in-out forwards; }
+          .animate-fade-away { animation: fade-away 2s ease-in-out forwards; }
+        `}
+      </style>
     </div>
   );
 };
