@@ -1,44 +1,36 @@
 
 export type GameMode = 'realistic' | 'creative';
 
-export type Category = 'animals' | 'fruits' | 'vehicles' | 'houses' | 'nature' | 'food' | 'toys';
-
-export interface ColorSection {
+export interface ColoringSection {
   id: string;
+  name: string;
   path: string;
   suggestedColor: string;
-  name: string;
-  x?: number;
-  y?: number;
-  originalX?: number;
-  originalY?: number;
-  isConnected?: boolean;
-}
-
-export interface ColoringOutline {
-  id: string;
-  name: string;
-  category: Category;
-  difficulty: number;
-  sections: ColorSection[];
-  viewBox: string;
-  animation?: 'fly' | 'run' | 'walk' | 'jump' | 'spin' | 'bounce';
-  missingParts?: MissingPart[];
 }
 
 export interface MissingPart {
   id: string;
   name: string;
-  description: string;
   position: { x: number; y: number };
-  drawingOptions: DrawingOption[];
+  size: { width: number; height: number };
+  drawingTools: ('pencil' | 'brush' | 'eraser' | 'circle' | 'rectangle')[];
+  suggestedShape?: string;
 }
 
-export interface DrawingOption {
+export interface ColoringOutline {
   id: string;
   name: string;
-  path: string;
-  suggestedColor: string;
+  category: string;
+  difficulty: number;
+  viewBox: string;
+  sections: ColoringSection[];
+  missingParts?: MissingPart[];
+  referenceImage?: string;
+  animation?: {
+    type: 'fly' | 'run' | 'walk' | 'jump' | 'spin' | 'bounce';
+    duration: number;
+    direction?: 'left' | 'right' | 'up' | 'down';
+  };
 }
 
 export interface GameStats {
@@ -49,7 +41,14 @@ export interface GameStats {
   hintsUsed: number;
 }
 
-export interface ColorPalette {
+export interface CreativePart {
+  id: string;
   name: string;
-  colors: string[];
+  path: string;
+  position: { x: number; y: number };
+  originalPosition: { x: number; y: number };
+  rotation: number;
+  scale: number;
+  color: string;
+  isPlaced: boolean;
 }

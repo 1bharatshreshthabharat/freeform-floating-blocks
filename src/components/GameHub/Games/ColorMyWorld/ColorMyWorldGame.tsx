@@ -1,14 +1,14 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Palette } from 'lucide-react';
+import { ArrowLeft, Palette, Eye, EyeOff } from 'lucide-react';
 import { ColorPalette } from './ColorPalette';
 import { DrawingCanvas } from './DrawingCanvas';
 import { CreativeCanvas } from './CreativeCanvas';
 import { GameHeader } from './GameHeader';
 import { CompletionModal } from './CompletionModal';
 import { AnimatedCompletion } from './AnimatedCompletion';
+import { ReferenceImage } from './ReferenceImage';
 import { outlineDatabase } from './outlineDatabase';
 import { GameMode, ColoringOutline, GameStats } from './types';
 
@@ -32,6 +32,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
   const [showOutlines, setShowOutlines] = useState(true);
   const [outlineColor, setOutlineColor] = useState('#000000');
   const [usedOutlines, setUsedOutlines] = useState<Set<string>>(new Set());
+  const [showReference, setShowReference] = useState(true);
   const canvasRef = useRef<SVGSVGElement>(null);
 
   const [gameStats, setGameStats] = useState<GameStats>({
@@ -264,7 +265,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
           </Card>
 
           {/* Drawing Canvas */}
-          <Card className="lg:col-span-3 p-3 sm:p-4 lg:p-6 bg-white/90 backdrop-blur-sm shadow-xl">
+          <Card className="lg:col-span-3 p-3 sm:p-4 lg:p-6 bg-white/90 backdrop-blur-sm shadow-xl relative">
             {gameMode === 'creative' ? (
               <CreativeCanvas
                 outline={currentOutline}
@@ -284,6 +285,15 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
                 showHint={showHint}
                 showOutlines={showOutlines}
                 outlineColor={outlineColor}
+              />
+            )}
+            
+            {/* Reference Image for Realistic Mode */}
+            {gameMode === 'realistic' && currentOutline && (
+              <ReferenceImage
+                outline={currentOutline}
+                show={showReference}
+                onToggle={() => setShowReference(!showReference)}
               />
             )}
           </Card>
