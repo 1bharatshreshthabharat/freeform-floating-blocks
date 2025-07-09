@@ -6,7 +6,7 @@ interface DrawingCanvasProps {
   outline: ColoringOutline;
   selectedColor: string;
   onSectionFill: (sectionId: string, color: string) => void;
-  completedSections: Set<string>;
+  completedSections: Map<string, string>;
   gameMode: GameMode;
   showHint: boolean;
 }
@@ -27,7 +27,7 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
     // Create paint splash effect
     const section = document.getElementById(`section-${sectionId}`);
     if (section) {
-      section.style.transform = 'scale(1.1)';
+      section.style.transform = 'scale(1.05)';
       setTimeout(() => {
         section.style.transform = 'scale(1)';
       }, 200);
@@ -35,10 +35,7 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
   };
 
   const getSectionColor = (sectionId: string) => {
-    if (completedSections.has(sectionId)) {
-      return selectedColor; // This would be stored per section in a real implementation
-    }
-    return 'transparent';
+    return completedSections.get(sectionId) || 'transparent';
   };
 
   const getSectionStyle = (section: any) => {
@@ -68,10 +65,12 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
     return style;
   };
 
+  const progress = (completedSections.size / outline.sections.length) * 100;
+
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">{outline.name}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">{outline.name}</h2>
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 rounded-full">
           <span className="text-sm font-medium text-purple-700 capitalize">
             {outline.category}
@@ -82,11 +81,11 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
         </div>
       </div>
 
-      <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
+      <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 max-w-full w-full">
         <svg
           ref={ref}
           viewBox={outline.viewBox}
-          className="w-full h-auto max-h-96"
+          className="w-full h-auto max-h-80 sm:max-h-96"
           style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))' }}
         >
           {outline.sections.map((section) => (
@@ -115,14 +114,14 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
 
         {/* Paint splash effect overlay */}
         <div className="absolute inset-0 pointer-events-none">
-          {Array.from(completedSections).map((sectionId, index) => (
+          {Array.from(completedSections.keys()).map((sectionId, index) => (
             <div
               key={sectionId}
-              className="absolute w-8 h-8 opacity-0 animate-ping"
+              className="absolute w-6 h-6 sm:w-8 sm:h-8 opacity-0 animate-ping"
               style={{
                 left: `${20 + (index * 15) % 60}%`,
                 top: `${20 + (index * 10) % 60}%`,
-                backgroundColor: selectedColor,
+                backgroundColor: completedSections.get(sectionId),
                 borderRadius: '50%',
                 animationDelay: `${index * 100}ms`,
                 animationDuration: '600ms',
@@ -130,6 +129,22 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
               }}
             />
           ))}
+        </div>
+      </div>
+
+      {/* Progress Section */}
+      <div className="w-full max-w-md">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">Progress</span>
+          <span className="text-sm text-gray-600">
+            {completedSections.size} / {outline.sections.length} sections
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div
+            className="bg-gradient-to-r from-pink-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 

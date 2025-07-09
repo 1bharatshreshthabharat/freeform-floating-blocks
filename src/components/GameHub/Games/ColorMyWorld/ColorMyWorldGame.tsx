@@ -21,7 +21,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
   const [gameMode, setGameMode] = useState<GameMode>('realistic');
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
-  const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
+  const [completedSections, setCompletedSections] = useState<Map<string, string>>(new Map());
   const [showCompletion, setShowCompletion] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [timeStarted, setTimeStarted] = useState<number>(Date.now());
@@ -44,7 +44,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
     const randomIndex = Math.floor(Math.random() * outlineDatabase.length);
     const outline = outlineDatabase[randomIndex];
     setCurrentOutline(outline);
-    setCompletedSections(new Set());
+    setCompletedSections(new Map());
     setHintsUsed(0);
     setTimeStarted(Date.now());
     setShowHint(false);
@@ -53,8 +53,8 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
   const handleSectionFill = (sectionId: string, color: string) => {
     if (!currentOutline) return;
 
-    const newCompleted = new Set(completedSections);
-    newCompleted.add(sectionId);
+    const newCompleted = new Map(completedSections);
+    newCompleted.set(sectionId, color);
     setCompletedSections(newCompleted);
 
     // Calculate score based on mode and accuracy
@@ -88,7 +88,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
       setGameStats(newStats);
       onStatsUpdate(newStats);
       
-      setTimeout(() => setShowCompletion(true), 500);
+      setTimeout(() => setShowCompletion(true), 800);
     }
   };
 
@@ -99,14 +99,15 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
   };
 
   const handleReset = () => {
-    setCompletedSections(new Set());
+    setCompletedSections(new Map());
     setTimeStarted(Date.now());
     setHintsUsed(0);
     setShowHint(false);
+    setScore(0);
   };
 
   const handleHint = () => {
-    if (gameMode === 'realistic' && currentOutline) {
+    if (gameMode === 'realistic' && currentOutline && hintsUsed < 5) {
       setShowHint(true);
       setHintsUsed(prev => prev + 1);
       setScore(prev => Math.max(0, prev - 5)); // Small penalty for hint
@@ -160,9 +161,9 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
       />
 
       <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Color Palette */}
-          <Card className="lg:col-span-1 p-4 bg-white/80 backdrop-blur-sm shadow-xl">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+          {/* Color Palette - Responsive */}
+          <Card className="lg:col-span-1 p-3 lg:p-4 bg-white/80 backdrop-blur-sm shadow-xl">
             <ColorPalette
               selectedColor={selectedColor}
               onColorSelect={setSelectedColor}
@@ -175,8 +176,8 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
               <Button
                 onClick={handleHint}
                 variant="outline"
-                className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300"
-                disabled={gameMode === 'creative'}
+                className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300 text-sm"
+                disabled={gameMode === 'creative' || hintsUsed >= 5}
               >
                 <Lightbulb className="h-4 w-4 mr-2" />
                 Hint ({5 - hintsUsed} left)
@@ -185,7 +186,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
               <Button
                 onClick={handleReset}
                 variant="outline"
-                className="w-full"
+                className="w-full text-sm"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset
@@ -194,7 +195,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
               <Button
                 onClick={handleDownload}
                 variant="outline"
-                className="w-full bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                className="w-full bg-green-50 hover:bg-green-100 text-green-700 border-green-300 text-sm"
                 disabled={completedSections.size === 0}
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -204,7 +205,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
           </Card>
 
           {/* Drawing Canvas */}
-          <Card className="lg:col-span-3 p-6 bg-white/80 backdrop-blur-sm shadow-xl">
+          <Card className="lg:col-span-3 p-4 lg:p-6 bg-white/80 backdrop-blur-sm shadow-xl">
             <DrawingCanvas
               ref={canvasRef}
               outline={currentOutline}
@@ -216,24 +217,6 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
             />
           </Card>
         </div>
-
-        {/* Progress Bar */}
-        <Card className="mt-6 p-4 bg-white/80 backdrop-blur-sm shadow-xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Progress</span>
-            <span className="text-sm text-gray-600">
-              {completedSections.size} / {currentOutline.sections.length} sections
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-pink-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
-              style={{
-                width: `${(completedSections.size / currentOutline.sections.length) * 100}%`
-              }}
-            />
-          </div>
-        </Card>
       </div>
 
       <CompletionModal
