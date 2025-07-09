@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Palette, RotateCcw, Download, Lightbulb, Star } from 'lucide-react';
+import { ArrowLeft, Palette } from 'lucide-react';
 import { ColorPalette } from './ColorPalette';
 import { DrawingCanvas } from './DrawingCanvas';
 import { CreativeCanvas } from './CreativeCanvas';
@@ -28,6 +29,9 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
   const [hintsUsed, setHintsUsed] = useState(0);
   const [timeStarted, setTimeStarted] = useState<number>(Date.now());
   const [showHint, setShowHint] = useState(false);
+  const [showOutlines, setShowOutlines] = useState(true);
+  const [outlineColor, setOutlineColor] = useState('#000000');
+  const [usedOutlines, setUsedOutlines] = useState<Set<string>>(new Set());
   const canvasRef = useRef<SVGSVGElement>(null);
 
   const [gameStats, setGameStats] = useState<GameStats>({
@@ -43,9 +47,26 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
   }, []);
 
   const loadRandomOutline = () => {
-    const randomIndex = Math.floor(Math.random() * outlineDatabase.length);
-    const outline = outlineDatabase[randomIndex];
-    setCurrentOutline(outline);
+    // Get available outlines (not recently used)
+    const availableOutlines = outlineDatabase.filter(outline => !usedOutlines.has(outline.id));
+    
+    // If all outlines have been used, reset the used set
+    if (availableOutlines.length === 0) {
+      setUsedOutlines(new Set());
+      const randomIndex = Math.floor(Math.random() * outlineDatabase.length);
+      setCurrentOutline(outlineDatabase[randomIndex]);
+      setUsedOutlines(new Set([outlineDatabase[randomIndex].id]));
+    } else {
+      const randomIndex = Math.floor(Math.random() * availableOutlines.length);
+      const selectedOutline = availableOutlines[randomIndex];
+      setCurrentOutline(selectedOutline);
+      setUsedOutlines(prev => new Set([...prev, selectedOutline.id]));
+    }
+    
+    resetGameState();
+  };
+
+  const resetGameState = () => {
     setCompletedSections(new Map());
     setHintsUsed(0);
     setTimeStarted(Date.now());
@@ -61,16 +82,25 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
     newCompleted.set(sectionId, color);
     setCompletedSections(newCompleted);
 
-    // Calculate score based on mode and accuracy
+    // Advanced scoring system
     let sectionScore = 10;
     if (gameMode === 'realistic') {
       const section = currentOutline.sections.find(s => s.id === sectionId);
       if (section && section.suggestedColor === color) {
-        sectionScore = 20; // Bonus for correct realistic color
+        sectionScore = 25; // Higher bonus for exact color match
+      } else if (section && isColorSimilar(section.suggestedColor, color)) {
+        sectionScore = 18; // Partial bonus for similar colors
       }
     } else if (gameMode === 'creative') {
       sectionScore = 15; // Creative mode bonus
     }
+    
+    // Combo bonus for consecutive correct colors
+    if (gameMode === 'realistic' && sectionScore > 15) {
+      const comboMultiplier = Math.min(2, 1 + (newCompleted.size * 0.1));
+      sectionScore = Math.floor(sectionScore * comboMultiplier);
+    }
+    
     setScore(prev => prev + sectionScore);
 
     // Check if outline is complete
@@ -80,14 +110,33 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
     }
   };
 
+  const isColorSimilar = (color1: string, color2: string): boolean => {
+    // Simple color similarity check - could be enhanced with proper color distance calculation
+    const hex1 = color1.replace('#', '');
+    const hex2 = color2.replace('#', '');
+    
+    const r1 = parseInt(hex1.substr(0, 2), 16);
+    const g1 = parseInt(hex1.substr(2, 2), 16);
+    const b1 = parseInt(hex1.substr(4, 2), 16);
+    
+    const r2 = parseInt(hex2.substr(0, 2), 16);
+    const g2 = parseInt(hex2.substr(2, 2), 16);
+    const b2 = parseInt(hex2.substr(4, 2), 16);
+    
+    const distance = Math.sqrt(Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2));
+    return distance < 100; // Threshold for similar colors
+  };
+
   const handleCompletion = () => {
     if (!currentOutline) return;
 
     const completionTime = Date.now() - timeStarted;
-    const timeBonus = Math.max(0, 500 - Math.floor(completionTime / 100));
-    const hintPenalty = hintsUsed * 10;
-    const finalScore = timeBonus - hintPenalty;
+    const timeBonus = Math.max(0, 1000 - Math.floor(completionTime / 100));
+    const hintPenalty = hintsUsed * 15;
+    const difficultyBonus = currentOutline.difficulty * 50;
+    const perfectBonus = hintsUsed === 0 ? 200 : 0;
     
+    const finalScore = timeBonus - hintPenalty + difficultyBonus + perfectBonus;
     setScore(prev => prev + finalScore);
     
     // Update game stats
@@ -117,19 +166,22 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
     loadRandomOutline();
   };
 
+  const handleSkip = () => {
+    // Small penalty for skipping
+    setScore(prev => Math.max(0, prev - 25));
+    loadRandomOutline();
+  };
+
   const handleReset = () => {
-    setCompletedSections(new Map());
-    setTimeStarted(Date.now());
-    setHintsUsed(0);
-    setShowHint(false);
+    resetGameState();
   };
 
   const handleHint = () => {
     if (gameMode === 'realistic' && currentOutline && hintsUsed < 5) {
       setShowHint(true);
       setHintsUsed(prev => prev + 1);
-      setScore(prev => Math.max(0, prev - 5)); // Small penalty for hint
-      setTimeout(() => setShowHint(false), 3000);
+      setScore(prev => Math.max(0, prev - 10)); // Increased penalty for hint
+      setTimeout(() => setShowHint(false), 4000); // Longer hint display
     }
   };
 
@@ -141,17 +193,21 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
       const img = new Image();
       
       img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx?.drawImage(img, 0, 0);
+        canvas.width = img.width || 800;
+        canvas.height = img.height || 600;
+        if (ctx) {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+        }
         
         const link = document.createElement('a');
-        link.download = `colored-${currentOutline?.name || 'artwork'}.png`;
-        link.href = canvas.toDataURL();
+        link.download = `colored-${currentOutline?.name || 'artwork'}-${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
         link.click();
       };
       
-      img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     }
   };
 
@@ -165,6 +221,9 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
       </div>
     );
   }
+
+  const canNext = completedSections.size === currentOutline.sections.length + (currentOutline.missingParts?.length || 0);
+  const canSkip = completedSections.size < (currentOutline.sections.length + (currentOutline.missingParts?.length || 0)) / 2;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
@@ -180,52 +239,32 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6">
-          {/* Color Palette - Mobile Optimized */}
-          <Card className="lg:col-span-1 p-2 sm:p-3 lg:p-4 bg-white/80 backdrop-blur-sm shadow-xl">
+          {/* Enhanced Color Palette */}
+          <Card className="lg:col-span-1 p-2 sm:p-3 lg:p-4 bg-white/90 backdrop-blur-sm shadow-xl">
             <ColorPalette
               selectedColor={selectedColor}
               onColorSelect={setSelectedColor}
               gameMode={gameMode}
               currentOutline={currentOutline}
               showHint={showHint}
+              hintsUsed={hintsUsed}
+              completedSections={completedSections}
+              onHint={handleHint}
+              onReset={handleReset}
+              onDownload={handleDownload}
+              onSkip={handleSkip}
+              onNext={handleNextOutline}
+              canSkip={canSkip}
+              canNext={canNext}
+              showOutlines={showOutlines}
+              onToggleOutlines={() => setShowOutlines(!showOutlines)}
+              outlineColor={outlineColor}
+              onOutlineColorChange={setOutlineColor}
             />
-            
-            <div className="mt-3 space-y-2">
-              {gameMode === 'realistic' && (
-                <Button
-                  onClick={handleHint}
-                  variant="outline"
-                  className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300 text-xs sm:text-sm"
-                  disabled={hintsUsed >= 5}
-                >
-                  <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  Hint ({5 - hintsUsed} left)
-                </Button>
-              )}
-              
-              <Button
-                onClick={handleReset}
-                variant="outline"
-                className="w-full text-xs sm:text-sm"
-              >
-                <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                Reset
-              </Button>
-              
-              <Button
-                onClick={handleDownload}
-                variant="outline"
-                className="w-full bg-green-50 hover:bg-green-100 text-green-700 border-green-300 text-xs sm:text-sm"
-                disabled={completedSections.size === 0}
-              >
-                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                Save Art
-              </Button>
-            </div>
           </Card>
 
           {/* Drawing Canvas */}
-          <Card className="lg:col-span-3 p-3 sm:p-4 lg:p-6 bg-white/80 backdrop-blur-sm shadow-xl">
+          <Card className="lg:col-span-3 p-3 sm:p-4 lg:p-6 bg-white/90 backdrop-blur-sm shadow-xl">
             {gameMode === 'creative' ? (
               <CreativeCanvas
                 outline={currentOutline}
@@ -243,6 +282,8 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
                 completedSections={completedSections}
                 gameMode={gameMode}
                 showHint={showHint}
+                showOutlines={showOutlines}
+                outlineColor={outlineColor}
               />
             )}
           </Card>
@@ -264,7 +305,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
         onClose={() => setShowCompletion(false)}
         onNext={handleNextOutline}
         score={score}
-        timeBonus={Math.max(0, 500 - Math.floor((Date.now() - timeStarted) / 100))}
+        timeBonus={Math.max(0, 1000 - Math.floor((Date.now() - timeStarted) / 100))}
         hintsUsed={hintsUsed}
         outlineName={currentOutline.name}
         level={level}
