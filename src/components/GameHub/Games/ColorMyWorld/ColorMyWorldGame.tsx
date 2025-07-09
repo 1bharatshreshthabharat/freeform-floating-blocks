@@ -1,12 +1,13 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Palette, RotateCcw, Download, Lightbulb, Star } from 'lucide-react';
 import { ColorPalette } from './ColorPalette';
 import { DrawingCanvas } from './DrawingCanvas';
+import { CreativeCanvas } from './CreativeCanvas';
 import { GameHeader } from './GameHeader';
 import { CompletionModal } from './CompletionModal';
+import { AnimatedCompletion } from './AnimatedCompletion';
 import { outlineDatabase } from './outlineDatabase';
 import { GameMode, ColoringOutline, GameStats } from './types';
 
@@ -23,6 +24,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
   const [level, setLevel] = useState(1);
   const [completedSections, setCompletedSections] = useState<Map<string, string>>(new Map());
   const [showCompletion, setShowCompletion] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [timeStarted, setTimeStarted] = useState<number>(Date.now());
   const [showHint, setShowHint] = useState(false);
@@ -48,6 +50,8 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
     setHintsUsed(0);
     setTimeStarted(Date.now());
     setShowHint(false);
+    setShowAnimation(false);
+    setShowCompletion(false);
   };
 
   const handleSectionFill = (sectionId: string, color: string) => {
@@ -64,32 +68,47 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
       if (section && section.suggestedColor === color) {
         sectionScore = 20; // Bonus for correct realistic color
       }
+    } else if (gameMode === 'creative') {
+      sectionScore = 15; // Creative mode bonus
     }
     setScore(prev => prev + sectionScore);
 
     // Check if outline is complete
-    if (newCompleted.size === currentOutline.sections.length) {
-      const completionTime = Date.now() - timeStarted;
-      const timeBonus = Math.max(0, 500 - Math.floor(completionTime / 100));
-      const hintPenalty = hintsUsed * 10;
-      const finalScore = sectionScore + timeBonus - hintPenalty;
-      
-      setScore(prev => prev + timeBonus - hintPenalty);
-      
-      // Update game stats
-      const newStats = {
-        ...gameStats,
-        totalOutlinesCompleted: gameStats.totalOutlinesCompleted + 1,
-        totalScore: gameStats.totalScore + finalScore,
-        fastestCompletion: Math.min(gameStats.fastestCompletion, completionTime),
-        perfectRounds: hintsUsed === 0 ? gameStats.perfectRounds + 1 : gameStats.perfectRounds,
-        hintsUsed: gameStats.hintsUsed + hintsUsed
-      };
-      setGameStats(newStats);
-      onStatsUpdate(newStats);
-      
-      setTimeout(() => setShowCompletion(true), 800);
+    const totalSections = currentOutline.sections.length + (currentOutline.missingParts?.length || 0);
+    if (newCompleted.size === totalSections) {
+      handleCompletion();
     }
+  };
+
+  const handleCompletion = () => {
+    if (!currentOutline) return;
+
+    const completionTime = Date.now() - timeStarted;
+    const timeBonus = Math.max(0, 500 - Math.floor(completionTime / 100));
+    const hintPenalty = hintsUsed * 10;
+    const finalScore = timeBonus - hintPenalty;
+    
+    setScore(prev => prev + finalScore);
+    
+    // Update game stats
+    const newStats = {
+      ...gameStats,
+      totalOutlinesCompleted: gameStats.totalOutlinesCompleted + 1,
+      totalScore: gameStats.totalScore + finalScore,
+      fastestCompletion: Math.min(gameStats.fastestCompletion, completionTime),
+      perfectRounds: hintsUsed === 0 ? gameStats.perfectRounds + 1 : gameStats.perfectRounds,
+      hintsUsed: gameStats.hintsUsed + hintsUsed
+    };
+    setGameStats(newStats);
+    onStatsUpdate(newStats);
+    
+    // Show animation first, then completion modal
+    setTimeout(() => setShowAnimation(true), 500);
+  };
+
+  const handleAnimationComplete = () => {
+    setShowAnimation(false);
+    setShowCompletion(true);
   };
 
   const handleNextOutline = () => {
@@ -103,7 +122,6 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
     setTimeStarted(Date.now());
     setHintsUsed(0);
     setShowHint(false);
-    setScore(0);
   };
 
   const handleHint = () => {
@@ -160,10 +178,10 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
         category={currentOutline.category}
       />
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
-          {/* Color Palette - Responsive */}
-          <Card className="lg:col-span-1 p-3 lg:p-4 bg-white/80 backdrop-blur-sm shadow-xl">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6">
+          {/* Color Palette - Mobile Optimized */}
+          <Card className="lg:col-span-1 p-2 sm:p-3 lg:p-4 bg-white/80 backdrop-blur-sm shadow-xl">
             <ColorPalette
               selectedColor={selectedColor}
               onColorSelect={setSelectedColor}
@@ -172,53 +190,75 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
               showHint={showHint}
             />
             
-            <div className="mt-4 space-y-2">
-              <Button
-                onClick={handleHint}
-                variant="outline"
-                className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300 text-sm"
-                disabled={gameMode === 'creative' || hintsUsed >= 5}
-              >
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Hint ({5 - hintsUsed} left)
-              </Button>
+            <div className="mt-3 space-y-2">
+              {gameMode === 'realistic' && (
+                <Button
+                  onClick={handleHint}
+                  variant="outline"
+                  className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300 text-xs sm:text-sm"
+                  disabled={hintsUsed >= 5}
+                >
+                  <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Hint ({5 - hintsUsed} left)
+                </Button>
+              )}
               
               <Button
                 onClick={handleReset}
                 variant="outline"
-                className="w-full text-sm"
+                className="w-full text-xs sm:text-sm"
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
+                <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 Reset
               </Button>
               
               <Button
                 onClick={handleDownload}
                 variant="outline"
-                className="w-full bg-green-50 hover:bg-green-100 text-green-700 border-green-300 text-sm"
+                className="w-full bg-green-50 hover:bg-green-100 text-green-700 border-green-300 text-xs sm:text-sm"
                 disabled={completedSections.size === 0}
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 Save Art
               </Button>
             </div>
           </Card>
 
           {/* Drawing Canvas */}
-          <Card className="lg:col-span-3 p-4 lg:p-6 bg-white/80 backdrop-blur-sm shadow-xl">
-            <DrawingCanvas
-              ref={canvasRef}
-              outline={currentOutline}
-              selectedColor={selectedColor}
-              onSectionFill={handleSectionFill}
-              completedSections={completedSections}
-              gameMode={gameMode}
-              showHint={showHint}
-            />
+          <Card className="lg:col-span-3 p-3 sm:p-4 lg:p-6 bg-white/80 backdrop-blur-sm shadow-xl">
+            {gameMode === 'creative' ? (
+              <CreativeCanvas
+                outline={currentOutline}
+                selectedColor={selectedColor}
+                onComplete={handleCompletion}
+                completedSections={completedSections}
+                onSectionFill={handleSectionFill}
+              />
+            ) : (
+              <DrawingCanvas
+                ref={canvasRef}
+                outline={currentOutline}
+                selectedColor={selectedColor}
+                onSectionFill={handleSectionFill}
+                completedSections={completedSections}
+                gameMode={gameMode}
+                showHint={showHint}
+              />
+            )}
           </Card>
         </div>
       </div>
 
+      {/* Animated Completion */}
+      {showAnimation && currentOutline && (
+        <AnimatedCompletion
+          outline={currentOutline}
+          completedSections={completedSections}
+          onAnimationComplete={handleAnimationComplete}
+        />
+      )}
+
+      {/* Completion Modal */}
       <CompletionModal
         isOpen={showCompletion}
         onClose={() => setShowCompletion(false)}

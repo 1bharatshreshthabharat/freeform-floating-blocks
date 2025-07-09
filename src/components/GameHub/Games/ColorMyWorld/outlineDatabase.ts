@@ -1,13 +1,13 @@
-
 import { ColoringOutline } from './types';
 
 export const outlineDatabase: ColoringOutline[] = [
   {
     id: 'elephant',
     name: 'Elephant',
-    category: 'animals',
+    category: 'animals', 
     difficulty: 1,
     viewBox: '0 0 400 300',
+    animation: 'walk',
     sections: [
       {
         id: 'body',
@@ -63,47 +63,77 @@ export const outlineDatabase: ColoringOutline[] = [
         suggestedColor: '#696969',
         name: 'Back Right Leg'
       }
+    ],
+    missingParts: [
+      {
+        id: 'tail',
+        name: 'Tail',
+        description: 'Every elephant needs a tail! Choose the best tail for your elephant.',
+        position: { x: 340, y: 200 },
+        drawingOptions: [
+          {
+            id: 'long-tail',
+            name: 'Long Tail',
+            path: 'M0 0 C5 10 8 20 6 30 C4 25 2 15 0 0',
+            suggestedColor: '#696969'
+          },
+          {
+            id: 'short-tail',
+            name: 'Short Tail',
+            path: 'M0 0 C3 8 4 12 2 15 C1 10 0 5 0 0',
+            suggestedColor: '#696969'
+          }
+        ]
+      }
     ]
   },
   {
-    id: 'apple',
-    name: 'Red Apple',
-    category: 'fruits',
-    difficulty: 1,
-    viewBox: '0 0 200 250',
+    id: 'bird',
+    name: 'Flying Bird',
+    category: 'animals',
+    difficulty: 2,
+    viewBox: '0 0 300 200',
+    animation: 'fly',
     sections: [
       {
-        id: 'apple-body',
-        path: 'M100 60 C70 60 50 90 50 130 C50 170 60 200 80 220 C100 240 120 240 140 220 C160 200 170 170 170 130 C170 90 150 60 120 60 C115 55 105 55 100 60 Z',
-        suggestedColor: '#FF0000',
-        name: 'Apple Body'
-      },
-      {
-        id: 'apple-indent',
-        path: 'M100 60 C105 50 115 50 120 60 C115 65 105 65 100 60 Z',
-        suggestedColor: '#DC143C',
-        name: 'Apple Indent'
-      },
-      {
-        id: 'stem',
-        path: 'M110 50 L110 30 C110 25 108 20 106 20 C104 20 102 25 102 30 L102 50 Z',
+        id: 'body',
+        path: 'M150 100 C140 90 130 95 125 105 C130 115 140 120 150 115 C160 120 170 115 175 105 C170 95 160 90 150 100 Z',
         suggestedColor: '#8B4513',
-        name: 'Stem'
+        name: 'Body'
       },
       {
-        id: 'leaf',
-        path: 'M102 40 C95 35 90 38 88 45 C90 52 95 55 102 50 C105 45 105 42 102 40 Z',
-        suggestedColor: '#228B22',
-        name: 'Leaf'
+        id: 'head',
+        path: 'M150 100 C145 85 140 80 135 85 C140 90 145 95 150 100 C155 95 160 90 165 85 C160 80 155 85 150 100 Z',
+        suggestedColor: '#A0522D',
+        name: 'Head'
+      },
+      {
+        id: 'wing1',
+        path: 'M125 105 C100 95 80 100 75 110 C80 120 100 125 125 115 C120 110 122 107 125 105 Z',
+        suggestedColor: '#654321',
+        name: 'Left Wing'
+      },
+      {
+        id: 'wing2',
+        path: 'M175 105 C200 95 220 100 225 110 C220 120 200 125 175 115 C180 110 178 107 175 105 Z',
+        suggestedColor: '#654321',
+        name: 'Right Wing'
+      },
+      {
+        id: 'beak',
+        path: 'M150 90 C145 85 140 87 142 92 C145 90 148 88 150 90 Z',
+        suggestedColor: '#FFA500',
+        name: 'Beak'
       }
     ]
   },
   {
     id: 'car',
-    name: 'Sports Car',
+    name: 'Racing Car',
     category: 'vehicles',
     difficulty: 2,
     viewBox: '0 0 400 200',
+    animation: 'run',
     sections: [
       {
         id: 'car-body',
@@ -156,74 +186,12 @@ export const outlineDatabase: ColoringOutline[] = [
     ]
   },
   {
-    id: 'house',
-    name: 'Family House',
-    category: 'houses',
-    difficulty: 2,
-    viewBox: '0 0 300 300',
-    sections: [
-      {
-        id: 'house-base',
-        path: 'M50 200 L250 200 L250 120 L50 120 Z',
-        suggestedColor: '#DEB887',
-        name: 'House Walls'
-      },
-      {
-        id: 'roof',
-        path: 'M40 120 L150 40 L260 120 L230 120 L150 70 L70 120 Z',
-        suggestedColor: '#8B0000',
-        name: 'Roof'
-      },
-      {
-        id: 'door',
-        path: 'M120 200 L120 150 L180 150 L180 200 Z',
-        suggestedColor: '#8B4513',
-        name: 'Door'
-      },
-      {
-        id: 'door-knob',
-        path: 'M170 175 C172 175 174 177 174 179 C174 181 172 183 170 183 C168 183 166 181 166 179 C166 177 168 175 170 175 Z',
-        suggestedColor: '#FFD700',
-        name: 'Door Knob'
-      },
-      {
-        id: 'window1',
-        path: 'M70 160 L70 130 L100 130 L100 160 Z',
-        suggestedColor: '#87CEEB',
-        name: 'Left Window'
-      },
-      {
-        id: 'window2',
-        path: 'M200 160 L200 130 L230 130 L230 160 Z',
-        suggestedColor: '#87CEEB',
-        name: 'Right Window'
-      },
-      {
-        id: 'window1-frame',
-        path: 'M70 145 L100 145 M85 130 L85 160',
-        suggestedColor: '#FFFFFF',
-        name: 'Left Window Frame'
-      },
-      {
-        id: 'window2-frame',
-        path: 'M200 145 L230 145 M215 130 L215 160',
-        suggestedColor: '#FFFFFF',
-        name: 'Right Window Frame'
-      },
-      {
-        id: 'chimney',
-        path: 'M190 70 L190 40 L210 40 L210 70 Z',
-        suggestedColor: '#A0522D',
-        name: 'Chimney'
-      }
-    ]
-  },
-  {
     id: 'butterfly',
-    name: 'Colorful Butterfly',
+    name: 'Beautiful Butterfly',
     category: 'nature',
     difficulty: 3,
     viewBox: '0 0 300 300',
+    animation: 'fly',
     sections: [
       {
         id: 'body',
@@ -282,53 +250,76 @@ export const outlineDatabase: ColoringOutline[] = [
     ]
   },
   {
-    id: 'fish',
-    name: 'Tropical Fish',
+    id: 'rabbit',
+    name: 'Cute Rabbit',
     category: 'animals',
     difficulty: 2,
-    viewBox: '0 0 350 200',
+    viewBox: '0 0 300 350',
+    animation: 'jump',
     sections: [
       {
-        id: 'fish-body',
-        path: 'M80 100 C80 70 110 50 150 50 C200 50 240 70 250 100 C240 130 200 150 150 150 C110 150 80 130 80 100 Z',
-        suggestedColor: '#FF8C00',
-        name: 'Fish Body'
-      },
-      {
-        id: 'fish-tail',
-        path: 'M250 100 C280 80 320 70 340 80 C350 90 340 100 320 110 C340 110 350 120 340 130 C320 140 280 130 250 100 Z',
-        suggestedColor: '#FF6347',
-        name: 'Fish Tail'
-      },
-      {
-        id: 'fish-eye',
-        path: 'M120 90 C130 90 140 100 140 110 C140 120 130 130 120 130 C110 130 100 120 100 110 C100 100 110 90 120 90 Z',
+        id: 'body',
+        path: 'M150 200 C120 190 100 210 105 240 C110 270 130 280 150 275 C170 280 190 270 195 240 C200 210 180 190 150 200 Z',
         suggestedColor: '#FFFFFF',
-        name: 'Fish Eye'
+        name: 'Body'
       },
       {
-        id: 'fish-pupil',
-        path: 'M120 100 C125 100 130 105 130 110 C130 115 125 120 120 120 C115 120 110 115 110 110 C110 105 115 100 120 100 Z',
+        id: 'head',
+        path: 'M150 150 C130 140 120 160 125 180 C130 200 140 210 150 205 C160 210 170 200 175 180 C180 160 170 140 150 150 Z',
+        suggestedColor: '#FFFFFF',
+        name: 'Head'
+      },
+      {
+        id: 'ear1',
+        path: 'M130 140 C125 120 120 100 125 90 C130 85 135 90 140 100 C145 120 140 140 130 140 Z',
+        suggestedColor: '#FFB6C1',
+        name: 'Left Ear'
+      },
+      {
+        id: 'ear2',
+        path: 'M170 140 C175 120 180 100 175 90 C170 85 165 90 160 100 C155 120 160 140 170 140 Z',
+        suggestedColor: '#FFB6C1',
+        name: 'Right Ear'
+      },
+      {
+        id: 'eye1',
+        path: 'M140 170 C142 170 144 172 144 174 C144 176 142 178 140 178 C138 178 136 176 136 174 C136 172 138 170 140 170 Z',
         suggestedColor: '#000000',
-        name: 'Fish Pupil'
+        name: 'Left Eye'
       },
       {
-        id: 'top-fin',
-        path: 'M140 50 C150 30 170 25 180 30 C190 35 185 45 175 50 C165 55 155 50 140 50 Z',
-        suggestedColor: '#FFA500',
-        name: 'Top Fin'
+        id: 'eye2',
+        path: 'M160 170 C162 170 164 172 164 174 C164 176 162 178 160 178 C158 178 156 176 156 174 C156 172 158 170 160 170 Z',
+        suggestedColor: '#000000',
+        name: 'Right Eye'
       },
       {
-        id: 'bottom-fin',
-        path: 'M140 150 C150 170 170 175 180 170 C190 165 185 155 175 150 C165 145 155 150 140 150 Z',
-        suggestedColor: '#FFA500',
-        name: 'Bottom Fin'
-      },
+        id: 'nose',
+        path: 'M150 185 C148 183 152 183 150 185 C150 187 150 185 150 185 Z',
+        suggestedColor: '#FF69B4',
+        name: 'Nose'
+      }
+    ],
+    missingParts: [
       {
-        id: 'side-fin',
-        path: 'M80 110 C60 120 55 140 65 150 C75 145 80 135 85 125 C85 120 83 115 80 110 Z',
-        suggestedColor: '#FF7F50',
-        name: 'Side Fin'
+        id: 'cotton-tail',
+        name: 'Cotton Tail',
+        description: 'Every rabbit needs a fluffy cotton tail!',
+        position: { x: 200, y: 260 },
+        drawingOptions: [
+          {
+            id: 'fluffy-tail',
+            name: 'Fluffy Tail',
+            path: 'M0 0 C-5 -5 -8 -8 -5 -12 C0 -10 5 -8 8 -5 C5 0 0 5 0 0 Z',
+            suggestedColor: '#FFFFFF'
+          },
+          {
+            id: 'round-tail',
+            name: 'Round Tail',
+            path: 'M0 0 C-6 0 -6 -6 0 -6 C6 -6 6 0 0 0 Z',
+            suggestedColor: '#FFFFFF'
+          }
+        ]
       }
     ]
   }

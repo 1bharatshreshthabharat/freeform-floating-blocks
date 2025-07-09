@@ -8,6 +8,11 @@ export interface ColorSection {
   path: string;
   suggestedColor: string;
   name: string;
+  x?: number;
+  y?: number;
+  originalX?: number;
+  originalY?: number;
+  isConnected?: boolean;
 }
 
 export interface ColoringOutline {
@@ -17,6 +22,23 @@ export interface ColoringOutline {
   difficulty: number;
   sections: ColorSection[];
   viewBox: string;
+  animation?: 'fly' | 'run' | 'walk' | 'jump' | 'spin' | 'bounce';
+  missingParts?: MissingPart[];
+}
+
+export interface MissingPart {
+  id: string;
+  name: string;
+  description: string;
+  position: { x: number; y: number };
+  drawingOptions: DrawingOption[];
+}
+
+export interface DrawingOption {
+  id: string;
+  name: string;
+  path: string;
+  suggestedColor: string;
 }
 
 export interface GameStats {
