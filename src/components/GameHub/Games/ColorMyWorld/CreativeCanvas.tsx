@@ -202,23 +202,18 @@ export const CreativeCanvas: React.FC<CreativeCanvasProps> = ({
             <p className="text-sm text-gray-600 mb-4">{currentMissingPart.description}</p>
             
             <div className="grid grid-cols-2 gap-4 mb-4">
-              {currentMissingPart.drawingOptions.map((option) => (
+              {currentMissingPart.drawingOptions?.map((option, index) => (
                 <button
-                  key={option.id}
-                  onClick={() => handleDrawingOptionSelect(currentMissingPart.id, option.path, option.suggestedColor)}
+                  key={index}
+                  onClick={() => handleDrawingOptionSelect(currentMissingPart.id, '', selectedColor)}
                   className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
                 >
-                  <svg viewBox="0 0 100 100" className="w-16 h-16 mx-auto mb-2">
-                    <path
-                      d={option.path}
-                      fill={option.suggestedColor}
-                      stroke="#333"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                  <div className="text-sm font-medium">{option.name}</div>
+                  <div className="w-16 h-16 mx-auto mb-2 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-2xl">{option}</span>
+                  </div>
+                  <div className="text-sm font-medium">{option}</div>
                 </button>
-              ))}
+              )) || null}
             </div>
             
             <Button onClick={() => setCurrentMissingPart(null)} variant="outline" className="w-full">

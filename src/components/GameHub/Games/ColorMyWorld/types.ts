@@ -15,6 +15,8 @@ export interface MissingPart {
   size: { width: number; height: number };
   drawingTools: ('pencil' | 'brush' | 'eraser' | 'circle' | 'rectangle')[];
   suggestedShape?: string;
+  description?: string;
+  drawingOptions?: string[];
 }
 
 export interface ColoringOutline {

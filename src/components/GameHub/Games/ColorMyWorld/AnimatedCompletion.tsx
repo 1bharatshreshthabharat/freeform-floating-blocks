@@ -19,7 +19,7 @@ export const AnimatedCompletion: React.FC<AnimatedCompletionProps> = ({
     setIsAnimating(true);
     
     // Animation duration based on type
-    const duration = outline.animation === 'fly' ? 3000 : 2000;
+    const duration = outline.animation?.type === 'fly' ? 3000 : 2000;
     
     const timer = setTimeout(() => {
       setIsAnimating(false);
@@ -30,7 +30,9 @@ export const AnimatedCompletion: React.FC<AnimatedCompletionProps> = ({
   }, [outline, onAnimationComplete]);
 
   const getAnimationClass = () => {
-    switch (outline.animation) {
+    if (!outline.animation) return 'animate-fade-away';
+    
+    switch (outline.animation.type) {
       case 'fly':
         return 'animate-fly-away';
       case 'run':
@@ -76,7 +78,7 @@ export const AnimatedCompletion: React.FC<AnimatedCompletionProps> = ({
         </div>
         
         <div className="text-lg text-gray-700">
-          Your {outline.name} is {outline.animation === 'fly' ? 'flying' : outline.animation === 'run' ? 'running' : 'moving'} away!
+          Your {outline.name} is {outline.animation?.type === 'fly' ? 'flying' : outline.animation?.type === 'run' ? 'running' : 'moving'} away!
         </div>
       </div>
 
