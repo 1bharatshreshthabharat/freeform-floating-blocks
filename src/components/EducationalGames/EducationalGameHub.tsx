@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Palette, Pencil, Lightbulb, Puzzle, BookOpen, FlaskConical, Brain, Star } from 'lucide-react';
-import { ColoringGameApp } from './ColoringGame/ColoringGameApp';
 import { SpellingPhonicGame } from './SpellingPhonics/SpellingPhonicGame';
 import { MazeGameApp } from './MazeGame/MazeGameApp';
 import { MolecularChemistryLab } from './ChemistryLab/MolecularChemistryLab';
+import { IntellectoKidsAcademy } from './IntellectoKids/IntellectoKidsAcademy';
 
 export type EducationalGameType = 
-  | 'coloring' 
   | 'spelling' 
   | 'maze' 
   | 'chemistry' 
+  | 'intellecto'
   | null;
 
 interface EducationalGameHubProps {
@@ -19,16 +19,6 @@ interface EducationalGameHubProps {
 }
 
 const educationalGames = [
-  {
-    id: 'coloring' as const,
-    title: 'Color & Draw',
-    description: 'Satisfying coloring and drawing games for creativity',
-    icon: Palette,
-    color: 'from-pink-400 to-purple-500',
-    difficulty: 'Easy',
-    ageRange: '3-8 years',
-    skills: ['Creativity', 'Fine Motor Skills', 'Color Recognition']
-  },
   {
     id: 'spelling' as const,
     title: 'Spelling & Phonics',
@@ -58,6 +48,16 @@ const educationalGames = [
     difficulty: 'Hard',
     ageRange: '8-16 years',
     skills: ['Science', 'Chemistry', 'Molecular Structure', 'Bonding']
+  },
+  {
+    id: 'intellecto' as const,
+    title: 'Intellecto Kids Academy',
+    description: 'Comprehensive learning with numbers, letters, shapes and more',
+    icon: Brain,
+    color: 'from-indigo-400 to-blue-500',
+    difficulty: 'Easy-Medium',
+    ageRange: '3-8 years',
+    skills: ['Reading', 'Math', 'Logic', 'Memory', 'Creativity']
   }
 ];
 
@@ -73,14 +73,6 @@ export const EducationalGameHub: React.FC<EducationalGameHubProps> = ({ onBack }
     setGameStats(prev => ({ ...prev, [gameId]: stats }));
   };
 
-  if (selectedGame === 'coloring') {
-    return (
-      <ColoringGameApp 
-        onBack={() => setSelectedGame(null)}
-        onStatsUpdate={(stats) => handleStatsUpdate('coloring', stats)}
-      />
-    );
-  }
 
   if (selectedGame === 'spelling') {
     return (
@@ -105,6 +97,15 @@ export const EducationalGameHub: React.FC<EducationalGameHubProps> = ({ onBack }
       <MolecularChemistryLab 
         onBack={() => setSelectedGame(null)}
         onStatsUpdate={(stats) => handleStatsUpdate('chemistry', stats)}
+      />
+    );
+  }
+
+  if (selectedGame === 'intellecto') {
+    return (
+      <IntellectoKidsAcademy 
+        onBack={() => setSelectedGame(null)}
+        onStatsUpdate={(stats) => handleStatsUpdate('intellecto', stats)}
       />
     );
   }
