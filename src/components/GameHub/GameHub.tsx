@@ -10,8 +10,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
 import { ColorMyWorldGame } from './Games/ColorMyWorldGame';
+import { EducationalGameHub } from '../EducationalGames/EducationalGameHub';
+import { IntellectoKidsAcademy } from '../EducationalGames/IntellectoKids/IntellectoKidsAcademy';
 
-export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | 'wordwonders' | 'colormyworld' | null;
+export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | 'wordwonders' | 'colormyworld' | 'educational' | 'intellectokids' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -22,6 +24,24 @@ export const GameHub: React.FC = () => {
   });
 
   const games = [
+    {
+      id: 'intellectokids' as const,
+      title: 'Intellecto Kids Academy',
+      description: 'Complete learning platform with 1000+ lessons covering numbers, letters, shapes, colors, worksheets, and interactive games!',
+      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=300&fit=crop',
+      difficulty: 'Easy-Medium',
+      category: 'Educational',
+      players: '1'
+    },
+    {
+      id: 'educational' as const,
+      title: 'Educational Games Hub',
+      description: 'Collection of educational games: coloring, spelling & phonics, maze adventures, and molecular chemistry lab!',
+      image: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=400&h=300&fit=crop',
+      difficulty: 'Easy-Hard',
+      category: 'Educational',
+      players: '1'
+    },
     {
       id: 'colormyworld' as const,
       title: 'Color My World',
@@ -89,6 +109,10 @@ export const GameHub: React.FC = () => {
 
   const renderGame = () => {
     switch (currentGame) {
+      case 'intellectokids':
+        return <IntellectoKidsAcademy onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
+      case 'educational':
+        return <EducationalGameHub onBack={() => setCurrentGame(null)} />;
       case 'colormyworld':
         return <ColorMyWorldGame onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'wordwonders':
