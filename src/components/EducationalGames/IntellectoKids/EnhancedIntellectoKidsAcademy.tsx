@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Star, Trophy, Target, Volume2, Heart, Zap, BookOpen, PenTool, Calculator, Shapes, Palette, Music, Award } from 'lucide-react';
+import { ArrowLeft, Star, Trophy, Target, Volume2, Heart, Zap, BookOpen, PenTool, Calculator, Shapes, Palette } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EnhancedIntellectoKidsAcademyProps {
@@ -431,13 +431,13 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
   };
 
   const renderLetterActivity = () => {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const currentLetter = letters[letterGame.currentIndex];
-
-    if (letterGame.currentIndex >= letters.length) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const currentLetter = alphabet[letterGame.currentIndex] || 'A';
+    
+    if (letterGame.currentIndex >= alphabet.length) {
       return (
         <div className="text-center p-8">
-          <div className="text-6xl mb-4">📚</div>
+          <div className="text-6xl mb-4">🎊</div>
           <h3 className="text-2xl font-bold mb-4">Alphabet Master!</h3>
           <div className="text-lg mb-6">You've learned all 26 letters!</div>
           <Button onClick={() => completeActivity(3)} className="bg-green-500 hover:bg-green-600">
@@ -449,61 +449,74 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
 
     return (
       <div className="text-center p-6">
-        <div className="text-8xl font-bold mb-6 text-blue-600">{currentLetter}</div>
-        <div className="text-2xl mb-4">Letter: {currentLetter}</div>
-        
-        <div className="space-y-4 mb-6">
-          <Button
-            onClick={() => speak(currentLetter)}
-            variant="outline"
-            className="w-full max-w-md"
-          >
+        <div className="mb-8">
+          <div className="text-8xl font-bold text-blue-600 mb-4">{currentLetter}</div>
+          <div className="text-2xl font-semibold mb-2">Letter {currentLetter}</div>
+          <Button onClick={() => speak(`Letter ${currentLetter}`)} variant="outline" className="mb-4">
             <Volume2 className="h-4 w-4 mr-2" />
-            Hear Letter Sound
-          </Button>
-          
-          <Button
-            onClick={() => speak(`${currentLetter} is for ${currentLetter === 'A' ? 'Apple' : currentLetter === 'B' ? 'Ball' : currentLetter === 'C' ? 'Cat' : 'Dog'}`)}
-            variant="outline"
-            className="w-full max-w-md"
-          >
-            📝 Hear Example Word
+            Hear Letter
           </Button>
         </div>
 
-        <Button
-          onClick={() => {
-            setLetterGame(prev => ({
-              ...prev,
-              recognizedLetters: [...prev.recognizedLetters, currentLetter],
-              currentIndex: prev.currentIndex + 1
-            }));
-            toast.success(`Great! You learned the letter ${currentLetter}!`);
-          }}
-          className="bg-green-500 hover:bg-green-600"
-        >
-          I Know This Letter! ✓
-        </Button>
+        <div className="space-y-4">
+          <div className="text-lg">Can you find the letter <strong>{currentLetter}</strong>?</div>
+          <div className="grid grid-cols-4 gap-4 max-w-md mx-auto">
+            {[currentLetter, alphabet[Math.floor(Math.random() * 26)], alphabet[Math.floor(Math.random() * 26)], alphabet[Math.floor(Math.random() * 26)]]
+              .sort(() => Math.random() - 0.5)
+              .map((letter, i) => (
+              <Button
+                key={i}
+                onClick={() => {
+                  if (letter === currentLetter) {
+                    toast.success('Correct! 🎉');
+                    speak(`Correct! Letter ${currentLetter}`);
+                    setLetterGame(prev => ({
+                      ...prev,
+                      recognizedLetters: [...prev.recognizedLetters, currentLetter],
+                      currentIndex: prev.currentIndex + 1
+                    }));
+                  } else {
+                    toast.error('Try again!');
+                    speak('Try again!');
+                  }
+                }}
+                className="text-3xl py-8"
+                variant="outline"
+              >
+                {letter}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Progress value={(letterGame.currentIndex / alphabet.length) * 100} className="w-full max-w-md mx-auto" />
+          <div className="text-sm text-gray-600 mt-2">{letterGame.currentIndex} / {alphabet.length} letters</div>
+        </div>
       </div>
     );
   };
 
   const renderShapeActivity = () => {
     const shapes = [
-      { name: 'Circle', emoji: '⭕', description: 'Round like a ball' },
-      { name: 'Square', emoji: '⬜', description: 'Four equal sides' },
-      { name: 'Triangle', emoji: '🔺', description: 'Three sides and three corners' },
-      { name: 'Rectangle', emoji: '▭', description: 'Four sides, two long and two short' }
+      { name: 'circle', emoji: '⭕', color: 'bg-red-500' },
+      { name: 'square', emoji: '🟦', color: 'bg-blue-500' },
+      { name: 'triangle', emoji: '🔺', color: 'bg-green-500' },
+      { name: 'rectangle', emoji: '▭', color: 'bg-yellow-500' },
+      { name: 'heart', emoji: '❤️', color: 'bg-pink-500' },
+      { name: 'star', emoji: '⭐', color: 'bg-purple-500' },
+      { name: 'diamond', emoji: '💎', color: 'bg-cyan-500' },
+      { name: 'hexagon', emoji: '⬡', color: 'bg-indigo-500' }
     ];
-
-    const currentShape = shapes[shapeGame.currentIndex];
-
+    
+    const currentShape = shapes[shapeGame.currentIndex] || shapes[0];
+    
     if (shapeGame.currentIndex >= shapes.length) {
       return (
         <div className="text-center p-8">
-          <div className="text-6xl mb-4">🔷</div>
-          <h3 className="text-2xl font-bold mb-4">Shape Detective!</h3>
-          <div className="text-lg mb-6">You've identified all basic shapes!</div>
+          <div className="text-6xl mb-4">🌟</div>
+          <h3 className="text-2xl font-bold mb-4">Shape Expert!</h3>
+          <div className="text-lg mb-6">You've mastered all shapes!</div>
           <Button onClick={() => completeActivity(3)} className="bg-green-500 hover:bg-green-600">
             Complete Activity
           </Button>
@@ -513,62 +526,71 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
 
     return (
       <div className="text-center p-6">
-        <div className="text-8xl mb-6">{currentShape.emoji}</div>
-        <div className="text-2xl font-bold mb-2">{currentShape.name}</div>
-        <div className="text-lg text-gray-600 mb-6">{currentShape.description}</div>
-        
-        <div className="space-y-4 mb-6">
-          <Button
-            onClick={() => speak(currentShape.name)}
-            variant="outline"
-            className="w-full max-w-md"
-          >
+        <div className="mb-8">
+          <div className="text-8xl mb-4">{currentShape.emoji}</div>
+          <div className="text-2xl font-semibold mb-2 capitalize">{currentShape.name}</div>
+          <Button onClick={() => speak(`This is a ${currentShape.name}`)} variant="outline" className="mb-4">
             <Volume2 className="h-4 w-4 mr-2" />
             Hear Shape Name
           </Button>
-          
-          <Button
-            onClick={() => speak(currentShape.description)}
-            variant="outline"
-            className="w-full max-w-md"
-          >
-            📝 Hear Description
-          </Button>
         </div>
 
-        <Button
-          onClick={() => {
-            setShapeGame(prev => ({
-              ...prev,
-              identifiedShapes: [...prev.identifiedShapes, currentShape.name],
-              currentIndex: prev.currentIndex + 1
-            }));
-            toast.success(`Excellent! You identified the ${currentShape.name}!`);
-          }}
-          className="bg-purple-500 hover:bg-purple-600"
-        >
-          I Know This Shape! ✓
-        </Button>
+        <div className="space-y-4">
+          <div className="text-lg">What shape is this?</div>
+          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+            {[currentShape.name, shapes[Math.floor(Math.random() * shapes.length)].name, shapes[Math.floor(Math.random() * shapes.length)].name, shapes[Math.floor(Math.random() * shapes.length)].name]
+              .filter((name, index, arr) => arr.indexOf(name) === index)
+              .slice(0, 4)
+              .sort(() => Math.random() - 0.5)
+              .map((shapeName, i) => (
+              <Button
+                key={i}
+                onClick={() => {
+                  if (shapeName === currentShape.name) {
+                    toast.success('Excellent! 🎉');
+                    speak(`Excellent! This is a ${currentShape.name}`);
+                    setShapeGame(prev => ({
+                      ...prev,
+                      identifiedShapes: [...prev.identifiedShapes, currentShape.name],
+                      currentIndex: prev.currentIndex + 1
+                    }));
+                  } else {
+                    toast.error('Try again!');
+                    speak('Try again!');
+                  }
+                }}
+                className="text-lg py-6 capitalize"
+                variant="outline"
+              >
+                {shapeName}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Progress value={(shapeGame.currentIndex / shapes.length) * 100} className="w-full max-w-md mx-auto" />
+          <div className="text-sm text-gray-600 mt-2">{shapeGame.currentIndex} / {shapes.length} shapes</div>
+        </div>
       </div>
     );
   };
 
   const renderColorActivity = () => {
-    const colors = [
-      { name: 'Red', hex: '#EF4444', emoji: '🔴', examples: ['Apple', 'Fire truck', 'Rose'] },
-      { name: 'Blue', hex: '#3B82F6', emoji: '🔵', examples: ['Sky', 'Ocean', 'Blueberry'] },
-      { name: 'Yellow', hex: '#EAB308', emoji: '🟡', examples: ['Sun', 'Banana', 'Lemon'] },
-      { name: 'Green', hex: '#22C55E', emoji: '🟢', examples: ['Grass', 'Frog', 'Leaf'] }
+    const colorMixing = [
+      { primary1: 'red', primary2: 'blue', result: 'purple' },
+      { primary1: 'red', primary2: 'yellow', result: 'orange' },
+      { primary1: 'blue', primary2: 'yellow', result: 'green' }
     ];
 
-    const currentColor = colors[colorGame.currentStage];
+    const currentMix = colorMixing[colorGame.currentStage];
 
-    if (colorGame.currentStage >= colors.length) {
+    if (colorGame.currentStage >= colorMixing.length) {
       return (
         <div className="text-center p-8">
-          <div className="text-6xl mb-4">🌈</div>
+          <div className="text-6xl mb-4">🎨</div>
           <h3 className="text-2xl font-bold mb-4">Color Master!</h3>
-          <div className="text-lg mb-6">You've learned all primary colors!</div>
+          <div className="text-lg mb-6">You've learned color mixing!</div>
           <Button onClick={() => completeActivity(3)} className="bg-green-500 hover:bg-green-600">
             Complete Activity
           </Button>
@@ -578,66 +600,94 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
 
     return (
       <div className="text-center p-6">
-        <div 
-          className="w-32 h-32 rounded-full mx-auto mb-6 border-4 border-gray-300"
-          style={{ backgroundColor: currentColor.hex }}
-        />
-        <div className="text-2xl font-bold mb-2">{currentColor.name}</div>
-        <div className="text-lg text-gray-600 mb-6">
-          {currentColor.name} like: {currentColor.examples.join(', ')}
-        </div>
-        
-        <div className="space-y-4 mb-6">
-          <Button
-            onClick={() => speak(currentColor.name)}
-            variant="outline"
-            className="w-full max-w-md"
-          >
-            <Volume2 className="h-4 w-4 mr-2" />
-            Hear Color Name
-          </Button>
-          
-          <Button
-            onClick={() => speak(`${currentColor.name} like ${currentColor.examples.join(', ')}`)}
-            variant="outline"
-            className="w-full max-w-md"
-          >
-            📝 Hear Examples
-          </Button>
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold mb-4">Color Mixing Lab 🧪</h3>
+          <div className="text-lg mb-4">
+            What happens when you mix {currentMix.primary1} and {currentMix.primary2}?
+          </div>
         </div>
 
-        <Button
-          onClick={() => {
-            setColorGame(prev => ({
-              ...prev,
-              mixedColors: [...prev.mixedColors, currentColor.name],
-              currentStage: prev.currentStage + 1
-            }));
-            toast.success(`Wonderful! You learned the color ${currentColor.name}!`);
-          }}
-          className="bg-pink-500 hover:bg-pink-600"
-        >
-          I Know This Color! ✓
-        </Button>
+        {/* Color mixing visualization */}
+        <div className="flex justify-center items-center gap-4 mb-8">
+          <div className="flex flex-col items-center">
+            <div 
+              className="w-20 h-20 rounded-full mb-2 border-4 border-gray-300"
+              style={{ backgroundColor: currentMix.primary1 === 'red' ? '#FF0000' : currentMix.primary1 === 'blue' ? '#0000FF' : '#FFFF00' }}
+            ></div>
+            <span className="capitalize font-semibold">{currentMix.primary1}</span>
+          </div>
+          <div className="text-3xl">+</div>
+          <div className="flex flex-col items-center">
+            <div 
+              className="w-20 h-20 rounded-full mb-2 border-4 border-gray-300"
+              style={{ backgroundColor: currentMix.primary2 === 'red' ? '#FF0000' : currentMix.primary2 === 'blue' ? '#0000FF' : '#FFFF00' }}
+            ></div>
+            <span className="capitalize font-semibold">{currentMix.primary2}</span>
+          </div>
+          <div className="text-3xl">=</div>
+          <div className="text-4xl">❓</div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="text-lg">Choose the result color:</div>
+          <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+            {[currentMix.result, 'brown', 'pink'].sort(() => Math.random() - 0.5).map((colorName, i) => (
+              <Button
+                key={i}
+                onClick={() => {
+                  if (colorName === currentMix.result) {
+                    toast.success('Perfect! 🎨');
+                    speak(`Perfect! ${currentMix.primary1} and ${currentMix.primary2} make ${currentMix.result}`);
+                    setColorGame(prev => ({
+                      ...prev,
+                      mixedColors: [...prev.mixedColors, currentMix.result],
+                      currentStage: prev.currentStage + 1
+                    }));
+                  } else {
+                    toast.error('Try again!');
+                    speak('Try again!');
+                  }
+                }}
+                className={`py-8 text-lg capitalize text-white`}
+                style={{ 
+                  backgroundColor: colorName === 'purple' ? '#800080' : 
+                                  colorName === 'orange' ? '#FFA500' :
+                                  colorName === 'green' ? '#00FF00' :
+                                  colorName === 'brown' ? '#964B00' :
+                                  colorName === 'pink' ? '#FFC0CB' : '#000000'
+                }}
+                variant="outline"
+              >
+                {colorName}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Progress value={(colorGame.currentStage / colorMixing.length) * 100} className="w-full max-w-md mx-auto" />
+          <div className="text-sm text-gray-600 mt-2">{colorGame.currentStage} / {colorMixing.length} mixes</div>
+        </div>
       </div>
     );
   };
 
   const renderMemoryActivity = () => {
-    const buttons = [
-      { color: 'bg-red-500', sound: 'Do' },
-      { color: 'bg-blue-500', sound: 'Re' },
-      { color: 'bg-green-500', sound: 'Mi' },
-      { color: 'bg-yellow-500', sound: 'Fa' }
-    ];
-
-    if (memoryGame.currentStep >= memoryGame.sequence.length && !memoryGame.showingSequence) {
+    const colors = ['red', 'blue', 'green', 'yellow'];
+    
+    if (memoryGame.playerSequence.length >= memoryGame.sequence.length && !memoryGame.showingSequence) {
+      const isCorrect = memoryGame.playerSequence.every((color, i) => color === memoryGame.sequence[i]);
+      
       return (
         <div className="text-center p-8">
-          <div className="text-6xl mb-4">🧠</div>
-          <h3 className="text-2xl font-bold mb-4">Memory Champion!</h3>
-          <div className="text-lg mb-6">Perfect memory! You remembered the sequence!</div>
-          <Button onClick={() => completeActivity(3)} className="bg-green-500 hover:bg-green-600">
+          <div className="text-6xl mb-4">{isCorrect ? '🎉' : '😅'}</div>
+          <h3 className="text-2xl font-bold mb-4">
+            {isCorrect ? 'Perfect Memory!' : 'Good Try!'}
+          </h3>
+          <div className="text-lg mb-6">
+            {isCorrect ? 'You remembered the sequence perfectly!' : 'Practice makes perfect!'}
+          </div>
+          <Button onClick={() => completeActivity(isCorrect ? 3 : 1)} className="bg-green-500 hover:bg-green-600">
             Complete Activity
           </Button>
         </div>
@@ -646,89 +696,49 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
 
     return (
       <div className="text-center p-6">
-        <h3 className="text-xl font-bold mb-4">Watch and Remember the Sequence</h3>
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold mb-4">Memory Challenge 🧠</h3>
+          <div className="text-lg mb-4">
+            {memoryGame.showingSequence ? 'Watch the sequence!' : 'Repeat the sequence!'}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-          {buttons.map((button, index) => (
-            <button
-              key={index}
-              className={`h-20 w-20 rounded-lg transition-all ${button.color} ${
-                memoryGame.showingSequence && memoryGame.sequence[memoryGame.currentStep] === index
-                  ? 'scale-110 ring-4 ring-white'
-                  : ''
-              }`}
+          {colors.map((color, i) => (
+            <Button
+              key={i}
               onClick={() => {
                 if (!memoryGame.showingSequence) {
-                  const newPlayerSequence = [...memoryGame.playerSequence, index];
-                  if (newPlayerSequence[newPlayerSequence.length - 1] === memoryGame.sequence[newPlayerSequence.length - 1]) {
-                    setMemoryGame(prev => ({ ...prev, playerSequence: newPlayerSequence }));
-                    if (newPlayerSequence.length === memoryGame.sequence.length) {
-                      setTimeout(() => {
-                        setMemoryGame(prev => ({ ...prev, currentStep: prev.sequence.length }));
-                      }, 500);
-                    }
-                  } else {
-                    toast.error('Oops! Try again from the beginning');
-                    setMemoryGame(prev => ({ ...prev, playerSequence: [] }));
-                  }
+                  const newPlayerSequence = [...memoryGame.playerSequence, i];
+                  setMemoryGame(prev => ({ ...prev, playerSequence: newPlayerSequence }));
                 }
               }}
-            />
+              className={`w-24 h-24 text-white ${
+                memoryGame.showingSequence && memoryGame.currentStep === i ? 'ring-4 ring-white' : ''
+              }`}
+              style={{ 
+                backgroundColor: color === 'red' ? '#FF0000' : 
+                               color === 'blue' ? '#0000FF' :
+                               color === 'green' ? '#00FF00' : '#FFFF00'
+              }}
+              disabled={memoryGame.showingSequence}
+            >
+              {color}
+            </Button>
           ))}
         </div>
-        
-        {memoryGame.showingSequence ? (
-          <div className="text-lg text-blue-600">Watch carefully... Step {memoryGame.currentStep + 1}</div>
-        ) : (
-          <div className="text-lg text-green-600">Your turn! Repeat the sequence</div>
-        )}
+
+        <div className="text-sm text-gray-600">
+          Sequence length: {memoryGame.sequence.length} | Your progress: {memoryGame.playerSequence.length}
+        </div>
       </div>
     );
   };
 
-  if (currentActivity) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-100 to-green-100">
-        <div className="bg-white/90 backdrop-blur-sm shadow-lg">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <Button 
-                onClick={() => setCurrentActivity(null)} 
-                variant="ghost" 
-                size="sm"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Academy
-              </Button>
-              <div className="text-center">
-                <h1 className="text-xl font-bold">{currentActivity.title}</h1>
-                <div className="text-sm text-gray-600">{currentActivity.description}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                {Array.from({length: 5}).map((_, i) => (
-                  <Heart key={i} className={`h-5 w-5 ${i < hearts ? 'text-red-500' : 'text-gray-300'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="container mx-auto px-4 py-6">
-          <Card className="max-w-4xl mx-auto p-6">
-            {currentActivity.category === 'Math' && renderMathActivity()}
-            {currentActivity.category === 'Letters' && renderLetterActivity()}
-            {currentActivity.category === 'Shapes' && renderShapeActivity()}
-            {currentActivity.category === 'Colors' && renderColorActivity()}
-            {currentActivity.category === 'Memory' && renderMemoryActivity()}
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-100 to-green-100">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50">
       {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg">
+      <div className="bg-white/90 backdrop-blur-sm shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -741,270 +751,265 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
                 <h1 className="text-xl font-bold">Intellecto Kids Academy</h1>
               </div>
             </div>
+            
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 {Array.from({length: 5}).map((_, i) => (
-                  <Heart key={i} className={`h-5 w-5 ${i < hearts ? 'text-red-500' : 'text-gray-300'}`} />
+                  <Heart key={i} className={`h-5 w-5 ${i < hearts ? 'text-red-500 fill-current' : 'text-gray-300'}`} />
                 ))}
               </div>
-              <div className="bg-yellow-100 px-3 py-1 rounded-full">
-                <span className="font-medium text-yellow-800">💎 {gems}</span>
+              <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full">
+                <span className="text-yellow-600">💎</span>
+                <span className="font-bold text-yellow-800">{gems}</span>
               </div>
-              <Button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                variant="ghost"
-                size="sm"
-              >
-                <Volume2 className={`h-4 w-4 ${soundEnabled ? 'text-blue-500' : 'text-gray-400'}`} />
-              </Button>
+              <div className="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full">
+                <Trophy className="h-4 w-4 text-blue-600" />
+                <span className="font-bold text-blue-800">Level {level}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-2/3 mx-auto">
-            <TabsTrigger value="dashboard">🏠 Home</TabsTrigger>
-            <TabsTrigger value="activities">📚 Learn</TabsTrigger>
-            <TabsTrigger value="challenges">🎯 Challenges</TabsTrigger>
-            <TabsTrigger value="progress">📊 Progress</TabsTrigger>
-            <TabsTrigger value="achievements">🏆 Awards</TabsTrigger>
-          </TabsList>
+        {currentActivity ? (
+          <Card className="p-6">
+            <div className="mb-4">
+              <Button onClick={() => setCurrentActivity(null)} variant="ghost" size="sm" className="mb-4">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Activities
+              </Button>
+              <h2 className="text-2xl font-bold mb-2">{currentActivity.title}</h2>
+              <p className="text-gray-600">{currentActivity.description}</p>
+            </div>
+            
+            {currentActivity.category === 'Math' && renderMathActivity()}
+            {currentActivity.category === 'Letters' && renderLetterActivity()}
+            {currentActivity.category === 'Shapes' && renderShapeActivity()}
+            {currentActivity.category === 'Colors' && renderColorActivity()}
+            {currentActivity.category === 'Memory' && renderMemoryActivity()}
+          </Card>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-7">
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="math">Numbers & Math</TabsTrigger>
+              <TabsTrigger value="letters">ABC & Writing</TabsTrigger>
+              <TabsTrigger value="shapes">Shapes & Patterns</TabsTrigger>
+              <TabsTrigger value="colors">Colors & Art</TabsTrigger>
+              <TabsTrigger value="memory">Memory Games</TabsTrigger>
+              <TabsTrigger value="challenges">Daily Challenges</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Player Stats */}
-              <Card className="lg:col-span-1 p-6">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold">
-                    {level}
+            <TabsContent value="dashboard" className="space-y-6">
+              {/* Dashboard content */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                  <div className="text-center">
+                    <Trophy className="h-12 w-12 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold mb-2">Level {level}</h3>
+                    <Progress value={progressToNextLevel()} className="bg-white/20" />
+                    <p className="text-sm mt-2">{experiencePoints % (level * 1000)}/{level * 1000} XP</p>
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Level {level} Learner</h3>
-                  <Progress value={progressToNextLevel()} className="mb-2" />
-                  <div className="text-sm text-gray-600">
-                    {experiencePoints % (level * 1000)}/{level * 1000} XP to next level
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mt-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{totalScore}</div>
-                      <div className="text-sm text-gray-600">Total Score</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{streakDays}</div>
-                      <div className="text-sm text-gray-600">Day Streak</div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                </Card>
 
-              {/* Quick Activities */}
-              <Card className="lg:col-span-2 p-6">
-                <h3 className="text-xl font-bold mb-4">Continue Learning</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <Card className="p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+                  <div className="text-center">
+                    <Target className="h-12 w-12 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold mb-2">Total Score</h3>
+                    <p className="text-3xl font-bold">{totalScore}</p>
+                  </div>
+                </Card>
+
+                <Card className="p-6 bg-gradient-to-br from-orange-500 to-red-600 text-white">
+                  <div className="text-center">
+                    <Zap className="h-12 w-12 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold mb-2">Streak Days</h3>
+                    <p className="text-3xl font-bold">{streakDays}</p>
+                  </div>
+                </Card>
+              </div>
+
+              <Card className="p-6">
+                <h3 className="text-xl font-bold mb-4">Quick Start Activities</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {activities.filter(a => a.unlocked && !a.completed).slice(0, 4).map(activity => (
-                    <button
+                    <Button
                       key={activity.id}
                       onClick={() => startActivity(activity)}
-                      className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border hover:shadow-md transition-all text-left"
+                      variant="outline"
+                      className="h-24 flex flex-col gap-2"
                     >
-                      <div className="text-2xl mb-2">{activity.icon}</div>
-                      <div className="font-semibold text-sm">{activity.title}</div>
-                      <div className="text-xs text-gray-600">{activity.category}</div>
-                      <div className="text-xs text-blue-600 mt-1">
-                        {'⭐'.repeat(activity.difficulty)}
-                      </div>
-                    </button>
+                      <span className="text-2xl">{activity.icon}</span>
+                      <span className="text-sm">{activity.title}</span>
+                    </Button>
                   ))}
                 </div>
               </Card>
-            </div>
+            </TabsContent>
 
-            {/* Daily Challenges Preview */}
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4">Today's Challenges</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {challenges.slice(0, 3).map(challenge => (
-                  <div
-                    key={challenge.id}
-                    className={`p-4 rounded-lg border ${challenge.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-sm">{challenge.title}</h4>
-                      <div className="text-xs text-yellow-600">+{challenge.points}</div>
-                    </div>
-                    <div className="text-xs text-gray-600 mb-3">{challenge.description}</div>
-                    {!challenge.completed ? (
-                      <Button 
-                        onClick={() => completeDailyChallenge(challenge.id)}
-                        size="sm" 
-                        className="w-full"
-                      >
-                        Start
-                      </Button>
-                    ) : (
-                      <div className="text-green-600 text-center text-sm font-medium">✓ Completed</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="activities" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {['Math', 'Letters', 'Shapes', 'Colors', 'Memory'].map(category => (
-                <Card key={category} className="p-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    {category === 'Math' && <Calculator className="h-5 w-5" />}
-                    {category === 'Letters' && <PenTool className="h-5 w-5" />}
-                    {category === 'Shapes' && <Shapes className="h-5 w-5" />}
-                    {category === 'Colors' && <Palette className="h-5 w-5" />}
-                    {category === 'Memory' && <Target className="h-5 w-5" />}
-                    {category}
-                  </h3>
-                  <div className="space-y-3">
-                    {activities.filter(a => a.category === category).map(activity => (
-                      <button
-                        key={activity.id}
+            <TabsContent value="math" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activities.filter(a => a.category === 'Math').map(activity => (
+                  <Card key={activity.id} className="p-4">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">{activity.icon}</div>
+                      <h3 className="font-bold mb-2">{activity.title}</h3>
+                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
+                      <div className="flex justify-center gap-1 mb-4">
+                        {Array.from({length: 3}).map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                      <Button
                         onClick={() => startActivity(activity)}
                         disabled={!activity.unlocked}
-                        className={`w-full p-3 rounded-lg border text-left transition-all ${
-                          activity.unlocked 
-                            ? 'bg-white hover:shadow-md' 
-                            : 'bg-gray-100 opacity-50 cursor-not-allowed'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="text-lg">{activity.icon}</div>
-                          <div className="flex">
-                            {Array.from({length: 3}).map((_, i) => (
-                              <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="font-medium text-sm">{activity.title}</div>
-                        <div className="text-xs text-gray-600">{activity.description}</div>
-                        <div className="text-xs text-blue-600 mt-1">
-                          Difficulty: {'⭐'.repeat(activity.difficulty)}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="challenges" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4">Daily Challenges</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {challenges.map(challenge => (
-                  <div
-                    key={challenge.id}
-                    className={`p-4 rounded-lg border ${challenge.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">{challenge.title}</h4>
-                      <div className="text-yellow-600 font-bold">+{challenge.points}</div>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-4">{challenge.description}</div>
-                    {!challenge.completed ? (
-                      <Button 
-                        onClick={() => completeDailyChallenge(challenge.id)}
+                        variant={activity.completed ? 'secondary' : 'default'}
                         className="w-full"
                       >
-                        Complete Challenge
+                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
                       </Button>
-                    ) : (
-                      <div className="text-green-600 text-center font-medium">✓ Completed Today!</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="progress" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">Learning Progress</h3>
-                <div className="space-y-4">
-                  {['Math', 'Letters', 'Shapes', 'Colors', 'Memory'].map(category => {
-                    const categoryActivities = activities.filter(a => a.category === category);
-                    const completed = categoryActivities.filter(a => a.completed).length;
-                    const total = categoryActivities.length;
-                    const progress = (completed / total) * 100;
-                    
-                    return (
-                      <div key={category}>
-                        <div className="flex justify-between mb-2">
-                          <span className="font-medium">{category}</span>
-                          <span className="text-sm text-gray-600">{completed}/{total}</span>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">Statistics</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{activities.filter(a => a.completed).length}</div>
-                    <div className="text-sm text-gray-600">Activities Completed</div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{unlockedAchievements.length}</div>
-                    <div className="text-sm text-gray-600">Achievements</div>
-                  </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">{gems}</div>
-                    <div className="text-sm text-gray-600">Gems Earned</div>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{streakDays}</div>
-                    <div className="text-sm text-gray-600">Day Streak</div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="achievements" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4">Achievements</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {achievements.map(achievement => (
-                  <div
-                    key={achievement.id}
-                    className={`p-4 rounded-lg border ${
-                      unlockedAchievements.includes(achievement.id)
-                        ? 'bg-yellow-50 border-yellow-200'
-                        : 'bg-gray-50 border-gray-200 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="text-3xl">{achievement.icon}</div>
-                      <div className="flex-1">
-                        <h4 className="font-bold">{achievement.name}</h4>
-                        <div className="text-sm text-gray-600 mb-2">{achievement.description}</div>
-                        <div className="text-xs text-blue-600">{achievement.category}</div>
-                        {unlockedAchievements.includes(achievement.id) && (
-                          <div className="text-green-600 text-sm font-medium mt-2">✓ Unlocked!</div>
-                        )}
-                      </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+
+            <TabsContent value="letters" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activities.filter(a => a.category === 'Letters').map(activity => (
+                  <Card key={activity.id} className="p-4">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">{activity.icon}</div>
+                      <h3 className="font-bold mb-2">{activity.title}</h3>
+                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
+                      <div className="flex justify-center gap-1 mb-4">
+                        {Array.from({length: 3}).map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                      <Button
+                        onClick={() => startActivity(activity)}
+                        disabled={!activity.unlocked}
+                        variant={activity.completed ? 'secondary' : 'default'}
+                        className="w-full"
+                      >
+                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="shapes" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activities.filter(a => a.category === 'Shapes').map(activity => (
+                  <Card key={activity.id} className="p-4">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">{activity.icon}</div>
+                      <h3 className="font-bold mb-2">{activity.title}</h3>
+                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
+                      <div className="flex justify-center gap-1 mb-4">
+                        {Array.from({length: 3}).map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                      <Button
+                        onClick={() => startActivity(activity)}
+                        disabled={!activity.unlocked}
+                        variant={activity.completed ? 'secondary' : 'default'}
+                        className="w-full"
+                      >
+                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="colors" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activities.filter(a => a.category === 'Colors').map(activity => (
+                  <Card key={activity.id} className="p-4">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">{activity.icon}</div>
+                      <h3 className="font-bold mb-2">{activity.title}</h3>
+                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
+                      <div className="flex justify-center gap-1 mb-4">
+                        {Array.from({length: 3}).map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                      <Button
+                        onClick={() => startActivity(activity)}
+                        disabled={!activity.unlocked}
+                        variant={activity.completed ? 'secondary' : 'default'}
+                        className="w-full"
+                      >
+                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="memory" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activities.filter(a => a.category === 'Memory').map(activity => (
+                  <Card key={activity.id} className="p-4">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">{activity.icon}</div>
+                      <h3 className="font-bold mb-2">{activity.title}</h3>
+                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
+                      <div className="flex justify-center gap-1 mb-4">
+                        {Array.from({length: 3}).map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                      <Button
+                        onClick={() => startActivity(activity)}
+                        disabled={!activity.unlocked}
+                        variant={activity.completed ? 'secondary' : 'default'}
+                        className="w-full"
+                      >
+                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="challenges" className="space-y-6">
+              <Card className="p-6">
+                <h3 className="text-xl font-bold mb-4">Daily Challenges</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {challenges.map(challenge => (
+                    <Card key={challenge.id} className={`p-4 ${challenge.completed ? 'bg-green-50 border-green-200' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold">{challenge.title}</h4>
+                          <p className="text-sm text-gray-600">{challenge.description}</p>
+                          <p className="text-sm font-semibold text-blue-600">+{challenge.points} points</p>
+                        </div>
+                        <Button
+                          onClick={() => completeDailyChallenge(challenge.id)}
+                          disabled={challenge.completed}
+                          variant={challenge.completed ? 'secondary' : 'default'}
+                        >
+                          {challenge.completed ? '✓ Done' : 'Complete'}
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </div>
   );

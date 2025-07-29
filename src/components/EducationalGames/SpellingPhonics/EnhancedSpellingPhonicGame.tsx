@@ -386,6 +386,49 @@ export const EnhancedSpellingPhonicGame: React.FC<EnhancedSpellingPhonicGameProp
 
           {/* Main Game Area */}
           <Card className="lg:col-span-3 p-6">
+            {/* Instructions Panel */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-bold text-blue-800 mb-2">📋 How to Play</h3>
+              <div className="text-sm text-blue-700">
+                {gameMode === 'spelling' && (
+                  <div>
+                    <p className="mb-2"><strong>Spelling Mode:</strong></p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Look at the word displayed above</li>
+                      <li>Type the word in the input box below</li>
+                      <li>Press Enter or click "Check Spelling" to submit</li>
+                      <li>Use the "Hear Word" button to listen to pronunciation</li>
+                      <li>Get hints by clicking the "Show Hint" button</li>
+                    </ul>
+                  </div>
+                )}
+                {gameMode === 'phonics' && (
+                  <div>
+                    <p className="mb-2"><strong>Phonics Mode:</strong></p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Click on letters below to build the word</li>
+                      <li>Letters will appear in order as you click them</li>
+                      <li>Use "Hear Phonics" to listen to letter sounds</li>
+                      <li>Complete the word to score points</li>
+                      <li>Click "Reset" to start over</li>
+                    </ul>
+                  </div>
+                )}
+                {gameMode === 'listening' && (
+                  <div>
+                    <p className="mb-2"><strong>Listening Mode:</strong></p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Click "Hear Word" to listen to the word</li>
+                      <li>The word is hidden - listen carefully!</li>
+                      <li>Type what you hear in the input box</li>
+                      <li>Use the definition clues to help you</li>
+                      <li>You can replay the word as many times as needed</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="text-center mb-6">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-lg mb-4">
                 <h2 className="text-2xl font-bold mb-2">
