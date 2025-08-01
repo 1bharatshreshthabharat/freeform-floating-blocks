@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Palette, Pencil, Lightbulb, Puzzle, BookOpen, FlaskConical, Brain, Star } from 'lucide-react';
-import { SpellingPhonicGame } from './SpellingPhonics/SpellingPhonicGame';
-import { MazeGameApp } from './MazeGame/MazeGameApp';
-import { MolecularChemistryLab } from './ChemistryLab/MolecularChemistryLab';
-import { IntellectoKidsAcademy } from './IntellectoKids/IntellectoKidsAcademy';
+import { EnhancedSpellingPhonicGame } from './SpellingPhonics/EnhancedSpellingPhonicGame';
+import { EnhancedMazeGameApp } from './MazeGame/EnhancedMazeGameApp';
+import { EnhancedMolecularChemistryLab } from './ChemistryLab/EnhancedMolecularChemistryLab';
+import { EnhancedIntellectoKidsAcademy } from './IntellectoKids/EnhancedIntellectoKidsAcademy';
 
 export type EducationalGameType = 
   | 'spelling' 
@@ -76,7 +76,7 @@ export const EducationalGameHub: React.FC<EducationalGameHubProps> = ({ onBack }
 
   if (selectedGame === 'spelling') {
     return (
-      <SpellingPhonicGame 
+      <EnhancedSpellingPhonicGame 
         onBack={() => setSelectedGame(null)}
         onStatsUpdate={(stats) => handleStatsUpdate('spelling', stats)}
       />
@@ -85,7 +85,7 @@ export const EducationalGameHub: React.FC<EducationalGameHubProps> = ({ onBack }
 
   if (selectedGame === 'maze') {
     return (
-      <MazeGameApp 
+      <EnhancedMazeGameApp 
         onBack={() => setSelectedGame(null)}
         onStatsUpdate={(stats) => handleStatsUpdate('maze', stats)}
       />
@@ -94,7 +94,7 @@ export const EducationalGameHub: React.FC<EducationalGameHubProps> = ({ onBack }
 
   if (selectedGame === 'chemistry') {
     return (
-      <MolecularChemistryLab 
+      <EnhancedMolecularChemistryLab 
         onBack={() => setSelectedGame(null)}
         onStatsUpdate={(stats) => handleStatsUpdate('chemistry', stats)}
       />
@@ -103,7 +103,7 @@ export const EducationalGameHub: React.FC<EducationalGameHubProps> = ({ onBack }
 
   if (selectedGame === 'intellecto') {
     return (
-      <IntellectoKidsAcademy 
+      <EnhancedIntellectoKidsAcademy 
         onBack={() => setSelectedGame(null)}
         onStatsUpdate={(stats) => handleStatsUpdate('intellecto', stats)}
       />

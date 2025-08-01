@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Star, Trophy, Target, Volume2, Heart, Zap, BookOpen, PenTool, Calculator, Shapes, Palette } from 'lucide-react';
+import { ArrowLeft, Star, Trophy, Target, Volume2, Heart, Zap, BookOpen, PenTool, Calculator, Shapes, Palette, Brain, Users, Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EnhancedIntellectoKidsAcademyProps {
@@ -11,487 +11,312 @@ interface EnhancedIntellectoKidsAcademyProps {
   onStatsUpdate: (stats: any) => void;
 }
 
-interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  category: string;
-}
-
-interface LearningActivity {
-  id: string;
-  title: string;
-  category: string;
-  difficulty: number;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  completed: boolean;
-  stars: number;
-}
-
-interface DailyChallenge {
-  id: string;
-  title: string;
-  description: string;
-  points: number;
-  completed: boolean;
-  type: 'math' | 'letters' | 'shapes' | 'colors' | 'memory';
-}
-
-const achievements: Achievement[] = [
-  { id: 'first_lesson', name: 'First Steps', description: 'Complete your first lesson', icon: '🌟', unlocked: false, category: 'General' },
-  { id: 'math_wizard', name: 'Math Wizard', description: 'Complete 10 math activities', icon: '🧮', unlocked: false, category: 'Math' },
-  { id: 'letter_master', name: 'Letter Master', description: 'Learn all 26 letters', icon: '📚', unlocked: false, category: 'Letters' },
-  { id: 'shape_detective', name: 'Shape Detective', description: 'Identify all basic shapes', icon: '🔷', unlocked: false, category: 'Shapes' },
-  { id: 'color_artist', name: 'Color Artist', description: 'Complete color mixing activities', icon: '🎨', unlocked: false, category: 'Colors' },
-  { id: 'memory_champion', name: 'Memory Champion', description: 'Perfect score in memory games', icon: '🧠', unlocked: false, category: 'Memory' },
-  { id: 'daily_warrior', name: 'Daily Warrior', description: 'Complete 7 daily challenges', icon: '⚡', unlocked: false, category: 'Challenges' },
-  { id: 'perfect_week', name: 'Perfect Week', description: 'Study every day for a week', icon: '💫', unlocked: false, category: 'Dedication' }
-];
-
-const learningActivities: LearningActivity[] = [
-  // Numbers & Math
-  { id: 'counting_1to10', title: 'Counting 1-10', category: 'Math', difficulty: 1, description: 'Learn to count from 1 to 10', icon: '1️⃣', unlocked: true, completed: false, stars: 0 },
-  { id: 'counting_11to20', title: 'Counting 11-20', category: 'Math', difficulty: 2, description: 'Count higher numbers', icon: '🔢', unlocked: false, completed: false, stars: 0 },
-  { id: 'simple_addition', title: 'Simple Addition', category: 'Math', difficulty: 2, description: 'Add numbers together', icon: '➕', unlocked: false, completed: false, stars: 0 },
-  { id: 'simple_subtraction', title: 'Simple Subtraction', category: 'Math', difficulty: 3, description: 'Take numbers away', icon: '➖', unlocked: false, completed: false, stars: 0 },
-  { id: 'number_patterns', title: 'Number Patterns', category: 'Math', difficulty: 3, description: 'Find patterns in numbers', icon: '🔗', unlocked: false, completed: false, stars: 0 },
-
-  // Letters & Reading
-  { id: 'alphabet_az', title: 'Alphabet A-Z', category: 'Letters', difficulty: 1, description: 'Learn all letters', icon: '🔤', unlocked: true, completed: false, stars: 0 },
-  { id: 'letter_sounds', title: 'Letter Sounds', category: 'Letters', difficulty: 2, description: 'Phonics and pronunciation', icon: '🗣️', unlocked: false, completed: false, stars: 0 },
-  { id: 'sight_words', title: 'Sight Words', category: 'Letters', difficulty: 2, description: 'Common words recognition', icon: '👁️', unlocked: false, completed: false, stars: 0 },
-  { id: 'rhyming_words', title: 'Rhyming Words', category: 'Letters', difficulty: 3, description: 'Words that sound alike', icon: '🎵', unlocked: false, completed: false, stars: 0 },
-  { id: 'word_building', title: 'Word Building', category: 'Letters', difficulty: 3, description: 'Combine letters to make words', icon: '🏗️', unlocked: false, completed: false, stars: 0 },
-
-  // Shapes & Patterns
-  { id: 'basic_shapes', title: 'Basic Shapes', category: 'Shapes', difficulty: 1, description: 'Circle, square, triangle, rectangle', icon: '⭕', unlocked: true, completed: false, stars: 0 },
-  { id: 'shape_sorting', title: 'Shape Sorting', category: 'Shapes', difficulty: 2, description: 'Group shapes together', icon: '📊', unlocked: false, completed: false, stars: 0 },
-  { id: 'pattern_recognition', title: 'Pattern Recognition', category: 'Shapes', difficulty: 2, description: 'Complete shape patterns', icon: '🔄', unlocked: false, completed: false, stars: 0 },
-  { id: 'shape_puzzles', title: 'Shape Puzzles', category: 'Shapes', difficulty: 3, description: 'Solve shape-based puzzles', icon: '🧩', unlocked: false, completed: false, stars: 0 },
-
-  // Colors & Art
-  { id: 'primary_colors', title: 'Primary Colors', category: 'Colors', difficulty: 1, description: 'Red, blue, yellow', icon: '🔴', unlocked: true, completed: false, stars: 0 },
-  { id: 'color_mixing', title: 'Color Mixing', category: 'Colors', difficulty: 2, description: 'Make new colors', icon: '🌈', unlocked: false, completed: false, stars: 0 },
-  { id: 'color_matching', title: 'Color Matching', category: 'Colors', difficulty: 2, description: 'Find matching colors', icon: '🎯', unlocked: false, completed: false, stars: 0 },
-  { id: 'color_patterns', title: 'Color Patterns', category: 'Colors', difficulty: 3, description: 'Complete color sequences', icon: '🎨', unlocked: false, completed: false, stars: 0 },
-
-  // Memory & Logic
-  { id: 'memory_cards', title: 'Memory Cards', category: 'Memory', difficulty: 1, description: 'Match pairs of cards', icon: '🃏', unlocked: true, completed: false, stars: 0 },
-  { id: 'sequence_memory', title: 'Sequence Memory', category: 'Memory', difficulty: 2, description: 'Remember sequences', icon: '📝', unlocked: false, completed: false, stars: 0 },
-  { id: 'logic_puzzles', title: 'Logic Puzzles', category: 'Memory', difficulty: 3, description: 'Think logically to solve', icon: '🧠', unlocked: false, completed: false, stars: 0 }
-];
-
-const dailyChallenges: DailyChallenge[] = [
-  { id: 'math_challenge', title: 'Number Detective', description: 'Find the missing number in the sequence', points: 50, completed: false, type: 'math' },
-  { id: 'letter_challenge', title: 'Letter Hunt', description: 'Find all words starting with "B"', points: 40, completed: false, type: 'letters' },
-  { id: 'shape_challenge', title: 'Shape Builder', description: 'Create a house using basic shapes', points: 45, completed: false, type: 'shapes' },
-  { id: 'color_challenge', title: 'Rainbow Master', description: 'Arrange colors in rainbow order', points: 35, completed: false, type: 'colors' },
-  { id: 'memory_challenge', title: 'Memory Master', description: 'Remember 8 items in order', points: 60, completed: false, type: 'memory' }
-];
-
 export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcademyProps> = ({ onBack, onStatsUpdate }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('math');
   const [totalScore, setTotalScore] = useState(0);
   const [level, setLevel] = useState(1);
-  const [experiencePoints, setExperiencePoints] = useState(0);
-  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
-  const [activities, setActivities] = useState<LearningActivity[]>(learningActivities);
-  const [challenges, setChallenges] = useState<DailyChallenge[]>(dailyChallenges);
-  const [currentActivity, setCurrentActivity] = useState<LearningActivity | null>(null);
-  const [streakDays, setStreakDays] = useState(0);
-  const [hearts, setHearts] = useState(5);
+  const [hearts, setHearts] = useState(3);
   const [gems, setGems] = useState(0);
+  const [streakDays, setStreakDays] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-
-  // Game states for different activities
+  
+  // Math game state
   const [mathGame, setMathGame] = useState({
-    currentQuestion: 0,
+    currentActivity: 'counting',
+    level: 1,
     score: 0,
-    questions: [] as any[],
-    selectedAnswer: null as number | null
+    question: 1,
+    totalQuestions: 10,
+    currentNumber: 1,
+    selectedAnswer: null as number | null,
+    showFeedback: false
   });
 
+  // Letter game state
   const [letterGame, setLetterGame] = useState({
     currentLetter: 'A',
+    currentIndex: 0,
     recognizedLetters: [] as string[],
-    currentIndex: 0
+    selectedAnswer: null as string | null,
+    showTracing: false
   });
 
+  // Shape game state
   const [shapeGame, setShapeGame] = useState({
-    currentShape: 'circle',
+    currentShape: 0,
     identifiedShapes: [] as string[],
-    currentIndex: 0
+    selectedAnswer: null as string | null,
+    currentPattern: [] as string[]
   });
 
+  // Color game state
   const [colorGame, setColorGame] = useState({
-    targetColor: 'red',
+    currentStage: 0,
     mixedColors: [] as string[],
-    currentStage: 0
+    selectedColors: [] as string[],
+    targetColor: '',
+    showResult: false
   });
 
+  // Memory game state
   const [memoryGame, setMemoryGame] = useState({
     sequence: [] as number[],
     playerSequence: [] as number[],
     showingSequence: false,
+    level: 1,
     currentStep: 0
   });
 
-  useEffect(() => {
-    // Initialize daily challenges
-    const today = new Date().toDateString();
-    const lastVisit = localStorage.getItem('lastVisit');
-    
-    if (lastVisit !== today) {
-      // Reset daily challenges
-      setChallenges(prev => prev.map(challenge => ({ ...challenge, completed: false })));
-      localStorage.setItem('lastVisit', today);
-      
-      // Update streak
-      if (lastVisit) {
-        const lastDate = new Date(lastVisit);
-        const todayDate = new Date();
-        const dayDiff = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (dayDiff === 1) {
-          setStreakDays(prev => prev + 1);
-        } else if (dayDiff > 1) {
-          setStreakDays(1);
-        }
-      }
-    }
-  }, []);
-
-  const generateMathQuestions = (activityId: string) => {
-    const questions = [];
-    switch (activityId) {
-      case 'counting_1to10':
-        for (let i = 0; i < 10; i++) {
-          const num = Math.floor(Math.random() * 10) + 1;
-          questions.push({
-            question: `How many objects do you see?`,
-            objects: Array(num).fill('🌟'),
-            answer: num,
-            options: [num, num + 1, num - 1, num + 2].sort(() => Math.random() - 0.5)
-          });
-        }
-        break;
-      case 'simple_addition':
-        for (let i = 0; i < 10; i++) {
-          const a = Math.floor(Math.random() * 5) + 1;
-          const b = Math.floor(Math.random() * 5) + 1;
-          questions.push({
-            question: `${a} + ${b} = ?`,
-            answer: a + b,
-            options: [a + b, a + b + 1, a + b - 1, a + b + 2].sort(() => Math.random() - 0.5)
-          });
-        }
-        break;
-    }
-    return questions;
-  };
-
-  const startActivity = (activity: LearningActivity) => {
-    if (!activity.unlocked) {
-      toast.error('Complete previous activities to unlock this one!');
-      return;
-    }
-
-    setCurrentActivity(activity);
-    
-    // Initialize activity-specific game state
-    switch (activity.category) {
-      case 'Math':
-        const questions = generateMathQuestions(activity.id);
-        setMathGame({
-          currentQuestion: 0,
-          score: 0,
-          questions,
-          selectedAnswer: null
-        });
-        break;
-      case 'Letters':
-        setLetterGame({
-          currentLetter: 'A',
-          recognizedLetters: [],
-          currentIndex: 0
-        });
-        break;
-      case 'Shapes':
-        setShapeGame({
-          currentShape: 'circle',
-          identifiedShapes: [],
-          currentIndex: 0
-        });
-        break;
-      case 'Colors':
-        setColorGame({
-          targetColor: 'red',
-          mixedColors: [],
-          currentStage: 0
-        });
-        break;
-      case 'Memory':
-        const sequence = Array.from({length: 4}, () => Math.floor(Math.random() * 4));
-        setMemoryGame({
-          sequence,
-          playerSequence: [],
-          showingSequence: true,
-          currentStep: 0
-        });
-        break;
-    }
-  };
-
-  const completeActivity = (stars: number) => {
-    if (!currentActivity) return;
-
-    const points = stars * 100 + currentActivity.difficulty * 50;
-    setTotalScore(prev => prev + points);
-    setExperiencePoints(prev => prev + points);
-    setGems(prev => prev + stars);
-
-    // Update activity
-    setActivities(prev => prev.map(activity => 
-      activity.id === currentActivity.id 
-        ? { ...activity, completed: true, stars: Math.max(activity.stars, stars) }
-        : activity
-    ));
-
-    // Unlock next activities
-    const categoryActivities = activities.filter(a => a.category === currentActivity.category);
-    const currentIndex = categoryActivities.findIndex(a => a.id === currentActivity.id);
-    if (currentIndex < categoryActivities.length - 1) {
-      const nextActivity = categoryActivities[currentIndex + 1];
-      setActivities(prev => prev.map(activity =>
-        activity.id === nextActivity.id
-          ? { ...activity, unlocked: true }
-          : activity
-      ));
-    }
-
-    // Check for level up
-    if (experiencePoints + points >= level * 1000) {
-      setLevel(prev => prev + 1);
-      setHearts(5); // Restore hearts on level up
-      toast.success(`🎉 Level Up! You're now level ${level + 1}!`);
-    }
-
-    // Check achievements
-    checkAchievements();
-
-    toast.success(`🌟 Activity completed! +${points} points, +${stars} gems!`);
-    setCurrentActivity(null);
-
-    onStatsUpdate({
-      totalScore: totalScore + points,
-      level,
-      completedActivities: activities.filter(a => a.completed).length,
-      achievements: unlockedAchievements.length
-    });
-  };
-
-  const checkAchievements = () => {
-    const completedActivities = activities.filter(a => a.completed);
-    const mathCompleted = completedActivities.filter(a => a.category === 'Math').length;
-    const lettersCompleted = completedActivities.filter(a => a.category === 'Letters').length;
-    
-    // Check for new achievements
-    achievements.forEach(achievement => {
-      if (unlockedAchievements.includes(achievement.id)) return;
-
-      let shouldUnlock = false;
-      switch (achievement.id) {
-        case 'first_lesson':
-          shouldUnlock = completedActivities.length >= 1;
-          break;
-        case 'math_wizard':
-          shouldUnlock = mathCompleted >= 3;
-          break;
-        case 'letter_master':
-          shouldUnlock = lettersCompleted >= 3;
-          break;
-        case 'daily_warrior':
-          shouldUnlock = challenges.filter(c => c.completed).length >= 7;
-          break;
-      }
-
-      if (shouldUnlock) {
-        setUnlockedAchievements(prev => [...prev, achievement.id]);
-        toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`);
-      }
-    });
-  };
-
-  const completeDailyChallenge = (challengeId: string) => {
-    const challenge = challenges.find(c => c.id === challengeId);
-    if (!challenge || challenge.completed) return;
-
-    setChallenges(prev => prev.map(c =>
-      c.id === challengeId ? { ...c, completed: true } : c
-    ));
-
-    setTotalScore(prev => prev + challenge.points);
-    setGems(prev => prev + Math.floor(challenge.points / 10));
-    
-    toast.success(`🎯 Daily Challenge completed! +${challenge.points} points!`);
-  };
-
-  const progressToNextLevel = () => {
-    return ((experiencePoints % (level * 1000)) / (level * 1000)) * 100;
-  };
-
   const speak = (text: string) => {
     if (!soundEnabled || !('speechSynthesis' in window)) return;
-    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.8;
     utterance.pitch = 1.2;
     window.speechSynthesis.speak(utterance);
   };
 
+  const addScore = (points: number) => {
+    setTotalScore(prev => prev + points);
+    setGems(prev => prev + Math.floor(points / 10));
+    
+    // Level up every 500 points
+    if ((totalScore + points) >= level * 500) {
+      setLevel(prev => prev + 1);
+      setHearts(3); // Restore hearts
+      toast.success(`🎉 Level ${level + 1} unlocked!`);
+    }
+  };
+
+  const loseHeart = () => {
+    setHearts(prev => Math.max(0, prev - 1));
+    if (hearts <= 1) {
+      toast.error("No hearts left! Take a break and try again.");
+    }
+  };
+
+  // Math Activities
+  const mathActivities = [
+    { id: 'counting', name: 'Number Recognition', icon: '🔢', description: 'Learn numbers 1-20' },
+    { id: 'addition', name: 'Simple Addition', icon: '➕', description: 'Add numbers together' },
+    { id: 'subtraction', name: 'Simple Subtraction', icon: '➖', description: 'Take numbers away' },
+    { id: 'patterns', name: 'Number Patterns', icon: '📈', description: 'Find the pattern' }
+  ];
+
   const renderMathActivity = () => {
-    if (mathGame.currentQuestion >= mathGame.questions.length) {
-      const stars = Math.floor((mathGame.score / mathGame.questions.length) * 3);
+    const { currentActivity, currentNumber, question, totalQuestions } = mathGame;
+
+    if (currentActivity === 'counting') {
       return (
-        <div className="text-center p-8">
-          <div className="text-6xl mb-4">🎉</div>
-          <h3 className="text-2xl font-bold mb-4">Great Job!</h3>
-          <div className="text-lg mb-4">You got {mathGame.score} out of {mathGame.questions.length} correct!</div>
-          <div className="flex justify-center gap-1 mb-6">
-            {Array.from({length: 3}).map((_, i) => (
-              <Star key={i} className={`h-8 w-8 ${i < stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-            ))}
+        <div className="p-4 space-y-4">
+          <div className="text-center mb-4">
+            <h3 className="text-xl font-bold text-blue-600 mb-2">Number Recognition</h3>
+            <div className="text-sm text-gray-600">Question {question} of {totalQuestions}</div>
+            <Progress value={(question / totalQuestions) * 100} className="w-full max-w-md mx-auto mt-2" />
           </div>
-          <Button onClick={() => completeActivity(stars)} className="bg-green-500 hover:bg-green-600">
-            Complete Activity
-          </Button>
+
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 text-center">
+            <div className="text-6xl font-bold text-blue-600 mb-4 animate-pulse">{currentNumber}</div>
+            <div className="text-lg mb-4">Count the objects!</div>
+            
+            <div className="grid grid-cols-5 gap-2 justify-center mb-6 max-w-md mx-auto">
+              {Array.from({length: currentNumber}, (_, i) => (
+                <div key={i} className="text-3xl animate-bounce" style={{animationDelay: `${i * 0.1}s`}}>
+                  🌟
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 max-w-sm mx-auto">
+              {[currentNumber, currentNumber + 1, currentNumber - 1, currentNumber + 2]
+                .filter(n => n > 0)
+                .sort(() => Math.random() - 0.5)
+                .map(num => (
+                <Button
+                  key={num}
+                  onClick={() => {
+                    if (num === currentNumber) {
+                      addScore(10);
+                      toast.success('Perfect! 🌟');
+                      speak(`Correct! ${currentNumber}`);
+                      
+                      setTimeout(() => {
+                        if (question < totalQuestions) {
+                          setMathGame(prev => ({
+                            ...prev,
+                            question: prev.question + 1,
+                            currentNumber: Math.floor(Math.random() * 20) + 1
+                          }));
+                        } else {
+                          toast.success('Math activity completed! 🎉');
+                          addScore(50);
+                        }
+                      }, 1000);
+                    } else {
+                      loseHeart();
+                      toast.error('Try again!');
+                      speak('Try again!');
+                    }
+                  }}
+                  variant="outline"
+                  className="text-xl py-3 hover:scale-105 transition-transform"
+                >
+                  {num}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       );
     }
 
-    const question = mathGame.questions[mathGame.currentQuestion];
-    return (
-      <div className="text-center p-6">
-        <div className="mb-6">
-          <div className="text-lg font-semibold mb-4">{question.question}</div>
-          {question.objects && (
-            <div className="flex justify-center gap-2 mb-4 flex-wrap">
-              {question.objects.map((obj: string, i: number) => (
-                <span key={i} className="text-3xl">{obj}</span>
+    if (currentActivity === 'addition') {
+      const a = Math.floor(Math.random() * 5) + 1;
+      const b = Math.floor(Math.random() * 5) + 1;
+      const answer = a + b;
+
+      return (
+        <div className="p-4 space-y-4">
+          <div className="text-center mb-4">
+            <h3 className="text-xl font-bold text-green-600 mb-2">Simple Addition</h3>
+            <div className="text-sm text-gray-600">Question {question} of {totalQuestions}</div>
+            <Progress value={(question / totalQuestions) * 100} className="w-full max-w-md mx-auto mt-2" />
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold mb-4 text-green-700">
+              {a} + {b} = ?
+            </div>
+            
+            <div className="flex justify-center gap-4 mb-6">
+              <div className="flex gap-1">
+                {Array.from({length: a}, (_, i) => (
+                  <span key={i} className="text-2xl">🍎</span>
+                ))}
+              </div>
+              <span className="text-2xl">+</span>
+              <div className="flex gap-1">
+                {Array.from({length: b}, (_, i) => (
+                  <span key={i} className="text-2xl">🍎</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 max-w-sm mx-auto">
+              {[answer, answer + 1, answer - 1, answer + 2]
+                .filter(n => n > 0)
+                .sort(() => Math.random() - 0.5)
+                .map(num => (
+                <Button
+                  key={num}
+                  onClick={() => {
+                    if (num === answer) {
+                      addScore(15);
+                      toast.success('Excellent! 🎉');
+                      speak(`Correct! ${a} plus ${b} equals ${answer}`);
+                      
+                      setTimeout(() => {
+                        if (question < totalQuestions) {
+                          setMathGame(prev => ({ ...prev, question: prev.question + 1 }));
+                        } else {
+                          toast.success('Addition mastered! 🎉');
+                          addScore(75);
+                        }
+                      }, 1000);
+                    } else {
+                      loseHeart();
+                      toast.error('Try counting again!');
+                      speak('Try counting again!');
+                    }
+                  }}
+                  variant="outline"
+                  className="text-xl py-3 hover:scale-105 transition-transform"
+                >
+                  {num}
+                </Button>
               ))}
             </div>
-          )}
+          </div>
         </div>
+      );
+    }
 
-        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-          {question.options.map((option: number) => (
-            <Button
-              key={option}
-              onClick={() => setMathGame(prev => ({ ...prev, selectedAnswer: option }))}
-              variant={mathGame.selectedAnswer === option ? 'default' : 'outline'}
-              className="text-xl py-6"
-            >
-              {option}
-            </Button>
-          ))}
-        </div>
-
-        {mathGame.selectedAnswer !== null && (
-          <Button
-            onClick={() => {
-              const isCorrect = mathGame.selectedAnswer === question.answer;
-              if (isCorrect) {
-                setMathGame(prev => ({ ...prev, score: prev.score + 1 }));
-                toast.success('Correct! 🎉');
-                speak('Correct! Great job!');
-              } else {
-                toast.error(`Not quite! The answer is ${question.answer}`);
-                speak(`Not quite! The answer is ${question.answer}`);
-              }
-              
-              setTimeout(() => {
-                setMathGame(prev => ({
-                  ...prev,
-                  currentQuestion: prev.currentQuestion + 1,
-                  selectedAnswer: null
-                }));
-              }, 1500);
-            }}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            Submit Answer
-          </Button>
-        )}
-      </div>
-    );
+    return null;
   };
 
   const renderLetterActivity = () => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const currentLetter = alphabet[letterGame.currentIndex] || 'A';
+    const currentLetter = alphabet[letterGame.currentIndex];
     
     if (letterGame.currentIndex >= alphabet.length) {
       return (
-        <div className="text-center p-8">
-          <div className="text-6xl mb-4">🎊</div>
-          <h3 className="text-2xl font-bold mb-4">Alphabet Master!</h3>
-          <div className="text-lg mb-6">You've learned all 26 letters!</div>
-          <Button onClick={() => completeActivity(3)} className="bg-green-500 hover:bg-green-600">
-            Complete Activity
+        <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+          <div className="text-4xl mb-3 animate-bounce">🎊</div>
+          <h3 className="text-xl font-bold mb-2 text-purple-700">Alphabet Master!</h3>
+          <div className="text-sm text-gray-600 mb-4">You've learned all 26 letters!</div>
+          <Button onClick={() => addScore(200)} className="bg-purple-500 hover:bg-purple-600">
+            Claim Reward! 🏆
           </Button>
         </div>
       );
     }
 
     return (
-      <div className="text-center p-6">
-        <div className="mb-8">
-          <div className="text-8xl font-bold text-blue-600 mb-4">{currentLetter}</div>
-          <div className="text-2xl font-semibold mb-2">Letter {currentLetter}</div>
-          <Button onClick={() => speak(`Letter ${currentLetter}`)} variant="outline" className="mb-4">
+      <div className="p-4 space-y-4">
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-bold text-purple-600 mb-2">Learn the Alphabet</h3>
+          <div className="text-sm text-gray-600">Letter {letterGame.currentIndex + 1} of 26</div>
+          <Progress value={((letterGame.currentIndex + 1) / 26) * 100} className="w-full max-w-md mx-auto mt-2" />
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 text-center">
+          <div className="text-8xl font-bold text-purple-600 mb-4 animate-pulse">{currentLetter}</div>
+          <div className="text-lg mb-4">This is the letter <strong>{currentLetter}</strong></div>
+          
+          <Button 
+            onClick={() => speak(`Letter ${currentLetter}`)} 
+            variant="outline" 
+            className="mb-6 hover:scale-105 transition-transform"
+          >
             <Volume2 className="h-4 w-4 mr-2" />
             Hear Letter
           </Button>
-        </div>
 
-        <div className="space-y-4">
-          <div className="text-lg">Can you find the letter <strong>{currentLetter}</strong>?</div>
-          <div className="grid grid-cols-4 gap-4 max-w-md mx-auto">
-            {[currentLetter, alphabet[Math.floor(Math.random() * 26)], alphabet[Math.floor(Math.random() * 26)], alphabet[Math.floor(Math.random() * 26)]]
-              .sort(() => Math.random() - 0.5)
-              .map((letter, i) => (
-              <Button
-                key={i}
-                onClick={() => {
-                  if (letter === currentLetter) {
-                    toast.success('Correct! 🎉');
-                    speak(`Correct! Letter ${currentLetter}`);
-                    setLetterGame(prev => ({
-                      ...prev,
-                      recognizedLetters: [...prev.recognizedLetters, currentLetter],
-                      currentIndex: prev.currentIndex + 1
-                    }));
-                  } else {
-                    toast.error('Try again!');
-                    speak('Try again!');
-                  }
-                }}
-                className="text-3xl py-8"
-                variant="outline"
-              >
-                {letter}
-              </Button>
-            ))}
+          <div className="space-y-4">
+            <div className="text-lg">Find the letter <strong>{currentLetter}</strong>!</div>
+            <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
+              {[currentLetter, alphabet[Math.floor(Math.random() * 26)], alphabet[Math.floor(Math.random() * 26)], alphabet[Math.floor(Math.random() * 26)]]
+                .filter((letter, index, arr) => arr.indexOf(letter) === index)
+                .sort(() => Math.random() - 0.5)
+                .map((letter, i) => (
+                <Button
+                  key={i}
+                  onClick={() => {
+                    if (letter === currentLetter) {
+                      addScore(10);
+                      toast.success('Perfect! 🌟');
+                      speak(`Correct! Letter ${currentLetter}`);
+                      
+                      setTimeout(() => {
+                        setLetterGame(prev => ({
+                          ...prev,
+                          recognizedLetters: [...prev.recognizedLetters, currentLetter],
+                          currentIndex: prev.currentIndex + 1
+                        }));
+                      }, 1000);
+                    } else {
+                      loseHeart();
+                      toast.error('Try again!');
+                      speak('Try again!');
+                    }
+                  }}
+                  variant="outline"
+                  className="text-2xl py-4 hover:scale-105 transition-transform"
+                >
+                  {letter}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div className="mt-6">
-          <Progress value={(letterGame.currentIndex / alphabet.length) * 100} className="w-full max-w-md mx-auto" />
-          <div className="text-sm text-gray-600 mt-2">{letterGame.currentIndex} / {alphabet.length} letters</div>
         </div>
       </div>
     );
@@ -499,174 +324,191 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
 
   const renderShapeActivity = () => {
     const shapes = [
-      { name: 'circle', emoji: '⭕', color: 'bg-red-500' },
-      { name: 'square', emoji: '🟦', color: 'bg-blue-500' },
-      { name: 'triangle', emoji: '🔺', color: 'bg-green-500' },
-      { name: 'rectangle', emoji: '▭', color: 'bg-yellow-500' },
-      { name: 'heart', emoji: '❤️', color: 'bg-pink-500' },
-      { name: 'star', emoji: '⭐', color: 'bg-purple-500' },
-      { name: 'diamond', emoji: '💎', color: 'bg-cyan-500' },
-      { name: 'hexagon', emoji: '⬡', color: 'bg-indigo-500' }
+      { name: 'circle', emoji: '⭕', color: '#ef4444', description: 'Round like a ball' },
+      { name: 'square', emoji: '🟦', color: '#3b82f6', description: 'Four equal sides' },
+      { name: 'triangle', emoji: '🔺', color: '#10b981', description: 'Three sides and corners' },
+      { name: 'rectangle', emoji: '🟨', color: '#f59e0b', description: 'Four sides, opposite sides equal' },
+      { name: 'heart', emoji: '❤️', color: '#ec4899', description: 'Shape of love' },
+      { name: 'star', emoji: '⭐', color: '#8b5cf6', description: 'Five pointed star' },
+      { name: 'diamond', emoji: '💎', color: '#06b6d4', description: 'Sparkling gem shape' },
+      { name: 'hexagon', emoji: '⬡', color: '#6366f1', description: 'Six equal sides' }
     ];
     
-    const currentShape = shapes[shapeGame.currentIndex] || shapes[0];
+    const currentShape = shapes[shapeGame.currentShape];
     
-    if (shapeGame.currentIndex >= shapes.length) {
+    if (shapeGame.currentShape >= shapes.length) {
       return (
-        <div className="text-center p-8">
-          <div className="text-6xl mb-4">🌟</div>
-          <h3 className="text-2xl font-bold mb-4">Shape Expert!</h3>
-          <div className="text-lg mb-6">You've mastered all shapes!</div>
-          <Button onClick={() => completeActivity(3)} className="bg-green-500 hover:bg-green-600">
-            Complete Activity
+        <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+          <div className="text-4xl mb-3 animate-bounce">🌟</div>
+          <h3 className="text-xl font-bold mb-2 text-green-700">Shape Expert!</h3>
+          <div className="text-sm text-gray-600 mb-4">You've mastered all shapes!</div>
+          <Button onClick={() => addScore(200)} className="bg-green-500 hover:bg-green-600">
+            Claim Reward! 🏆
           </Button>
         </div>
       );
     }
 
     return (
-      <div className="text-center p-6">
-        <div className="mb-8">
-          <div className="text-8xl mb-4">{currentShape.emoji}</div>
-          <div className="text-2xl font-semibold mb-2 capitalize">{currentShape.name}</div>
-          <Button onClick={() => speak(`This is a ${currentShape.name}`)} variant="outline" className="mb-4">
-            <Volume2 className="h-4 w-4 mr-2" />
-            Hear Shape Name
-          </Button>
+      <div className="p-4 space-y-4">
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-bold text-green-600 mb-2">Learn Shapes</h3>
+          <div className="text-sm text-gray-600">Shape {shapeGame.currentShape + 1} of {shapes.length}</div>
+          <Progress value={((shapeGame.currentShape + 1) / shapes.length) * 100} className="w-full max-w-md mx-auto mt-2" />
         </div>
 
-        <div className="space-y-4">
-          <div className="text-lg">What shape is this?</div>
-          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-            {[currentShape.name, shapes[Math.floor(Math.random() * shapes.length)].name, shapes[Math.floor(Math.random() * shapes.length)].name, shapes[Math.floor(Math.random() * shapes.length)].name]
-              .filter((name, index, arr) => arr.indexOf(name) === index)
-              .slice(0, 4)
-              .sort(() => Math.random() - 0.5)
-              .map((shapeName, i) => (
-              <Button
-                key={i}
-                onClick={() => {
-                  if (shapeName === currentShape.name) {
-                    toast.success('Excellent! 🎉');
-                    speak(`Excellent! This is a ${currentShape.name}`);
-                    setShapeGame(prev => ({
-                      ...prev,
-                      identifiedShapes: [...prev.identifiedShapes, currentShape.name],
-                      currentIndex: prev.currentIndex + 1
-                    }));
-                  } else {
-                    toast.error('Try again!');
-                    speak('Try again!');
-                  }
-                }}
-                className="text-lg py-6 capitalize"
-                variant="outline"
-              >
-                {shapeName}
-              </Button>
-            ))}
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 text-center">
+          <div className="text-8xl mb-4 animate-pulse">{currentShape.emoji}</div>
+          <div className="text-xl font-bold capitalize mb-2" style={{color: currentShape.color}}>
+            {currentShape.name}
           </div>
-        </div>
+          <div className="text-sm text-gray-600 mb-4">{currentShape.description}</div>
+          
+          <Button 
+            onClick={() => speak(`This is a ${currentShape.name}. ${currentShape.description}`)} 
+            variant="outline" 
+            className="mb-6 hover:scale-105 transition-transform"
+          >
+            <Volume2 className="h-4 w-4 mr-2" />
+            Learn About Shape
+          </Button>
 
-        <div className="mt-6">
-          <Progress value={(shapeGame.currentIndex / shapes.length) * 100} className="w-full max-w-md mx-auto" />
-          <div className="text-sm text-gray-600 mt-2">{shapeGame.currentIndex} / {shapes.length} shapes</div>
+          <div className="space-y-4">
+            <div className="text-lg">What shape is this?</div>
+            <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+              {[currentShape.name, shapes[Math.floor(Math.random() * shapes.length)].name, shapes[Math.floor(Math.random() * shapes.length)].name]
+                .filter((name, index, arr) => arr.indexOf(name) === index)
+                .slice(0, 4)
+                .sort(() => Math.random() - 0.5)
+                .map((shapeName, i) => (
+                <Button
+                  key={i}
+                  onClick={() => {
+                    if (shapeName === currentShape.name) {
+                      addScore(15);
+                      toast.success('Fantastic! 🎉');
+                      speak(`Excellent! This is a ${currentShape.name}`);
+                      
+                      setTimeout(() => {
+                        setShapeGame(prev => ({
+                          ...prev,
+                          identifiedShapes: [...prev.identifiedShapes, currentShape.name],
+                          currentShape: prev.currentShape + 1
+                        }));
+                      }, 1000);
+                    } else {
+                      loseHeart();
+                      toast.error('Look again!');
+                      speak('Look again!');
+                    }
+                  }}
+                  variant="outline"
+                  className="text-sm py-3 capitalize hover:scale-105 transition-transform"
+                >
+                  {shapeName}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
   };
 
   const renderColorActivity = () => {
+    const primaryColors = ['red', 'blue', 'yellow'];
     const colorMixing = [
-      { primary1: 'red', primary2: 'blue', result: 'purple' },
-      { primary1: 'red', primary2: 'yellow', result: 'orange' },
-      { primary1: 'blue', primary2: 'yellow', result: 'green' }
+      { color1: 'red', color2: 'blue', result: 'purple', emoji: '🟣' },
+      { color1: 'red', color2: 'yellow', result: 'orange', emoji: '🟠' },
+      { color1: 'blue', color2: 'yellow', result: 'green', emoji: '🟢' }
     ];
 
     const currentMix = colorMixing[colorGame.currentStage];
 
     if (colorGame.currentStage >= colorMixing.length) {
       return (
-        <div className="text-center p-8">
-          <div className="text-6xl mb-4">🎨</div>
-          <h3 className="text-2xl font-bold mb-4">Color Master!</h3>
-          <div className="text-lg mb-6">You've learned color mixing!</div>
-          <Button onClick={() => completeActivity(3)} className="bg-green-500 hover:bg-green-600">
-            Complete Activity
+        <div className="text-center p-6 bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl">
+          <div className="text-4xl mb-3 animate-bounce">🎨</div>
+          <h3 className="text-xl font-bold mb-2 text-pink-700">Color Master!</h3>
+          <div className="text-sm text-gray-600 mb-4">You've learned color mixing!</div>
+          <Button onClick={() => addScore(200)} className="bg-pink-500 hover:bg-pink-600">
+            Claim Reward! 🏆
           </Button>
         </div>
       );
     }
 
     return (
-      <div className="text-center p-6">
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold mb-4">Color Mixing Lab 🧪</h3>
+      <div className="p-4 space-y-4">
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-bold text-pink-600 mb-2">Color Mixing Magic</h3>
+          <div className="text-sm text-gray-600">Mix {colorGame.currentStage + 1} of {colorMixing.length}</div>
+          <Progress value={((colorGame.currentStage + 1) / colorMixing.length) * 100} className="w-full max-w-md mx-auto mt-2" />
+        </div>
+
+        <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 text-center">
+          <div className="text-lg mb-4">Let's mix colors!</div>
+          
+          <div className="flex justify-center items-center gap-4 mb-6">
+            <div 
+              className="w-16 h-16 rounded-full border-4 border-white shadow-lg animate-pulse"
+              style={{backgroundColor: currentMix.color1}}
+            />
+            <span className="text-2xl">+</span>
+            <div 
+              className="w-16 h-16 rounded-full border-4 border-white shadow-lg animate-pulse"
+              style={{backgroundColor: currentMix.color2}}
+            />
+            <span className="text-2xl">=</span>
+            <span className="text-2xl">?</span>
+          </div>
+
           <div className="text-lg mb-4">
-            What happens when you mix {currentMix.primary1} and {currentMix.primary2}?
+            What color do you get when you mix <span style={{color: currentMix.color1}}>{currentMix.color1}</span> and <span style={{color: currentMix.color2}}>{currentMix.color2}</span>?
           </div>
-        </div>
 
-        {/* Color mixing visualization */}
-        <div className="flex justify-center items-center gap-4 mb-8">
-          <div className="flex flex-col items-center">
-            <div 
-              className="w-20 h-20 rounded-full mb-2 border-4 border-gray-300"
-              style={{ backgroundColor: currentMix.primary1 === 'red' ? '#FF0000' : currentMix.primary1 === 'blue' ? '#0000FF' : '#FFFF00' }}
-            ></div>
-            <span className="capitalize font-semibold">{currentMix.primary1}</span>
-          </div>
-          <div className="text-3xl">+</div>
-          <div className="flex flex-col items-center">
-            <div 
-              className="w-20 h-20 rounded-full mb-2 border-4 border-gray-300"
-              style={{ backgroundColor: currentMix.primary2 === 'red' ? '#FF0000' : currentMix.primary2 === 'blue' ? '#0000FF' : '#FFFF00' }}
-            ></div>
-            <span className="capitalize font-semibold">{currentMix.primary2}</span>
-          </div>
-          <div className="text-3xl">=</div>
-          <div className="text-4xl">❓</div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="text-lg">Choose the result color:</div>
-          <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-            {[currentMix.result, 'brown', 'pink'].sort(() => Math.random() - 0.5).map((colorName, i) => (
+          <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
+            {[currentMix.result, 'black', 'white']
+              .sort(() => Math.random() - 0.5)
+              .map((color, i) => (
               <Button
                 key={i}
                 onClick={() => {
-                  if (colorName === currentMix.result) {
-                    toast.success('Perfect! 🎨');
-                    speak(`Perfect! ${currentMix.primary1} and ${currentMix.primary2} make ${currentMix.result}`);
-                    setColorGame(prev => ({
-                      ...prev,
-                      mixedColors: [...prev.mixedColors, currentMix.result],
-                      currentStage: prev.currentStage + 1
-                    }));
+                  if (color === currentMix.result) {
+                    addScore(20);
+                    toast.success('Amazing color mixing! 🎨');
+                    speak(`Perfect! ${currentMix.color1} and ${currentMix.color2} make ${currentMix.result}`);
+                    
+                    setTimeout(() => {
+                      setColorGame(prev => ({
+                        ...prev,
+                        mixedColors: [...prev.mixedColors, currentMix.result],
+                        currentStage: prev.currentStage + 1
+                      }));
+                    }, 1000);
                   } else {
-                    toast.error('Try again!');
-                    speak('Try again!');
+                    loseHeart();
+                    toast.error('Try a different color!');
+                    speak('Try a different color!');
                   }
                 }}
-                className={`py-8 text-lg capitalize text-white`}
-                style={{ 
-                  backgroundColor: colorName === 'purple' ? '#800080' : 
-                                  colorName === 'orange' ? '#FFA500' :
-                                  colorName === 'green' ? '#00FF00' :
-                                  colorName === 'brown' ? '#964B00' :
-                                  colorName === 'pink' ? '#FFC0CB' : '#000000'
-                }}
                 variant="outline"
+                className="text-sm py-6 capitalize hover:scale-105 transition-transform"
+                style={{backgroundColor: color, color: color === 'white' ? 'black' : 'white'}}
               >
-                {colorName}
+                {color}
               </Button>
             ))}
           </div>
-        </div>
 
-        <div className="mt-6">
-          <Progress value={(colorGame.currentStage / colorMixing.length) * 100} className="w-full max-w-md mx-auto" />
-          <div className="text-sm text-gray-600 mt-2">{colorGame.currentStage} / {colorMixing.length} mixes</div>
+          {colorGame.showResult && (
+            <div className="mt-6 p-4 bg-white rounded-lg">
+              <div className="text-4xl mb-2">{currentMix.emoji}</div>
+              <div className="text-lg font-bold" style={{color: currentMix.result}}>
+                {currentMix.result.toUpperCase()}!
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -675,341 +517,222 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
   const renderMemoryActivity = () => {
     const colors = ['red', 'blue', 'green', 'yellow'];
     
-    if (memoryGame.playerSequence.length >= memoryGame.sequence.length && !memoryGame.showingSequence) {
-      const isCorrect = memoryGame.playerSequence.every((color, i) => color === memoryGame.sequence[i]);
+    const startNewSequence = () => {
+      const newSequence = Array.from({length: memoryGame.level + 2}, () => Math.floor(Math.random() * 4));
+      setMemoryGame(prev => ({
+        ...prev,
+        sequence: newSequence,
+        playerSequence: [],
+        showingSequence: true,
+        currentStep: 0
+      }));
       
-      return (
-        <div className="text-center p-8">
-          <div className="text-6xl mb-4">{isCorrect ? '🎉' : '😅'}</div>
-          <h3 className="text-2xl font-bold mb-4">
-            {isCorrect ? 'Perfect Memory!' : 'Good Try!'}
-          </h3>
-          <div className="text-lg mb-6">
-            {isCorrect ? 'You remembered the sequence perfectly!' : 'Practice makes perfect!'}
-          </div>
-          <Button onClick={() => completeActivity(isCorrect ? 3 : 1)} className="bg-green-500 hover:bg-green-600">
-            Complete Activity
-          </Button>
-        </div>
-      );
-    }
+      // Show sequence
+      newSequence.forEach((colorIndex, i) => {
+        setTimeout(() => {
+          // Highlight color logic would go here
+        }, (i + 1) * 800);
+      });
+      
+      setTimeout(() => {
+        setMemoryGame(prev => ({ ...prev, showingSequence: false }));
+      }, (newSequence.length + 1) * 800);
+    };
+
+    const handleColorClick = (colorIndex: number) => {
+      if (memoryGame.showingSequence) return;
+      
+      const newPlayerSequence = [...memoryGame.playerSequence, colorIndex];
+      const isCorrect = newPlayerSequence[newPlayerSequence.length - 1] === memoryGame.sequence[newPlayerSequence.length - 1];
+      
+      if (isCorrect) {
+        if (newPlayerSequence.length === memoryGame.sequence.length) {
+          addScore(memoryGame.level * 25);
+          toast.success('Perfect memory! 🧠');
+          speak('Perfect memory!');
+          
+          setTimeout(() => {
+            setMemoryGame(prev => ({ ...prev, level: prev.level + 1 }));
+            startNewSequence();
+          }, 1000);
+        } else {
+          setMemoryGame(prev => ({ ...prev, playerSequence: newPlayerSequence }));
+        }
+      } else {
+        loseHeart();
+        toast.error('Wrong sequence! Try again!');
+        speak('Wrong sequence! Try again!');
+        setMemoryGame(prev => ({ ...prev, playerSequence: [] }));
+      }
+    };
 
     return (
-      <div className="text-center p-6">
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold mb-4">Memory Challenge 🧠</h3>
+      <div className="p-4 space-y-4">
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-bold text-indigo-600 mb-2">Memory Challenge</h3>
+          <div className="text-sm text-gray-600">Level {memoryGame.level}</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center">
           <div className="text-lg mb-4">
             {memoryGame.showingSequence ? 'Watch the sequence!' : 'Repeat the sequence!'}
           </div>
-        </div>
+          
+          <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-6">
+            {colors.map((color, index) => (
+              <Button
+                key={index}
+                onClick={() => handleColorClick(index)}
+                disabled={memoryGame.showingSequence}
+                className="w-20 h-20 rounded-full transition-all duration-200 hover:scale-110"
+                style={{
+                  backgroundColor: color,
+                  opacity: memoryGame.showingSequence ? 0.5 : 1
+                }}
+              />
+            ))}
+          </div>
 
-        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-          {colors.map((color, i) => (
-            <Button
-              key={i}
-              onClick={() => {
-                if (!memoryGame.showingSequence) {
-                  const newPlayerSequence = [...memoryGame.playerSequence, i];
-                  setMemoryGame(prev => ({ ...prev, playerSequence: newPlayerSequence }));
-                }
-              }}
-              className={`w-24 h-24 text-white ${
-                memoryGame.showingSequence && memoryGame.currentStep === i ? 'ring-4 ring-white' : ''
-              }`}
-              style={{ 
-                backgroundColor: color === 'red' ? '#FF0000' : 
-                               color === 'blue' ? '#0000FF' :
-                               color === 'green' ? '#00FF00' : '#FFFF00'
-              }}
-              disabled={memoryGame.showingSequence}
-            >
-              {color}
+          <div className="text-sm text-gray-600">
+            Progress: {memoryGame.playerSequence.length} / {memoryGame.sequence.length}
+          </div>
+          
+          {memoryGame.sequence.length === 0 && (
+            <Button onClick={startNewSequence} className="mt-4">
+              Start Memory Game
             </Button>
-          ))}
-        </div>
-
-        <div className="text-sm text-gray-600">
-          Sequence length: {memoryGame.sequence.length} | Your progress: {memoryGame.playerSequence.length}
+          )}
         </div>
       </div>
     );
   };
 
+  useEffect(() => {
+    onStatsUpdate({
+      totalScore,
+      level,
+      completedActivities: letterGame.recognizedLetters.length + shapeGame.identifiedShapes.length + colorGame.mixedColors.length,
+      hearts,
+      gems
+    });
+  }, [totalScore, level, letterGame.recognizedLetters.length, shapeGame.identifiedShapes.length, colorGame.mixedColors.length, hearts, gems, onStatsUpdate]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+      {/* Compact Header */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-sm">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button onClick={onBack} variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
               <div className="flex items-center gap-2">
-                <BookOpen className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold">Intellecto Kids Academy</h1>
+                <Brain className="h-6 w-6 text-purple-600" />
+                <h1 className="text-lg font-bold text-purple-700">Kids Academy</h1>
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                {Array.from({length: 5}).map((_, i) => (
-                  <Heart key={i} className={`h-5 w-5 ${i < hearts ? 'text-red-500 fill-current' : 'text-gray-300'}`} />
-                ))}
+            {/* Stats Bar */}
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1">
+                <Trophy className="h-4 w-4 text-yellow-500" />
+                <span className="font-bold">{totalScore}</span>
               </div>
-              <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full">
-                <span className="text-yellow-600">💎</span>
-                <span className="font-bold text-yellow-800">{gems}</span>
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 text-blue-500" />
+                <span className="font-bold">L{level}</span>
               </div>
-              <div className="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full">
-                <Trophy className="h-4 w-4 text-blue-600" />
-                <span className="font-bold text-blue-800">Level {level}</span>
+              <div className="flex items-center gap-1">
+                <Heart className="h-4 w-4 text-red-500" />
+                <span className="font-bold">{hearts}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Zap className="h-4 w-4 text-purple-500" />
+                <span className="font-bold">{gems}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        {currentActivity ? (
-          <Card className="p-6">
-            <div className="mb-4">
-              <Button onClick={() => setCurrentActivity(null)} variant="ghost" size="sm" className="mb-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Activities
-              </Button>
-              <h2 className="text-2xl font-bold mb-2">{currentActivity.title}</h2>
-              <p className="text-gray-600">{currentActivity.description}</p>
-            </div>
-            
-            {currentActivity.category === 'Math' && renderMathActivity()}
-            {currentActivity.category === 'Letters' && renderLetterActivity()}
-            {currentActivity.category === 'Shapes' && renderShapeActivity()}
-            {currentActivity.category === 'Colors' && renderColorActivity()}
-            {currentActivity.category === 'Memory' && renderMemoryActivity()}
-          </Card>
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="math">Numbers & Math</TabsTrigger>
-              <TabsTrigger value="letters">ABC & Writing</TabsTrigger>
-              <TabsTrigger value="shapes">Shapes & Patterns</TabsTrigger>
-              <TabsTrigger value="colors">Colors & Art</TabsTrigger>
-              <TabsTrigger value="memory">Memory Games</TabsTrigger>
-              <TabsTrigger value="challenges">Daily Challenges</TabsTrigger>
-            </TabsList>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="math" className="flex items-center gap-1 text-xs">
+              <Calculator className="h-3 w-3" />
+              Math
+            </TabsTrigger>
+            <TabsTrigger value="letters" className="flex items-center gap-1 text-xs">
+              <BookOpen className="h-3 w-3" />
+              ABC
+            </TabsTrigger>
+            <TabsTrigger value="shapes" className="flex items-center gap-1 text-xs">
+              <Shapes className="h-3 w-3" />
+              Shapes
+            </TabsTrigger>
+            <TabsTrigger value="colors" className="flex items-center gap-1 text-xs">
+              <Palette className="h-3 w-3" />
+              Colors
+            </TabsTrigger>
+            <TabsTrigger value="memory" className="flex items-center gap-1 text-xs">
+              <Brain className="h-3 w-3" />
+              Memory
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="dashboard" className="space-y-6">
-              {/* Dashboard content */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                  <div className="text-center">
-                    <Trophy className="h-12 w-12 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold mb-2">Level {level}</h3>
-                    <Progress value={progressToNextLevel()} className="bg-white/20" />
-                    <p className="text-sm mt-2">{experiencePoints % (level * 1000)}/{level * 1000} XP</p>
-                  </div>
-                </Card>
-
-                <Card className="p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white">
-                  <div className="text-center">
-                    <Target className="h-12 w-12 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold mb-2">Total Score</h3>
-                    <p className="text-3xl font-bold">{totalScore}</p>
-                  </div>
-                </Card>
-
-                <Card className="p-6 bg-gradient-to-br from-orange-500 to-red-600 text-white">
-                  <div className="text-center">
-                    <Zap className="h-12 w-12 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold mb-2">Streak Days</h3>
-                    <p className="text-3xl font-bold">{streakDays}</p>
-                  </div>
-                </Card>
+          <TabsContent value="math" className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="h-5 w-5 text-blue-600" />
+                <h2 className="text-lg font-bold text-blue-700">Numbers & Math</h2>
               </div>
+              {renderMathActivity()}
+            </Card>
+          </TabsContent>
 
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">Quick Start Activities</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {activities.filter(a => a.unlocked && !a.completed).slice(0, 4).map(activity => (
-                    <Button
-                      key={activity.id}
-                      onClick={() => startActivity(activity)}
-                      variant="outline"
-                      className="h-24 flex flex-col gap-2"
-                    >
-                      <span className="text-2xl">{activity.icon}</span>
-                      <span className="text-sm">{activity.title}</span>
-                    </Button>
-                  ))}
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="math" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activities.filter(a => a.category === 'Math').map(activity => (
-                  <Card key={activity.id} className="p-4">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">{activity.icon}</div>
-                      <h3 className="font-bold mb-2">{activity.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
-                      <div className="flex justify-center gap-1 mb-4">
-                        {Array.from({length: 3}).map((_, i) => (
-                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-                        ))}
-                      </div>
-                      <Button
-                        onClick={() => startActivity(activity)}
-                        disabled={!activity.unlocked}
-                        variant={activity.completed ? 'secondary' : 'default'}
-                        className="w-full"
-                      >
-                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+          <TabsContent value="letters" className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="h-5 w-5 text-purple-600" />
+                <h2 className="text-lg font-bold text-purple-700">ABC & Writing</h2>
               </div>
-            </TabsContent>
+              {renderLetterActivity()}
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="letters" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activities.filter(a => a.category === 'Letters').map(activity => (
-                  <Card key={activity.id} className="p-4">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">{activity.icon}</div>
-                      <h3 className="font-bold mb-2">{activity.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
-                      <div className="flex justify-center gap-1 mb-4">
-                        {Array.from({length: 3}).map((_, i) => (
-                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-                        ))}
-                      </div>
-                      <Button
-                        onClick={() => startActivity(activity)}
-                        disabled={!activity.unlocked}
-                        variant={activity.completed ? 'secondary' : 'default'}
-                        className="w-full"
-                      >
-                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+          <TabsContent value="shapes" className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Shapes className="h-5 w-5 text-green-600" />
+                <h2 className="text-lg font-bold text-green-700">Shapes & Patterns</h2>
               </div>
-            </TabsContent>
+              {renderShapeActivity()}
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="shapes" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activities.filter(a => a.category === 'Shapes').map(activity => (
-                  <Card key={activity.id} className="p-4">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">{activity.icon}</div>
-                      <h3 className="font-bold mb-2">{activity.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
-                      <div className="flex justify-center gap-1 mb-4">
-                        {Array.from({length: 3}).map((_, i) => (
-                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-                        ))}
-                      </div>
-                      <Button
-                        onClick={() => startActivity(activity)}
-                        disabled={!activity.unlocked}
-                        variant={activity.completed ? 'secondary' : 'default'}
-                        className="w-full"
-                      >
-                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+          <TabsContent value="colors" className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Palette className="h-5 w-5 text-pink-600" />
+                <h2 className="text-lg font-bold text-pink-700">Colors & Art</h2>
               </div>
-            </TabsContent>
+              {renderColorActivity()}
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="colors" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activities.filter(a => a.category === 'Colors').map(activity => (
-                  <Card key={activity.id} className="p-4">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">{activity.icon}</div>
-                      <h3 className="font-bold mb-2">{activity.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
-                      <div className="flex justify-center gap-1 mb-4">
-                        {Array.from({length: 3}).map((_, i) => (
-                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-                        ))}
-                      </div>
-                      <Button
-                        onClick={() => startActivity(activity)}
-                        disabled={!activity.unlocked}
-                        variant={activity.completed ? 'secondary' : 'default'}
-                        className="w-full"
-                      >
-                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+          <TabsContent value="memory" className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Brain className="h-5 w-5 text-indigo-600" />
+                <h2 className="text-lg font-bold text-indigo-700">Memory Games</h2>
               </div>
-            </TabsContent>
-
-            <TabsContent value="memory" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activities.filter(a => a.category === 'Memory').map(activity => (
-                  <Card key={activity.id} className="p-4">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">{activity.icon}</div>
-                      <h3 className="font-bold mb-2">{activity.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{activity.description}</p>
-                      <div className="flex justify-center gap-1 mb-4">
-                        {Array.from({length: 3}).map((_, i) => (
-                          <Star key={i} className={`h-4 w-4 ${i < activity.stars ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
-                        ))}
-                      </div>
-                      <Button
-                        onClick={() => startActivity(activity)}
-                        disabled={!activity.unlocked}
-                        variant={activity.completed ? 'secondary' : 'default'}
-                        className="w-full"
-                      >
-                        {activity.completed ? 'Play Again' : activity.unlocked ? 'Start' : 'Locked'}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="challenges" className="space-y-6">
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">Daily Challenges</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {challenges.map(challenge => (
-                    <Card key={challenge.id} className={`p-4 ${challenge.completed ? 'bg-green-50 border-green-200' : ''}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-bold">{challenge.title}</h4>
-                          <p className="text-sm text-gray-600">{challenge.description}</p>
-                          <p className="text-sm font-semibold text-blue-600">+{challenge.points} points</p>
-                        </div>
-                        <Button
-                          onClick={() => completeDailyChallenge(challenge.id)}
-                          disabled={challenge.completed}
-                          variant={challenge.completed ? 'secondary' : 'default'}
-                        >
-                          {challenge.completed ? '✓ Done' : 'Complete'}
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        )}
+              {renderMemoryActivity()}
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

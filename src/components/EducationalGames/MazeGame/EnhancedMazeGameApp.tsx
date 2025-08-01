@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Compass, RotateCcw, Trophy, Timer, Zap, Star, Target, Settings } from 'lucide-react';
+import { ArrowLeft, Compass, RotateCcw, Trophy, Timer, Zap, Star, Target, Settings, Play, Pause, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EnhancedMazeGameAppProps {
@@ -51,10 +51,10 @@ interface Theme {
 }
 
 const MAZE_SIZES = {
-  easy: { width: 11, height: 11, name: 'Easy (11x11)' },
-  medium: { width: 17, height: 17, name: 'Medium (17x17)' },
-  hard: { width: 23, height: 23, name: 'Hard (23x23)' },
-  expert: { width: 31, height: 31, name: 'Expert (31x31)' }
+  easy: { width: 11, height: 11, name: 'Easy' },
+  medium: { width: 17, height: 17, name: 'Medium' },
+  hard: { width: 23, height: 23, name: 'Hard' },
+  expert: { width: 31, height: 31, name: 'Expert' }
 };
 
 const THEMES: Theme[] = [
@@ -108,13 +108,6 @@ const THEMES: Theme[] = [
   }
 ];
 
-const POWER_UPS: PowerUp[] = [
-  { id: 'speed', name: 'Speed Boost', description: 'Move faster for 30 seconds', icon: '⚡', active: false, duration: 30000 },
-  { id: 'wallhack', name: 'Wall Hack', description: 'See through walls for 15 seconds', icon: '👁️', active: false, duration: 15000 },
-  { id: 'compass', name: 'Magic Compass', description: 'Shows direction to exit for 20 seconds', icon: '🧭', active: false, duration: 20000 },
-  { id: 'teleport', name: 'Teleport', description: 'Instantly teleport to a random location', icon: '🌀', active: false, duration: 0 }
-];
-
 export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack, onStatsUpdate }) => {
   const [mazeSize, setMazeSize] = useState<keyof typeof MAZE_SIZES>('easy');
   const [maze, setMaze] = useState<MazeCell[][]>([]);
@@ -130,42 +123,22 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
   const [level, setLevel] = useState(1);
   const [coinsCollected, setCoinsCollected] = useState(0);
   const [totalCoins, setTotalCoins] = useState(0);
-  const [powerUps, setPowerUps] = useState<PowerUp[]>(POWER_UPS);
-  const [activePowerUps, setActivePowerUps] = useState<PowerUp[]>([]);
   const [selectedTheme, setSelectedTheme] = useState<Theme>(THEMES[0]);
   const [showSolution, setShowSolution] = useState(false);
   const [solutionPath, setSolutionPath] = useState<Position[]>([]);
-  const [gameMode, setGameMode] = useState<'normal' | 'timed' | 'survival'>('normal');
-  const [timeLimit, setTimeLimit] = useState(300000); // 5 minutes
-  const [showSettings, setShowSettings] = useState(false);
+  const [gameMode, setGameMode] = useState<'normal' | 'timed'>('normal');
+  const [isPaused, setIsPaused] = useState(false);
 
   // Timer effect
   useEffect(() => {
-    if (!gameWon && gameMode !== 'survival') {
+    if (!gameWon && !isPaused) {
       const timer = setInterval(() => {
         const elapsed = Date.now() - startTime;
         setElapsedTime(elapsed);
-        
-        // Check time limit for timed mode
-        if (gameMode === 'timed' && elapsed >= timeLimit) {
-          toast.error("Time's up! Starting new maze...");
-          initializeGame();
-        }
       }, 100);
       return () => clearInterval(timer);
     }
-  }, [startTime, gameWon, gameMode, timeLimit]);
-
-  // Power-up timer effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActivePowerUps(prev => prev.filter(powerUp => {
-        const timeLeft = powerUp.duration - (Date.now() - (powerUp as any).startTime);
-        return timeLeft > 0;
-      }));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  }, [startTime, gameWon, isPaused]);
 
   const generateMaze = useCallback((width: number, height: number): { maze: MazeCell[][], solution: Position[] } => {
     // Ensure odd dimensions for proper maze generation
@@ -357,7 +330,7 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
     setElapsedTime(0);
     setCoinsCollected(0);
     setSolutionPath(solution);
-    setActivePowerUps([]);
+    setShowSolution(false);
   }, [mazeSize, generateMaze]);
 
   useEffect(() => {
@@ -383,7 +356,7 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
   };
 
   const movePlayer = (direction: 'up' | 'down' | 'left' | 'right') => {
-    if (gameWon) return;
+    if (gameWon || isPaused) return;
 
     const newPos = { ...playerPos };
     
@@ -404,7 +377,7 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
         if (itemType === 'coin') {
           setCoinsCollected(prev => prev + 1);
           setScore(prev => prev + 10);
-          toast.success('+10 points! Coin collected!');
+          toast.success('+10 points! Coin collected! 💰');
         }
         
         // Remove item
@@ -434,7 +407,7 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
           const newCount = prev + 1;
           if (newCount % 5 === 0) {
             setLevel(prev => prev + 1);
-            toast.success(`Level Up! You're now level ${level + 1}!`);
+            toast.success(`🎉 Level Up! You're now level ${level + 1}!`);
           }
           
           onStatsUpdate({
@@ -450,7 +423,7 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
           setBestTime(completionTime);
         }
 
-        toast.success(`Maze completed! +${Math.floor(totalScore)} points!`);
+        toast.success(`🎉 Maze completed! +${Math.floor(totalScore)} points!`);
       }
     }
   };
@@ -520,294 +493,219 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
     return ((mazesCompleted % 5) / 5) * 100;
   };
 
+  const cellSize = mazeSize === 'easy' ? 20 : mazeSize === 'medium' ? 16 : mazeSize === 'hard' ? 12 : 10;
+
   return (
-    <div className="min-h-screen" style={{ background: `linear-gradient(135deg, ${selectedTheme.colors.background}20, ${selectedTheme.colors.background}10)` }}>
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50">
+      {/* Compact Header */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-sm">
+        <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button onClick={onBack} variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
               <div className="flex items-center gap-2">
-                <Compass className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold">Enhanced Maze Adventures</h1>
+                <Compass className="h-5 w-5 text-emerald-600" />
+                <h1 className="text-lg font-bold text-emerald-700">Maze Adventures</h1>
                 <span className="text-lg">{selectedTheme.emoji}</span>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="bg-blue-100 px-3 py-1 rounded-full">
+            
+            {/* Compact Stats */}
+            <div className="flex items-center gap-2 text-sm">
+              <div className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-medium">
                 <Timer className="h-3 w-3 inline mr-1" />
                 {formatTime(elapsedTime)}
               </div>
-              <div className="bg-yellow-100 px-3 py-1 rounded-full">
-                <span className="font-medium text-yellow-800">Moves: {moves}</span>
+              <div className="bg-yellow-100 px-2 py-1 rounded text-yellow-800 font-medium">
+                Moves: {moves}
               </div>
-              <div className="bg-green-100 px-3 py-1 rounded-full">
-                <span className="font-medium text-green-800">Score: {score}</span>
+              <div className="bg-green-100 px-2 py-1 rounded text-green-800 font-medium">
+                Score: {score}
               </div>
-              <div className="bg-purple-100 px-3 py-1 rounded-full">
-                <span className="font-medium text-purple-800">Level: {level}</span>
+              <div className="bg-purple-100 px-2 py-1 rounded text-purple-800 font-medium">
+                L{level}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Controls */}
-          <Card className="lg:col-span-1 p-4 bg-white/95 backdrop-blur-sm">
-            {/* Level Progress */}
-            <div className="mb-4 p-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg">
-              <div className="text-center">
-                <div className="text-lg font-bold">Level {level}</div>
-                <Progress value={progressToNextLevel()} className="mt-2 bg-white/20" />
+      {/* Main Content - Single Row Layout */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
+          
+          {/* Controls Panel - Compact */}
+          <Card className="lg:col-span-1 p-3 bg-white/95 backdrop-blur-sm h-fit">
+            {/* Quick Controls */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm">Controls</h3>
+                <Button
+                  onClick={() => setIsPaused(!isPaused)}
+                  variant="outline"
+                  size="sm"
+                >
+                  {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+                </Button>
+              </div>
+
+              {/* Difficulty */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Difficulty</label>
+                <div className="grid grid-cols-2 gap-1">
+                  {Object.entries(MAZE_SIZES).map(([key, size]) => (
+                    <Button
+                      key={key}
+                      onClick={() => setMazeSize(key as keyof typeof MAZE_SIZES)}
+                      variant={mazeSize === key ? 'default' : 'outline'}
+                      size="sm"
+                      className="text-xs"
+                    >
+                      {size.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Themes */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Theme</label>
+                <div className="grid grid-cols-2 gap-1">
+                  {THEMES.map(theme => (
+                    <Button
+                      key={theme.id}
+                      onClick={() => setSelectedTheme(theme)}
+                      variant={selectedTheme.id === theme.id ? 'default' : 'outline'}
+                      size="sm"
+                      className="text-xs"
+                    >
+                      {theme.emoji} {theme.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-3">
+                <Button
+                  onClick={initializeGame}
+                  className="w-full mb-2"
+                  size="sm"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  New Maze
+                </Button>
+                
+                <Button
+                  onClick={() => setShowSolution(!showSolution)}
+                  variant="outline"
+                  className="w-full"
+                  size="sm"
+                >
+                  <Lightbulb className="h-3 w-3 mr-1" />
+                  {showSolution ? 'Hide' : 'Show'} Path
+                </Button>
+              </div>
+
+              {/* Progress */}
+              <div className="p-2 bg-gradient-to-r from-emerald-500 to-blue-600 text-white rounded text-center">
+                <div className="text-sm font-bold">Level {level}</div>
+                <Progress value={progressToNextLevel()} className="mt-1 bg-white/20" />
                 <div className="text-xs mt-1">{mazesCompleted % 5}/5 mazes</div>
               </div>
-            </div>
 
-            {/* Game Mode */}
-            <div className="mb-4">
-              <h3 className="font-bold text-gray-800 mb-2">Game Mode</h3>
-              <div className="space-y-1">
-                {[
-                  { id: 'normal', name: '🎯 Normal', desc: 'Classic maze solving' },
-                  { id: 'timed', name: '⏱️ Timed', desc: '5 minute challenge' },
-                  { id: 'survival', name: '💖 Survival', desc: 'Limited lives' }
-                ].map(mode => (
-                  <Button
-                    key={mode.id}
-                    onClick={() => setGameMode(mode.id as any)}
-                    variant={gameMode === mode.id ? 'default' : 'outline'}
-                    className="w-full text-left"
-                    size="sm"
-                  >
-                    <div>
-                      <div className="font-medium">{mode.name}</div>
-                      <div className="text-xs text-gray-500">{mode.desc}</div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Difficulty */}
-            <div className="mb-4">
-              <h3 className="font-bold text-gray-800 mb-2">Difficulty</h3>
-              <div className="space-y-1">
-                {(Object.keys(MAZE_SIZES) as Array<keyof typeof MAZE_SIZES>).map((size) => (
-                  <Button
-                    key={size}
-                    onClick={() => setMazeSize(size)}
-                    variant={mazeSize === size ? 'default' : 'outline'}
-                    className="w-full"
-                    disabled={!gameWon && moves > 0}
-                    size="sm"
-                  >
-                    {MAZE_SIZES[size].name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Theme Selection */}
-            <div className="mb-4">
-              <h3 className="font-bold text-gray-800 mb-2">Theme</h3>
-              <div className="grid grid-cols-2 gap-1">
-                {THEMES.map(theme => (
-                  <Button
-                    key={theme.id}
-                    onClick={() => setSelectedTheme(theme)}
-                    variant={selectedTheme.id === theme.id ? 'default' : 'outline'}
-                    size="sm"
-                    className="text-xs"
-                  >
-                    {theme.emoji} {theme.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="space-y-2 mb-4">
-              <Button onClick={initializeGame} className="w-full" variant="outline" size="sm">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                New Maze
-              </Button>
-              <Button 
-                onClick={() => setShowSolution(!showSolution)} 
-                variant="outline" 
-                className="w-full"
-                size="sm"
-              >
-                <Target className="h-4 w-4 mr-2" />
-                {showSolution ? 'Hide' : 'Show'} Path
-              </Button>
-            </div>
-
-            {/* Stats */}
-            <div className="bg-gray-50 p-3 rounded-lg mb-4">
-              <h4 className="font-semibold text-gray-700 mb-2">Stats</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Completed:</span>
-                  <span className="font-bold">{mazesCompleted}</span>
-                </div>
+              {/* Stats */}
+              <div className="text-xs space-y-1">
                 <div className="flex justify-between">
                   <span>Coins:</span>
                   <span className="font-bold text-yellow-600">{coinsCollected}/{totalCoins}</span>
                 </div>
-                {bestTime && (
-                  <div className="flex justify-between">
-                    <span>Best Time:</span>
-                    <span className="font-bold text-green-600">{formatTime(bestTime)}</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span>Best Time:</span>
+                  <span className="font-bold text-blue-600">{bestTime ? formatTime(bestTime) : '--'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Completed:</span>
+                  <span className="font-bold text-green-600">{mazesCompleted}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Maze Area */}
+          <Card className="lg:col-span-3 p-4 bg-white/95 backdrop-blur-sm">
+            <div className="flex justify-center">
+              <div 
+                className="grid border-2 border-gray-300 relative"
+                style={{
+                  gridTemplateColumns: `repeat(${maze[0]?.length || 1}, ${cellSize}px)`,
+                  gridTemplateRows: `repeat(${maze.length || 1}, ${cellSize}px)`,
+                  backgroundColor: selectedTheme.colors.background,
+                  maxWidth: '90vw',
+                  maxHeight: '70vh'
+                }}
+              >
+                {maze.map((row, y) =>
+                  row.map((cell, x) => (
+                    <div
+                      key={`${x}-${y}`}
+                      className="relative"
+                      style={{
+                        ...getCellStyle(x, y),
+                        width: `${cellSize}px`,
+                        height: `${cellSize}px`
+                      }}
+                    >
+                      {/* Player */}
+                      {playerPos.x === x && playerPos.y === y && (
+                        <div
+                          className="absolute inset-0 rounded-full animate-pulse"
+                          style={{ 
+                            backgroundColor: selectedTheme.colors.player,
+                            margin: '2px'
+                          }}
+                        />
+                      )}
+                      
+                      {/* Exit */}
+                      {endPos.x === x && endPos.y === y && (
+                        <div
+                          className="absolute inset-0 rounded-full animate-bounce"
+                          style={{ 
+                            backgroundColor: selectedTheme.colors.exit,
+                            margin: '3px'
+                          }}
+                        />
+                      )}
+                      
+                      {/* Items */}
+                      {cell.hasItem && (
+                        <div className="absolute inset-0 flex items-center justify-center text-xs animate-pulse">
+                          {cell.itemType === 'coin' && '💰'}
+                        </div>
+                      )}
+                      
+                      {/* Solution Path */}
+                      {showSolution && solutionPath.some(pos => pos.x === x && pos.y === y) && (
+                        <div className="absolute inset-0 bg-yellow-300 opacity-50 rounded" />
+                      )}
+                    </div>
+                  ))
                 )}
               </div>
             </div>
 
-            {/* Instructions */}
-            <div className="bg-blue-50 p-3 rounded-lg text-sm">
-              <h4 className="font-semibold text-blue-800 mb-2">Controls</h4>
-              <ul className="text-blue-700 space-y-1">
-                <li>• Arrow keys or WASD to move</li>
-                <li>• Spacebar to toggle solution</li>
-                <li>• Collect coins for bonus points</li>
-                <li>• Reach the red exit to win</li>
-              </ul>
-            </div>
-          </Card>
-
-          {/* Maze */}
-          <Card className="lg:col-span-4 p-6 bg-white/95 backdrop-blur-sm">
-            <div className="text-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Navigate to the Exit! 🎯
-              </h2>
-              <p className="text-gray-600">
-                Theme: {selectedTheme.name} {selectedTheme.emoji} | Collect {totalCoins} coins for bonus points!
-              </p>
-              {gameMode === 'timed' && (
-                <div className="mt-2">
-                  <Progress 
-                    value={(elapsedTime / timeLimit) * 100} 
-                    className="w-full max-w-md mx-auto"
-                  />
-                  <div className="text-sm text-red-600 mt-1">
-                    Time remaining: {formatTime(Math.max(0, timeLimit - elapsedTime))}
-                  </div>
+            {/* Game Instructions */}
+            <div className="mt-4 text-center text-sm text-gray-600">
+              Use arrow keys or WASD to move • Space to toggle solution • Collect coins for bonus points!
+              {gameWon && (
+                <div className="mt-2 p-3 bg-green-100 text-green-800 rounded-lg font-bold">
+                  🎉 Congratulations! Maze completed in {formatTime(elapsedTime)} with {moves} moves!
                 </div>
               )}
             </div>
-
-            {maze.length > 0 && (
-              <div className="flex justify-center mb-6">
-                <div 
-                  className="inline-grid gap-0 p-2 rounded-lg shadow-lg"
-                  style={{ 
-                    gridTemplateColumns: `repeat(${maze[0].length}, 1fr)`,
-                    maxWidth: '90vw',
-                    maxHeight: '60vh',
-                    backgroundColor: selectedTheme.colors.background
-                  }}
-                >
-                  {maze.map((row, y) =>
-                    row.map((cell, x) => (
-                      <div
-                        key={`${x}-${y}`}
-                        className="relative"
-                        style={{
-                          width: `${Math.min(500 / maze[0].length, 20)}px`,
-                          height: `${Math.min(500 / maze.length, 20)}px`,
-                          ...getCellStyle(x, y)
-                        }}
-                      >
-                        {/* Solution path */}
-                        {showSolution && solutionPath.some(pos => pos.x === x && pos.y === y) && (
-                          <div 
-                            className="absolute inset-0 bg-green-400 opacity-30"
-                            style={{ margin: '2px' }}
-                          />
-                        )}
-
-                        {/* Items */}
-                        {cell.hasItem && cell.itemType === 'coin' && (
-                          <div className="absolute inset-0 flex items-center justify-center text-yellow-500 text-xs">
-                            💰
-                          </div>
-                        )}
-                        
-                        {/* Player */}
-                        {playerPos.x === x && playerPos.y === y && (
-                          <div 
-                            className="absolute inset-0 rounded-full animate-pulse border-2 border-white"
-                            style={{ 
-                              backgroundColor: selectedTheme.colors.player,
-                              margin: '2px'
-                            }}
-                          />
-                        )}
-                        
-                        {/* Exit */}
-                        {endPos.x === x && endPos.y === y && (
-                          <div 
-                            className="absolute inset-0 animate-bounce"
-                            style={{ 
-                              backgroundColor: selectedTheme.colors.exit,
-                              margin: '2px'
-                            }}
-                          />
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Mobile Controls */}
-            <div className="flex justify-center lg:hidden mb-4">
-              <div className="grid grid-cols-3 gap-2">
-                <div></div>
-                <Button onClick={() => movePlayer('up')} variant="outline" size="sm">
-                  ↑
-                </Button>
-                <div></div>
-                <Button onClick={() => movePlayer('left')} variant="outline" size="sm">
-                  ←
-                </Button>
-                <div></div>
-                <Button onClick={() => movePlayer('right')} variant="outline" size="sm">
-                  →
-                </Button>
-                <div></div>
-                <Button onClick={() => movePlayer('down')} variant="outline" size="sm">
-                  ↓
-                </Button>
-                <div></div>
-              </div>
-            </div>
-
-            {gameWon && (
-              <div className="mt-6 text-center p-6 bg-green-100 border border-green-300 rounded-lg">
-                <div className="text-2xl font-bold text-green-800 mb-2">🎉 Maze Completed! 🎉</div>
-                <div className="text-green-700 space-y-1">
-                  <div>Time: {formatTime(elapsedTime)}</div>
-                  <div>Moves: {moves}</div>
-                  <div>Coins: {coinsCollected}/{totalCoins}</div>
-                  <div>Score: +{Math.floor(score / (mazesCompleted || 1))} points</div>
-                </div>
-                <Button 
-                  onClick={initializeGame} 
-                  className="mt-4 bg-green-600 hover:bg-green-700"
-                >
-                  Next Maze
-                </Button>
-              </div>
-            )}
           </Card>
         </div>
       </div>
