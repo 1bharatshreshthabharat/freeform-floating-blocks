@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, FlaskConical, Atom, Zap, BookOpen, Trophy, Target, Beaker, Microscope } from 'lucide-react';
+import { ArrowLeft, FlaskConical, Atom, Zap, BookOpen, Trophy, Target, Beaker, Microscope, Lightbulb, Flame, TestTube } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EnhancedMolecularChemistryLabProps {
@@ -56,6 +56,18 @@ interface ChemicalReaction {
   type: string;
   description: string;
   example: string;
+}
+
+interface Experiment {
+  id: string;
+  name: string;
+  description: string;
+  equipment: string[];
+  procedure: string[];
+  safetyTips: string[];
+  expectedResult: string;
+  difficulty: number;
+  icon: string;
 }
 
 const periodicTable: Atom[] = [
@@ -277,6 +289,60 @@ const chemicalReactions: ChemicalReaction[] = [
   }
 ];
 
+const virtualExperiments: Experiment[] = [
+  {
+    id: 'acid_base_titration',
+    name: 'Acid-Base Titration',
+    description: 'Determine the concentration of an unknown acid using a base',
+    equipment: ['Burette', 'Conical Flask', 'Pipette', 'Indicator'],
+    procedure: [
+      'Fill burette with NaOH solution',
+      'Pipette acid into conical flask',
+      'Add indicator to the acid',
+      'Slowly add base until color change',
+      'Record the volume used'
+    ],
+    safetyTips: ['Wear safety goggles', 'Handle acids with care', 'Work in ventilated area'],
+    expectedResult: 'Color change from red to yellow at equivalence point',
+    difficulty: 3,
+    icon: '🧪'
+  },
+  {
+    id: 'crystallization',
+    name: 'Salt Crystallization',
+    description: 'Grow beautiful salt crystals from solution',
+    equipment: ['Beaker', 'Stirring Rod', 'Heat Source', 'String'],
+    procedure: [
+      'Heat water in beaker',
+      'Add salt until saturated',
+      'Cool the solution slowly',
+      'Observe crystal formation',
+      'Examine under microscope'
+    ],
+    safetyTips: ['Handle hot water carefully', 'Use heat-resistant glassware'],
+    expectedResult: 'Formation of cubic salt crystals',
+    difficulty: 1,
+    icon: '💎'
+  },
+  {
+    id: 'combustion_analysis',
+    name: 'Combustion Analysis',
+    description: 'Analyze the products of methane combustion',
+    equipment: ['Combustion Chamber', 'Gas Tubes', 'Lime Water', 'Thermometer'],
+    procedure: [
+      'Set up combustion apparatus',
+      'Ignite methane gas',
+      'Collect combustion products',
+      'Test for CO₂ with lime water',
+      'Measure heat released'
+    ],
+    safetyTips: ['Work in fume hood', 'Keep fire extinguisher nearby', 'Monitor temperature'],
+    expectedResult: 'CO₂ turns lime water milky, heat is released',
+    difficulty: 4,
+    icon: '🔥'
+  }
+];
+
 export const EnhancedMolecularChemistryLab: React.FC<EnhancedMolecularChemistryLabProps> = ({ onBack, onStatsUpdate }) => {
   const [currentTarget, setCurrentTarget] = useState(advancedMolecules[0]);
   const [placedAtoms, setPlacedAtoms] = useState<(Atom & { placed: boolean })[]>([]);
@@ -290,6 +356,8 @@ export const EnhancedMolecularChemistryLab: React.FC<EnhancedMolecularChemistryL
   const [experiencePoints, setExperiencePoints] = useState(0);
   const [unlockedMolecules, setUnlockedMolecules] = useState<string[]>(['H2O', 'CO2']);
   const [showMoleculeAnimation, setShowMoleculeAnimation] = useState(false);
+  const [selectedExperiment, setSelectedExperiment] = useState<Experiment | null>(null);
+  const [experimentProgress, setExperimentProgress] = useState(0);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const checkMolecule = () => {
@@ -403,412 +471,309 @@ export const EnhancedMolecularChemistryLab: React.FC<EnhancedMolecularChemistryL
     return ((experiencePoints % (level * 500)) / (level * 500)) * 100;
   };
 
-  const generateMoleculeGraphic = (molecule: Molecule) => {
-    // This would generate a visual representation of the molecule
-    // For now, we'll use emoji and text
+  const generate3DMoleculeGraphic = (molecule: Molecule) => {
     return (
-      <div className="text-center p-4 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg">
-        <div className="text-6xl mb-2">{molecule.moleculeImage}</div>
-        <div className="text-lg font-bold text-gray-800">{molecule.formula}</div>
-        <div className="text-sm text-gray-600">{molecule.structure}</div>
+      <div className="relative w-32 h-32 mx-auto mb-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute inset-2 bg-gradient-to-tr from-white to-blue-100 rounded-full flex items-center justify-center shadow-lg">
+          <div className="text-center">
+            <div className="text-4xl mb-1">{molecule.moleculeImage}</div>
+            <div className="text-xs font-bold text-gray-700">{molecule.formula}</div>
+          </div>
+        </div>
+        <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold animate-bounce">
+          {molecule.difficulty}
+        </div>
       </div>
     );
   };
 
+  const runExperiment = (experiment: Experiment) => {
+    setSelectedExperiment(experiment);
+    setExperimentProgress(0);
+    
+    // Simulate experiment progress
+    const interval = setInterval(() => {
+      setExperimentProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          toast.success(`🧪 Experiment completed: ${experiment.name}`);
+          setScore(prev => prev + experiment.difficulty * 50);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 800);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-green-50">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg">
-        <div className="container mx-auto px-4 py-4">
+      {/* Compact Header */}
+      <div className="bg-white/95 backdrop-blur-sm shadow-lg border-b">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button onClick={onBack} variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
               <div className="flex items-center gap-2">
-                <FlaskConical className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold">Advanced Molecular Chemistry Lab</h1>
+                <FlaskConical className="h-6 w-6 text-blue-600" />
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Advanced Chemistry Lab
+                </h1>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="bg-purple-100 px-3 py-1 rounded-full">
-                <span className="font-medium text-purple-800">Level: {level}</span>
+            
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 rounded-full">
+                <Trophy className="h-4 w-4 text-yellow-600" />
+                <span className="font-semibold text-yellow-700">{score}</span>
               </div>
-              <div className="bg-yellow-100 px-3 py-1 rounded-full">
-                <span className="font-medium text-yellow-800">Score: {score}</span>
+              <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 rounded-full">
+                <Target className="h-4 w-4 text-purple-600" />
+                <span className="font-semibold text-purple-700">Lvl {level}</span>
               </div>
-              <div className="bg-green-100 px-3 py-1 rounded-full">
-                <span className="font-medium text-green-800">Built: {moleculesBuilt}</span>
+              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
+                <Beaker className="h-4 w-4 text-green-600" />
+                <span className="font-semibold text-green-700">{moleculesBuilt}</span>
               </div>
             </div>
+          </div>
+          
+          {/* Level Progress */}
+          <div className="mt-2">
+            <Progress value={progressToNextLevel()} className="h-2" />
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-1/2">
-            <TabsTrigger value="build">🔬 Build</TabsTrigger>
-            <TabsTrigger value="learn">📚 Learn</TabsTrigger>
-            <TabsTrigger value="periodic">⚛️ Elements</TabsTrigger>
-            <TabsTrigger value="reactions">⚡ Reactions</TabsTrigger>
+      {/* Main Content - Single Page Layout */}
+      <div className="container mx-auto px-4 py-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="build" className="text-xs">
+              <Atom className="h-4 w-4 mr-1" />
+              Build
+            </TabsTrigger>
+            <TabsTrigger value="learn" className="text-xs">
+              <BookOpen className="h-4 w-4 mr-1" />
+              Learn
+            </TabsTrigger>
+            <TabsTrigger value="elements" className="text-xs">
+              <Zap className="h-4 w-4 mr-1" />
+              Elements
+            </TabsTrigger>
+            <TabsTrigger value="reactions" className="text-xs">
+              <Flame className="h-4 w-4 mr-1" />
+              Reactions
+            </TabsTrigger>
+            <TabsTrigger value="experiments" className="text-xs">
+              <TestTube className="h-4 w-4 mr-1" />
+              Experiments
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="build" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Left Panel */}
-              <Card className="lg:col-span-1 p-4 space-y-4">
-                {/* Level Progress */}
-                <div className="bg-gradient-to-r from-purple-500 to-blue-600 text-white p-4 rounded-lg">
-                  <div className="text-center">
-                    <div className="text-lg font-bold">Level {level}</div>
-                    <Progress value={progressToNextLevel()} className="mt-2 bg-white/20" />
-                    <div className="text-xs mt-1">{experiencePoints % (level * 500)}/{level * 500} XP</div>
-                  </div>
-                </div>
-
-                {/* Target Molecule */}
-                <div>
-                  <h3 className="font-bold text-gray-800 mb-2">Target Molecule</h3>
-                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                    <div className="text-center mb-3">
-                      <div className="text-4xl mb-2">{currentTarget.moleculeImage}</div>
-                      <div className="text-xl font-bold text-blue-800">{currentTarget.formula}</div>
-                      <div className="text-sm text-blue-700">{currentTarget.name}</div>
-                    </div>
-                    <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getBondTypeColor(currentTarget.bondType)}`}>
-                      {currentTarget.bondType} bond
-                    </div>
-                    <div className="mt-2 text-xs text-blue-600">
-                      Difficulty: {'⭐'.repeat(currentTarget.difficulty)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Available Atoms */}
-                <div>
-                  <h3 className="font-bold text-gray-800 mb-2">Available Elements</h3>
-                  <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-                    {periodicTable.slice(0, 18).map((atom) => (
-                      <button
-                        key={atom.symbol}
-                        onClick={() => addAtom(atom)}
-                        className="aspect-square border-2 rounded-lg flex flex-col items-center justify-center text-white font-bold text-xs transition-all hover:scale-105 shadow-md"
-                        style={{ 
-                          backgroundColor: atom.color === '#FFFFFF' ? '#E5E7EB' : atom.color, 
-                          borderColor: atom.color === '#FFFFFF' ? '#9CA3AF' : atom.color,
-                          color: atom.color === '#FFFFFF' || atom.color === '#FFFF30' ? '#000000' : '#FFFFFF'
-                        }}
-                        title={`${atom.name} (${atom.symbol}) - Valency: ${atom.valency}`}
-                      >
-                        <div className="text-sm font-bold">{atom.symbol}</div>
-                        <div className="text-xs opacity-80">{atom.atomicNumber}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="space-y-2">
-                  <Button onClick={checkMolecule} className="w-full bg-green-500 hover:bg-green-600">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Test Molecule
-                  </Button>
-                  <Button onClick={clearLab} variant="outline" className="w-full">
-                    <Target className="h-4 w-4 mr-2" />
-                    Clear Lab
-                  </Button>
-                  <Button 
-                    onClick={() => setShowHint(!showHint)} 
-                    variant="outline" 
-                    className="w-full"
-                  >
-                    💡 {showHint ? 'Hide' : 'Show'} Hint
-                  </Button>
-                </div>
-
-                {/* Hint */}
-                {showHint && (
-                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-sm">
-                    <div className="font-medium text-yellow-800 mb-1">Molecular Hint:</div>
-                    <div className="text-yellow-700 mb-2">{currentTarget.description}</div>
-                    <div className="text-xs text-yellow-600">
-                      <strong>Formula:</strong> {currentTarget.formula}<br/>
-                      <strong>Atoms needed:</strong> {currentTarget.atoms.map(a => `${a.count} ${a.symbol}`).join(', ')}<br/>
-                      <strong>Bond type:</strong> {currentTarget.bondType}
-                    </div>
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                  <h4 className="font-semibold text-gray-700 mb-2">Lab Statistics</h4>
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span>Molecules Built:</span>
-                      <span className="font-bold text-green-600">{moleculesBuilt}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Success Rate:</span>
-                      <span className="font-bold text-blue-600">
-                        {moleculesBuilt > 0 ? Math.round((moleculesBuilt / (moleculesBuilt + attempts)) * 100) : 100}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Unlocked:</span>
-                      <span className="font-bold text-purple-600">{unlockedMolecules.length}/{advancedMolecules.length}</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Main Lab Area */}
-              <Card className="lg:col-span-3 p-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                    Build {currentTarget.name} ({currentTarget.formula})
-                  </h2>
-                  <p className="text-gray-600">{currentTarget.description}</p>
-                  {attempts > 0 && (
-                    <p className="text-orange-600 text-sm mt-2">
-                      Attempts: {attempts} | Tip: Check valency and count!
-                    </p>
-                  )}
-                </div>
-
-                {/* Molecule Animation */}
-                {showMoleculeAnimation && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-8 rounded-xl shadow-2xl text-center animate-bounce">
-                      <div className="text-8xl mb-4">{currentTarget.moleculeImage}</div>
-                      <div className="text-2xl font-bold text-green-600 mb-2">Molecule Created!</div>
-                      <div className="text-lg text-gray-700">{currentTarget.name}</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Lab Canvas */}
-                <div 
-                  ref={canvasRef}
-                  className="relative bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-dashed border-gray-300 rounded-xl"
-                  style={{ minHeight: '500px' }}
-                >
-                  <div className="absolute inset-4 bg-white rounded-lg shadow-inner overflow-hidden">
-                    {placedAtoms.length === 0 && (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        <div className="text-center">
-                          <Atom className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                          <p className="text-lg font-medium">Click elements to add them to the lab</p>
-                          <p className="text-sm">Build the target molecule: {currentTarget.formula}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {placedAtoms.map((atom) => (
-                      <div
-                        key={atom.id}
-                        className="absolute cursor-pointer transition-all hover:scale-125 hover:z-10"
-                        style={{
-                          left: atom.position?.x || 0,
-                          top: atom.position?.y || 0,
-                          transform: 'translate(-50%, -50%)'
-                        }}
-                        onClick={() => removeAtom(atom.id)}
-                        title={`${atom.name} (${atom.symbol}) - Click to remove`}
-                      >
-                        <div
-                          className="w-16 h-16 rounded-full border-3 flex flex-col items-center justify-center font-bold shadow-lg hover:shadow-xl transition-all"
-                          style={{ 
-                            backgroundColor: atom.color === '#FFFFFF' ? '#E5E7EB' : atom.color, 
-                            borderColor: atom.color === '#FFFFFF' ? '#9CA3AF' : atom.color,
-                            color: atom.color === '#FFFFFF' || atom.color === '#FFFF30' ? '#000000' : '#FFFFFF'
-                          }}
-                        >
-                          <div className="text-lg font-bold">{atom.symbol}</div>
-                          <div className="text-xs opacity-80">{atom.atomicNumber}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Molecule Information */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-800 mb-3">Current Formula</h4>
-                    <div className="text-2xl font-mono text-center p-4 bg-white rounded border">
-                      {placedAtoms.length === 0 ? 'No atoms placed' : 
-                        Object.entries(
-                          placedAtoms.reduce((acc, atom) => {
-                            acc[atom.symbol] = (acc[atom.symbol] || 0) + 1;
-                            return acc;
-                          }, {} as { [key: string]: number })
-                        ).map(([symbol, count]) => `${symbol}${count > 1 ? count : ''}`).join('')
-                      }
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-800 mb-3">Target Properties</h4>
-                    <div className="text-sm space-y-1">
-                      <div><strong>State:</strong> {currentTarget.properties.state}</div>
-                      <div><strong>Color:</strong> {currentTarget.properties.color}</div>
-                      <div><strong>Solubility:</strong> {currentTarget.properties.solubility}</div>
-                      {currentTarget.properties.boilingPoint && (
-                        <div><strong>Boiling Point:</strong> {currentTarget.properties.boilingPoint}°C</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="learn" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Molecule Library
+          <TabsContent value="build" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Atom Palette - Compact */}
+              <Card className="p-3">
+                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                  <Atom className="h-5 w-5" />
+                  Atoms
                 </h3>
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {advancedMolecules.map(molecule => (
-                    <div key={molecule.id} className={`p-4 rounded-lg border-2 ${unlockedMolecules.includes(molecule.id) ? 'bg-white' : 'bg-gray-100 opacity-50'}`}>
-                      <div className="flex items-start gap-4">
-                        <div className="text-3xl">{unlockedMolecules.includes(molecule.id) ? molecule.moleculeImage : '🔒'}</div>
-                        <div className="flex-1">
-                          <div className="font-bold text-lg">{molecule.name}</div>
-                          <div className="text-sm text-gray-600">{molecule.formula}</div>
-                          <div className="text-sm mt-2">{molecule.description}</div>
-                          {unlockedMolecules.includes(molecule.id) && (
-                            <div className="mt-2 text-xs text-blue-600">
-                              <strong>Uses:</strong> {molecule.realWorldUse}
-                            </div>
-                          )}
-                        </div>
+                <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                  {periodicTable.slice(0, 16).map((atom) => (
+                    <Button
+                      key={atom.id}
+                      onClick={() => addAtom(atom)}
+                      variant="outline"
+                      size="sm"
+                      className="h-12 p-1 text-xs font-bold transition-all hover:scale-105"
+                      style={{ backgroundColor: atom.color + '20', borderColor: atom.color }}
+                    >
+                      <div className="text-center">
+                        <div className="font-bold">{atom.symbol}</div>
+                        <div className="text-xs">{atom.atomicNumber}</div>
                       </div>
-                    </div>
+                    </Button>
                   ))}
                 </div>
               </Card>
 
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Microscope className="h-5 w-5" />
-                  Chemical Concepts
-                </h3>
-                <div className="space-y-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">Valency Rules</h4>
-                    <p className="text-sm text-blue-700">
-                      Valency determines how many bonds an atom can form. Group 1: 1, Group 2: 2, Group 13: 3, Group 14: 4, etc.
-                    </p>
+              {/* 3D Molecule Canvas */}
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-bold">Molecular Builder</h3>
+                  <div className="flex gap-2">
+                    <Button onClick={clearLab} variant="outline" size="sm">Clear</Button>
+                    <Button onClick={checkMolecule} size="sm">Check</Button>
                   </div>
+                </div>
+                
+                <div 
+                  ref={canvasRef}
+                  className="relative w-full h-64 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-dashed border-gray-300 overflow-hidden"
+                >
+                  {placedAtoms.map((atom) => (
+                    <div
+                      key={atom.id}
+                      className="absolute w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm cursor-pointer transform hover:scale-110 transition-transform shadow-lg"
+                      style={{
+                        left: atom.position?.x,
+                        top: atom.position?.y,
+                        backgroundColor: atom.color,
+                        border: '2px solid white'
+                      }}
+                      onClick={() => removeAtom(atom.id)}
+                    >
+                      {atom.symbol}
+                    </div>
+                  ))}
                   
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">Bond Types</h4>
-                    <ul className="text-sm text-green-700 space-y-1">
-                      <li><strong>Ionic:</strong> Metal + Non-metal (electron transfer)</li>
-                      <li><strong>Covalent:</strong> Non-metal + Non-metal (electron sharing)</li>
-                      <li><strong>Polar:</strong> Unequal electron sharing (partial charges)</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-purple-800 mb-2">Molecular Geometry</h4>
-                    <p className="text-sm text-purple-700">
-                      Shape depends on electron pairs: Linear (2), Trigonal (3), Tetrahedral (4), etc.
-                    </p>
-                  </div>
+                  {showMoleculeAnimation && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-6xl animate-bounce">{currentTarget.moleculeImage}</div>
+                    </div>
+                  )}
+                </div>
+              </Card>
 
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-orange-800 mb-2">Real World Applications</h4>
-                    <p className="text-sm text-orange-700">
-                      Understanding molecular structure helps in drug design, materials science, and environmental chemistry.
-                    </p>
+              {/* Target Molecule Info */}
+              <Card className="p-4">
+                <h3 className="text-lg font-bold mb-3">Target Molecule</h3>
+                {generate3DMoleculeGraphic(currentTarget)}
+                
+                <div className="space-y-2 text-sm">
+                  <h4 className="font-bold text-gray-800">{currentTarget.name}</h4>
+                  <div className="text-2xl font-bold text-blue-600">{currentTarget.formula}</div>
+                  
+                  <div className={`px-2 py-1 rounded-full text-xs border ${getBondTypeColor(currentTarget.bondType)}`}>
+                    {currentTarget.bondType} bond
                   </div>
+                  
+                  <div className="text-xs text-gray-600">
+                    <div><strong>Need:</strong></div>
+                    {currentTarget.atoms.map(({ symbol, count }) => (
+                      <div key={symbol}>{symbol}: {count}</div>
+                    ))}
+                  </div>
+                  
+                  {showHint && (
+                    <div className="p-2 bg-yellow-100 rounded text-xs">
+                      💡 {currentTarget.description}
+                    </div>
+                  )}
+                  
+                  <Button
+                    onClick={() => setShowHint(!showHint)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Lightbulb className="h-4 w-4 mr-1" />
+                    {showHint ? 'Hide' : 'Show'} Hint
+                  </Button>
                 </div>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="periodic" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Atom className="h-5 w-5" />
-                Interactive Periodic Table
-              </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-2">
+          <TabsContent value="learn" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {advancedMolecules.map((molecule) => (
+                <Card key={molecule.id} className="p-4 hover:shadow-lg transition-shadow">
+                  {generate3DMoleculeGraphic(molecule)}
+                  <h3 className="font-bold text-lg mb-2">{molecule.name}</h3>
+                  <div className="text-sm text-gray-600 space-y-2">
+                    <div><strong>Formula:</strong> {molecule.formula}</div>
+                    <div><strong>Structure:</strong> {molecule.structure}</div>
+                    <div><strong>Uses:</strong> {molecule.realWorldUse}</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><strong>State:</strong> {molecule.properties.state}</div>
+                      <div><strong>Color:</strong> {molecule.properties.color}</div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="elements" className="space-y-4">
+            <Card className="p-4">
+              <h3 className="text-lg font-bold mb-4">Periodic Table</h3>
+              <div className="grid grid-cols-6 md:grid-cols-9 lg:grid-cols-12 gap-2">
                 {periodicTable.map((element) => (
                   <div
-                    key={element.symbol}
-                    className="aspect-square border-2 rounded-lg flex flex-col items-center justify-center text-white font-bold text-xs transition-all hover:scale-105 shadow-md cursor-pointer"
-                    style={{ 
-                      backgroundColor: element.color === '#FFFFFF' ? '#E5E7EB' : element.color, 
-                      borderColor: element.color === '#FFFFFF' ? '#9CA3AF' : element.color,
-                      color: element.color === '#FFFFFF' || element.color === '#FFFF30' ? '#000000' : '#FFFFFF'
-                    }}
+                    key={element.id}
+                    className="aspect-square border-2 rounded-lg p-2 text-center hover:scale-105 transition-transform cursor-pointer"
+                    style={{ backgroundColor: element.color + '15', borderColor: element.color }}
                     title={`${element.name} - ${element.description}`}
-                    onClick={() => setSelectedAtom(element)}
                   >
+                    <div className="text-xs font-bold">{element.atomicNumber}</div>
                     <div className="text-lg font-bold">{element.symbol}</div>
-                    <div className="text-xs opacity-80">{element.atomicNumber}</div>
-                    <div className="text-xs opacity-60">{element.mass.toFixed(1)}</div>
+                    <div className="text-xs">{element.mass}</div>
                   </div>
                 ))}
               </div>
-              
-              {selectedAtom && (
-                <div className="mt-6 bg-white p-6 rounded-lg border shadow-lg">
-                  <h4 className="text-xl font-bold mb-4">{selectedAtom.name} ({selectedAtom.symbol})</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div><strong>Atomic Number:</strong> {selectedAtom.atomicNumber}</div>
-                      <div><strong>Atomic Mass:</strong> {selectedAtom.mass} u</div>
-                      <div><strong>Valency:</strong> {selectedAtom.valency}</div>
-                      <div><strong>Group:</strong> {selectedAtom.group}</div>
-                      <div><strong>Period:</strong> {selectedAtom.period}</div>
-                    </div>
-                    <div>
-                      <div><strong>Electron Configuration:</strong> {selectedAtom.electronConfig}</div>
-                      <div className="mt-2"><strong>Description:</strong></div>
-                      <div className="text-gray-600">{selectedAtom.description}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </Card>
           </TabsContent>
 
-          <TabsContent value="reactions" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Beaker className="h-5 w-5" />
-                Chemical Reactions Database
-              </h3>
-              <div className="space-y-4">
-                {chemicalReactions.map(reaction => (
-                  <div key={reaction.id} className="bg-white p-4 rounded-lg border shadow-sm">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-bold text-lg">{reaction.name}</h4>
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-                        {reaction.type}
-                      </span>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded font-mono text-center text-lg mb-3">
-                      {reaction.equation}
-                    </div>
-                    <div className="text-sm text-gray-700 mb-2">
-                      <strong>Description:</strong> {reaction.description}
-                    </div>
-                    <div className="text-sm text-blue-600">
-                      <strong>Example:</strong> {reaction.example}
-                    </div>
+          <TabsContent value="reactions" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {chemicalReactions.map((reaction) => (
+                <Card key={reaction.id} className="p-4 hover:shadow-lg transition-shadow">
+                  <h3 className="font-bold text-lg mb-2">{reaction.name}</h3>
+                  <div className="bg-gray-100 p-3 rounded-lg mb-3 font-mono text-center">
+                    {reaction.equation}
                   </div>
-                ))}
-              </div>
-            </Card>
+                  <div className="space-y-2 text-sm">
+                    <div><strong>Type:</strong> {reaction.type}</div>
+                    <div><strong>Description:</strong> {reaction.description}</div>
+                    <div><strong>Example:</strong> {reaction.example}</div>
+                  </div>
+                  <Button className="w-full mt-3" variant="outline" size="sm">
+                    View Animation
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="experiments" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {virtualExperiments.map((experiment) => (
+                <Card key={experiment.id} className="p-4 hover:shadow-lg transition-shadow">
+                  <div className="text-center mb-3">
+                    <div className="text-4xl mb-2">{experiment.icon}</div>
+                    <h3 className="font-bold text-lg">{experiment.name}</h3>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm mb-4">
+                    <div><strong>Difficulty:</strong> {'⭐'.repeat(experiment.difficulty)}</div>
+                    <div className="text-gray-600">{experiment.description}</div>
+                  </div>
+                  
+                  {selectedExperiment?.id === experiment.id && (
+                    <div className="mb-3">
+                      <Progress value={experimentProgress} className="h-2" />
+                      <div className="text-center text-xs mt-1">{experimentProgress}% Complete</div>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    onClick={() => runExperiment(experiment)}
+                    className="w-full"
+                    disabled={selectedExperiment?.id === experiment.id && experimentProgress < 100}
+                  >
+                    {selectedExperiment?.id === experiment.id && experimentProgress < 100 
+                      ? 'Running...' 
+                      : 'Start Experiment'
+                    }
+                  </Button>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

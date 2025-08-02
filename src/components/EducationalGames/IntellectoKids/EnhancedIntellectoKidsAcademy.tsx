@@ -97,13 +97,119 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
   // Math Activities
   const mathActivities = [
     { id: 'counting', name: 'Number Recognition', icon: '🔢', description: 'Learn numbers 1-20' },
-    { id: 'addition', name: 'Simple Addition', icon: '➕', description: 'Add numbers together' },
-    { id: 'subtraction', name: 'Simple Subtraction', icon: '➖', description: 'Take numbers away' },
-    { id: 'patterns', name: 'Number Patterns', icon: '📈', description: 'Find the pattern' }
+    { id: 'addition', name: 'Addition & Subtraction', icon: '➕', description: 'Basic math operations' },
+    { id: 'multiplication', name: 'Times Tables', icon: '✖️', description: 'Learn multiplication' },
+    { id: 'division', name: 'Division', icon: '➗', description: 'Learn division' },
+    { id: 'mixed', name: 'Mixed Operations', icon: '🧮', description: 'All operations together' }
   ];
 
   const renderMathActivity = () => {
     const { currentActivity, currentNumber, question, totalQuestions } = mathGame;
+    const timeLimit = Math.max(10 - level, 3); // Decrease time as level increases
+
+    const generateMathProblem = () => {
+      const difficulty = Math.min(level, 5);
+      let a, b, operation, answer, display;
+
+      if (currentActivity === 'addition') {
+        // Addition: start simple, get complex
+        const maxNum = difficulty <= 2 ? 10 : difficulty <= 3 ? 50 : 100;
+        a = Math.floor(Math.random() * maxNum) + 1;
+        b = Math.floor(Math.random() * maxNum) + 1;
+        operation = '+';
+        answer = a + b;
+        display = `${a} + ${b}`;
+      } else if (currentActivity === 'multiplication') {
+        // Multiplication: times tables
+        const maxTable = Math.min(difficulty + 2, 12);
+        a = Math.floor(Math.random() * maxTable) + 1;
+        b = Math.floor(Math.random() * 10) + 1;
+        operation = '×';
+        answer = a * b;
+        display = `${a} × ${b}`;
+      } else if (currentActivity === 'division') {
+        // Division: ensure whole numbers
+        b = Math.floor(Math.random() * 10) + 1;
+        answer = Math.floor(Math.random() * 12) + 1;
+        a = b * answer;
+        operation = '÷';
+        display = `${a} ÷ ${b}`;
+      } else if (currentActivity === 'mixed') {
+        // Mixed operations for advanced levels
+        const operations = ['+', '-', '×'];
+        if (level >= 3) operations.push('÷');
+        
+        const op = operations[Math.floor(Math.random() * operations.length)];
+        
+        if (op === '+') {
+          a = Math.floor(Math.random() * 50) + 1;
+          b = Math.floor(Math.random() * 50) + 1;
+          answer = a + b;
+          display = `${a} + ${b}`;
+        } else if (op === '-') {
+          a = Math.floor(Math.random() * 50) + 20;
+          b = Math.floor(Math.random() * a);
+          answer = a - b;
+          display = `${a} - ${b}`;
+        } else if (op === '×') {
+          a = Math.floor(Math.random() * 12) + 1;
+          b = Math.floor(Math.random() * 10) + 1;
+          answer = a * b;
+          display = `${a} × ${b}`;
+        } else { // division
+          b = Math.floor(Math.random() * 10) + 1;
+          answer = Math.floor(Math.random() * 12) + 1;
+          a = b * answer;
+          display = `${a} ÷ ${b}`;
+        }
+        
+        // For higher levels, add multiple operations
+        if (level >= 4 && Math.random() > 0.7) {
+          const c = Math.floor(Math.random() * 10) + 1;
+          const secondOp = operations[Math.floor(Math.random() * 2)]; // + or -
+          if (secondOp === '+') {
+            answer = answer + c;
+            display = `(${display}) + ${c}`;
+          } else {
+            answer = answer - c;
+            display = `(${display}) - ${c}`;
+          }
+        }
+      } else {
+        // Counting (default)
+        a = Math.floor(Math.random() * 20) + 1;
+        operation = 'count';
+        answer = a;
+        display = 'Count the objects';
+      }
+
+      return { a, b, operation, answer, display };
+    };
+
+    const [currentProblem, setCurrentProblem] = useState(() => generateMathProblem());
+    const [timeLeft, setTimeLeft] = useState(timeLimit);
+    const [showResult, setShowResult] = useState(false);
+
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            // Time's up
+            loseHeart();
+            toast.error('Time\'s up! ⏰');
+            setTimeout(() => {
+              setCurrentProblem(generateMathProblem());
+              setTimeLeft(timeLimit);
+              setShowResult(false);
+            }, 1500);
+            return timeLimit;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }, [timeLimit]);
 
     if (currentActivity === 'counting') {
       return (
@@ -150,7 +256,7 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
                           toast.success('Math activity completed! 🎉');
                           addScore(50);
                         }
-                      }, 1000);
+                      }, 3000);
                     } else {
                       loseHeart();
                       toast.error('Try again!');
@@ -169,78 +275,91 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
       );
     }
 
-    if (currentActivity === 'addition') {
-      const a = Math.floor(Math.random() * 5) + 1;
-      const b = Math.floor(Math.random() * 5) + 1;
-      const answer = a + b;
-
-      return (
-        <div className="p-4 space-y-4">
-          <div className="text-center mb-4">
-            <h3 className="text-xl font-bold text-green-600 mb-2">Simple Addition</h3>
-            <div className="text-sm text-gray-600">Question {question} of {totalQuestions}</div>
-            <Progress value={(question / totalQuestions) * 100} className="w-full max-w-md mx-auto mt-2" />
-          </div>
-
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 text-center">
-            <div className="text-4xl font-bold mb-4 text-green-700">
-              {a} + {b} = ?
-            </div>
-            
-            <div className="flex justify-center gap-4 mb-6">
-              <div className="flex gap-1">
-                {Array.from({length: a}, (_, i) => (
-                  <span key={i} className="text-2xl">🍎</span>
-                ))}
-              </div>
-              <span className="text-2xl">+</span>
-              <div className="flex gap-1">
-                {Array.from({length: b}, (_, i) => (
-                  <span key={i} className="text-2xl">🍎</span>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-2 max-w-sm mx-auto">
-              {[answer, answer + 1, answer - 1, answer + 2]
-                .filter(n => n > 0)
-                .sort(() => Math.random() - 0.5)
-                .map(num => (
-                <Button
-                  key={num}
-                  onClick={() => {
-                    if (num === answer) {
-                      addScore(15);
-                      toast.success('Excellent! 🎉');
-                      speak(`Correct! ${a} plus ${b} equals ${answer}`);
-                      
-                      setTimeout(() => {
-                        if (question < totalQuestions) {
-                          setMathGame(prev => ({ ...prev, question: prev.question + 1 }));
-                        } else {
-                          toast.success('Addition mastered! 🎉');
-                          addScore(75);
-                        }
-                      }, 1000);
-                    } else {
-                      loseHeart();
-                      toast.error('Try counting again!');
-                      speak('Try counting again!');
-                    }
-                  }}
-                  variant="outline"
-                  className="text-xl py-3 hover:scale-105 transition-transform"
-                >
-                  {num}
-                </Button>
-              ))}
+    // For all other math activities
+    return (
+      <div className="p-4 space-y-4">
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-bold text-green-600 mb-2">
+            {currentActivity === 'addition' && 'Addition & Subtraction'}
+            {currentActivity === 'multiplication' && 'Times Tables'}
+            {currentActivity === 'division' && 'Division'}
+            {currentActivity === 'mixed' && 'Mixed Operations'}
+          </h3>
+          <div className="text-sm text-gray-600">Question {question} of {totalQuestions} | Level {level}</div>
+          <Progress value={(question / totalQuestions) * 100} className="w-full max-w-md mx-auto mt-2" />
+          
+          {/* Timer */}
+          <div className="mt-2 flex justify-center">
+            <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+              timeLeft <= 3 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+            }`}>
+              ⏰ {timeLeft}s
             </div>
           </div>
         </div>
-      );
-    }
 
-    return null;
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 text-center">
+          <div className="text-4xl font-bold mb-4 text-green-700 animate-pulse">
+            {currentProblem.display} = ?
+          </div>
+          
+          {showResult && (
+            <div className="text-2xl font-bold text-green-600 mb-4 animate-bounce">
+              = {currentProblem.answer}
+            </div>
+          )}
+
+          <div className="grid grid-cols-4 gap-2 max-w-sm mx-auto">
+            {[
+              currentProblem.answer,
+              currentProblem.answer + Math.floor(Math.random() * 5) + 1,
+              currentProblem.answer - Math.floor(Math.random() * 5) - 1,
+              currentProblem.answer + Math.floor(Math.random() * 10) + 5
+            ]
+              .filter(n => n > 0)
+              .sort(() => Math.random() - 0.5)
+              .map(num => (
+              <Button
+                key={num}
+                onClick={() => {
+                  if (num === currentProblem.answer) {
+                    const timeBonus = timeLeft * 2;
+                    const levelBonus = level * 5;
+                    const totalPoints = 15 + timeBonus + levelBonus;
+                    
+                    addScore(totalPoints);
+                    setShowResult(true);
+                    toast.success(`Excellent! +${totalPoints} points! 🎉`);
+                    speak(`Correct! ${currentProblem.display} equals ${currentProblem.answer}`);
+                    
+                    setTimeout(() => {
+                      if (question < totalQuestions) {
+                        setMathGame(prev => ({ ...prev, question: prev.question + 1 }));
+                        setCurrentProblem(generateMathProblem());
+                        setTimeLeft(timeLimit);
+                        setShowResult(false);
+                      } else {
+                        toast.success('Math mastery achieved! 🎉');
+                        addScore(100);
+                      }
+                    }, 3000);
+                  } else {
+                    loseHeart();
+                    toast.error('Try again!');
+                    speak('Try again!');
+                  }
+                }}
+                variant="outline"
+                className="text-xl py-3 hover:scale-105 transition-transform"
+                disabled={showResult}
+              >
+                {num}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderLetterActivity = () => {
@@ -296,13 +415,13 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
                       toast.success('Perfect! 🌟');
                       speak(`Correct! Letter ${currentLetter}`);
                       
-                      setTimeout(() => {
-                        setLetterGame(prev => ({
-                          ...prev,
-                          recognizedLetters: [...prev.recognizedLetters, currentLetter],
-                          currentIndex: prev.currentIndex + 1
-                        }));
-                      }, 1000);
+                        setTimeout(() => {
+                          setLetterGame(prev => ({
+                            ...prev,
+                            recognizedLetters: [...prev.recognizedLetters, currentLetter],
+                            currentIndex: prev.currentIndex + 1
+                          }));
+                        }, 3000);
                     } else {
                       loseHeart();
                       toast.error('Try again!');
@@ -395,7 +514,7 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
                           identifiedShapes: [...prev.identifiedShapes, currentShape.name],
                           currentShape: prev.currentShape + 1
                         }));
-                      }, 1000);
+                      }, 3000);
                     } else {
                       loseHeart();
                       toast.error('Look again!');
@@ -416,21 +535,101 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
   };
 
   const renderColorActivity = () => {
-    const primaryColors = ['red', 'blue', 'yellow'];
-    const colorMixing = [
-      { color1: 'red', color2: 'blue', result: 'purple', emoji: '🟣' },
-      { color1: 'red', color2: 'yellow', result: 'orange', emoji: '🟠' },
-      { color1: 'blue', color2: 'yellow', result: 'green', emoji: '🟢' }
+    const colorMixingActivities = [
+      { 
+        id: 'palette',
+        name: 'Color Palette Mixing',
+        color1: 'red', 
+        color2: 'blue', 
+        result: 'purple', 
+        emoji: '🟣',
+        method: 'palette'
+      },
+      { 
+        id: 'glass',
+        name: 'Glass Color Mixing',
+        color1: 'red', 
+        color2: 'yellow', 
+        result: 'orange', 
+        emoji: '🟠',
+        method: 'glass'
+      },
+      { 
+        id: 'flask',
+        name: 'Flask Experiments',
+        color1: 'blue', 
+        color2: 'yellow', 
+        result: 'green', 
+        emoji: '🟢',
+        method: 'flask'
+      },
+      {
+        id: 'paintbrush',
+        name: 'Paint Brush Mixing',
+        color1: 'yellow',
+        color2: 'red',
+        result: 'orange',
+        emoji: '🧡',
+        method: 'brush'
+      },
+      {
+        id: 'watercolor',
+        name: 'Watercolor Blending',
+        color1: 'blue',
+        color2: 'red',
+        result: 'purple',
+        emoji: '💜',
+        method: 'watercolor'
+      }
     ];
 
-    const currentMix = colorMixing[colorGame.currentStage];
+    const currentMix = colorMixingActivities[colorGame.currentStage];
+    const [selectedColors, setSelectedColors] = useState<string[]>([]);
+    const [showMixingAnimation, setShowMixingAnimation] = useState(false);
+    const [showResult, setShowResult] = useState(false);
 
-    if (colorGame.currentStage >= colorMixing.length) {
+    const handleColorSelect = (color: string) => {
+      if (selectedColors.length < 2 && !selectedColors.includes(color)) {
+        const newSelection = [...selectedColors, color];
+        setSelectedColors(newSelection);
+        
+        if (newSelection.length === 2) {
+          setShowMixingAnimation(true);
+          setTimeout(() => {
+            setShowMixingAnimation(false);
+            setShowResult(true);
+            const isCorrect = 
+              (newSelection.includes(currentMix.color1) && newSelection.includes(currentMix.color2));
+            
+            if (isCorrect) {
+              addScore(25);
+              toast.success(`Perfect! You made ${currentMix.result}! 🎨`);
+              speak(`Excellent! ${currentMix.color1} and ${currentMix.color2} make ${currentMix.result}`);
+              
+              setTimeout(() => {
+                setColorGame(prev => ({ ...prev, currentStage: prev.currentStage + 1 }));
+                setSelectedColors([]);
+                setShowResult(false);
+              }, 3000);
+            } else {
+              loseHeart();
+              toast.error('Try a different combination!');
+              setTimeout(() => {
+                setSelectedColors([]);
+                setShowResult(false);
+              }, 2000);
+            }
+          }, 2000);
+        }
+      }
+    };
+
+    if (colorGame.currentStage >= colorMixingActivities.length) {
       return (
         <div className="text-center p-6 bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl">
           <div className="text-4xl mb-3 animate-bounce">🎨</div>
           <h3 className="text-xl font-bold mb-2 text-pink-700">Color Master!</h3>
-          <div className="text-sm text-gray-600 mb-4">You've learned color mixing!</div>
+          <div className="text-sm text-gray-600 mb-4">You've mastered all color mixing methods!</div>
           <Button onClick={() => addScore(200)} className="bg-pink-500 hover:bg-pink-600">
             Claim Reward! 🏆
           </Button>
@@ -438,12 +637,91 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
       );
     }
 
+    const renderMixingInterface = () => {
+      switch (currentMix.method) {
+        case 'palette':
+          return (
+            <div className="bg-white rounded-full p-4 shadow-lg">
+              <div className="grid grid-cols-3 gap-4">
+                {['red', 'blue', 'yellow', 'green', 'orange', 'purple'].map(color => (
+                  <button
+                    key={color}
+                    onClick={() => handleColorSelect(color)}
+                    disabled={selectedColors.includes(color)}
+                    className={`w-12 h-12 rounded-full border-4 transition-all ${
+                      selectedColors.includes(color) 
+                        ? 'border-yellow-400 scale-110' 
+                        : 'border-gray-300 hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        
+        case 'glass':
+          return (
+            <div className="flex justify-center gap-8 items-end">
+              {['red', 'blue', 'yellow'].map(color => (
+                <div key={color} className="text-center">
+                  <div 
+                    className="w-16 h-20 mx-auto mb-2 rounded-b-full border-2 border-gray-400 cursor-pointer hover:scale-105 transition-transform"
+                    style={{ 
+                      background: `linear-gradient(to bottom, transparent 30%, ${color} 30%)`,
+                    }}
+                    onClick={() => handleColorSelect(color)}
+                  />
+                  <div className="text-sm capitalize">{color}</div>
+                </div>
+              ))}
+            </div>
+          );
+        
+        case 'flask':
+          return (
+            <div className="flex justify-center gap-6">
+              {['red', 'blue', 'yellow'].map(color => (
+                <div key={color} className="text-center">
+                  <div 
+                    className="w-12 h-16 mx-auto mb-2 rounded-full border-2 border-gray-400 cursor-pointer hover:scale-105 transition-transform relative"
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleColorSelect(color)}
+                  >
+                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-2 h-4 bg-gray-400 rounded-t" />
+                  </div>
+                  <div className="text-sm capitalize">{color}</div>
+                </div>
+              ))}
+            </div>
+          );
+        
+        default:
+          return (
+            <div className="grid grid-cols-3 gap-4 max-w-xs mx-auto">
+              {['red', 'blue', 'yellow'].map(color => (
+                <button
+                  key={color}
+                  onClick={() => handleColorSelect(color)}
+                  className={`w-16 h-16 rounded-lg border-4 transition-all ${
+                    selectedColors.includes(color) 
+                      ? 'border-yellow-400 scale-110' 
+                      : 'border-gray-300 hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          );
+      }
+    };
+
     return (
       <div className="p-4 space-y-4">
         <div className="text-center mb-4">
           <h3 className="text-xl font-bold text-pink-600 mb-2">Color Mixing Magic</h3>
-          <div className="text-sm text-gray-600">Mix {colorGame.currentStage + 1} of {colorMixing.length}</div>
-          <Progress value={((colorGame.currentStage + 1) / colorMixing.length) * 100} className="w-full max-w-md mx-auto mt-2" />
+          <div className="text-sm text-gray-600">Mix {colorGame.currentStage + 1} of {colorMixingActivities.length}</div>
+          <Progress value={((colorGame.currentStage + 1) / colorMixingActivities.length) * 100} className="w-full max-w-md mx-auto mt-2" />
         </div>
 
         <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 text-center">

@@ -228,74 +228,194 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
-      <GameHeader
-        onBack={onBack}
-        score={score}
-        level={level}
-        gameMode={gameMode}
-        onModeChange={setGameMode}
-        outlineName={currentOutline.name}
-        category={currentOutline.category}
-      />
+      {/* Compact Header */}
+      <div className="bg-white/95 backdrop-blur-sm shadow-lg border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button onClick={onBack} variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div className="flex items-center gap-2">
+                <Palette className="h-6 w-6 text-pink-600" />
+                <h1 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                  Color My World
+                </h1>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 rounded-full">
+                <span className="font-semibold text-yellow-700">{score}</span>
+              </div>
+              <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 rounded-full">
+                <span className="font-semibold text-purple-700">Lvl {level}</span>
+              </div>
+              <div className="flex items-center gap-1 px-2 py-1 bg-pink-100 rounded-full">
+                <span className="font-semibold text-pink-700">{currentOutline.category}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6">
-          {/* Enhanced Color Palette */}
-          <Card className="lg:col-span-1 p-2 sm:p-3 lg:p-4 bg-white/90 backdrop-blur-sm shadow-xl">
-            <ColorPalette
-              selectedColor={selectedColor}
-              onColorSelect={setSelectedColor}
-              gameMode={gameMode}
-              currentOutline={currentOutline}
-              showHint={showHint}
-              hintsUsed={hintsUsed}
-              completedSections={completedSections}
-              onHint={handleHint}
-              onReset={handleReset}
-              onDownload={handleDownload}
-              onSkip={handleSkip}
-              onNext={handleNextOutline}
-              canSkip={canSkip}
-              canNext={canNext}
-              showOutlines={showOutlines}
-              onToggleOutlines={() => setShowOutlines(!showOutlines)}
-              outlineColor={outlineColor}
-              onOutlineColorChange={setOutlineColor}
-            />
+      {/* Single Page Layout */}
+      <div className="container mx-auto px-4 py-4 max-h-[calc(100vh-80px)] overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+          {/* Compact Color Palette */}
+          <Card className="lg:col-span-1 p-3 bg-white/90 backdrop-blur-sm shadow-xl max-h-full overflow-y-auto">
+            <div className="space-y-3">
+              {/* Mode Toggle */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setGameMode('realistic')}
+                  variant={gameMode === 'realistic' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 text-xs"
+                >
+                  Realistic
+                </Button>
+                <Button
+                  onClick={() => setGameMode('creative')}
+                  variant={gameMode === 'creative' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 text-xs"
+                >
+                  Creative
+                </Button>
+              </div>
+
+              {/* Compact Color Grid */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD',
+                  '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA',
+                  '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
+                  '#800000', '#008000', '#000080', '#808000', '#800080', '#008080'
+                ].map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`w-8 h-8 rounded border-2 transition-all hover:scale-110 ${
+                      selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+
+              {/* Control Buttons */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setShowOutlines(!showOutlines)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                  >
+                    {showOutlines ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                  </Button>
+                  <Button
+                    onClick={handleReset}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                  >
+                    Reset
+                  </Button>
+                </div>
+                
+                <div className="flex gap-2">
+                  {canSkip && (
+                    <Button
+                      onClick={handleSkip}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-xs"
+                    >
+                      Skip
+                    </Button>
+                  )}
+                  {canNext && (
+                    <Button
+                      onClick={handleNextOutline}
+                      size="sm"
+                      className="flex-1 text-xs"
+                    >
+                      Next
+                    </Button>
+                  )}
+                </div>
+
+                {gameMode === 'realistic' && hintsUsed < 5 && (
+                  <Button
+                    onClick={handleHint}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                  >
+                    Hint ({5 - hintsUsed} left)
+                  </Button>
+                )}
+              </div>
+
+              {/* Progress Info */}
+              <div className="text-xs text-gray-600 space-y-1">
+                <div>Progress: {completedSections.size}/{currentOutline.sections.length + (currentOutline.missingParts?.length || 0)}</div>
+                <div>Hints used: {hintsUsed}</div>
+              </div>
+            </div>
           </Card>
 
-          {/* Drawing Canvas */}
-          <Card className="lg:col-span-3 p-3 sm:p-4 lg:p-6 bg-white/90 backdrop-blur-sm shadow-xl relative">
-            {gameMode === 'creative' ? (
-              <CreativeCanvas
-                outline={currentOutline}
-                selectedColor={selectedColor}
-                onComplete={handleCompletion}
-                completedSections={completedSections}
-                onSectionFill={handleSectionFill}
-              />
-            ) : (
-              <DrawingCanvas
-                ref={canvasRef}
-                outline={currentOutline}
-                selectedColor={selectedColor}
-                onSectionFill={handleSectionFill}
-                completedSections={completedSections}
-                gameMode={gameMode}
-                showHint={showHint}
-                showOutlines={showOutlines}
-                outlineColor={outlineColor}
-              />
-            )}
-            
-            {/* Reference Image for Realistic Mode */}
-            {gameMode === 'realistic' && currentOutline && (
-              <ReferenceImage
-                outline={currentOutline}
-                show={showReference}
-                onToggle={() => setShowReference(!showReference)}
-              />
-            )}
+          {/* Responsive Drawing Canvas */}
+          <Card className="lg:col-span-3 p-3 bg-white/90 backdrop-blur-sm shadow-xl relative overflow-hidden">
+            <div className="h-full w-full relative">
+              {gameMode === 'creative' ? (
+                <CreativeCanvas
+                  outline={currentOutline}
+                  selectedColor={selectedColor}
+                  onComplete={handleCompletion}
+                  completedSections={completedSections}
+                  onSectionFill={handleSectionFill}
+                />
+              ) : (
+                <DrawingCanvas
+                  ref={canvasRef}
+                  outline={currentOutline}
+                  selectedColor={selectedColor}
+                  onSectionFill={handleSectionFill}
+                  completedSections={completedSections}
+                  gameMode={gameMode}
+                  showHint={showHint}
+                  showOutlines={showOutlines}
+                  outlineColor={outlineColor}
+                />
+              )}
+              
+              {/* Reference Image for Realistic Mode */}
+              {gameMode === 'realistic' && currentOutline && (
+                <div className="absolute top-2 right-2">
+                  <Button
+                    onClick={() => setShowReference(!showReference)}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                  >
+                    {showReference ? 'Hide' : 'Show'} Reference
+                  </Button>
+                  {showReference && (
+                    <div className="absolute top-8 right-0 w-32 h-32 bg-white rounded border shadow-lg p-2">
+                      <img 
+                        src={currentOutline.referenceImage} 
+                        alt="Reference"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </Card>
         </div>
       </div>
