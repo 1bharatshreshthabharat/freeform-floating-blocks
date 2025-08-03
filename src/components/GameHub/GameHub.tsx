@@ -11,9 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Home, Trophy, User, Settings } from 'lucide-react';
 import { ColorMyWorldGame } from './Games/ColorMyWorldGame';
 import { EducationalGameHub } from '../EducationalGames/EducationalGameHub';
-import { IntellectoKidsAcademy } from '../EducationalGames/IntellectoKids/IntellectoKidsAcademy';
-
-export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | 'wordwonders' | 'colormyworld' | 'educational' | 'intellectokids' | null;
+export type GameType = 'chess' | 'snake' | 'flappy' | 'fruitninja' | 'balloonpop' | 'wordwonders' | 'colormyworld' | 'educational' | null;
 
 export const GameHub: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>(null);
@@ -24,15 +22,6 @@ export const GameHub: React.FC = () => {
   });
 
   const games = [
-    {
-      id: 'intellectokids' as const,
-      title: 'Intellecto Kids Academy',
-      description: 'Complete learning platform with 1000+ lessons covering numbers, letters, shapes, colors, worksheets, and interactive games!',
-      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=300&fit=crop',
-      difficulty: 'Easy-Medium',
-      category: 'Educational',
-      players: '1'
-    },
     {
       id: 'educational' as const,
       title: 'Educational Games Hub',
@@ -109,8 +98,6 @@ export const GameHub: React.FC = () => {
 
   const renderGame = () => {
     switch (currentGame) {
-      case 'intellectokids':
-        return <IntellectoKidsAcademy onBack={() => setCurrentGame(null)} onStatsUpdate={setPlayerStats} />;
       case 'educational':
         return <EducationalGameHub onBack={() => setCurrentGame(null)} />;
       case 'colormyworld':
@@ -142,57 +129,7 @@ export const GameHub: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-      {/* Header */}
-      <header className="bg-white shadow-lg border-b-4 border-blue-500">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                🎮 Ultimate Game Hub
-              </h1>
-              <p className="text-gray-600 mt-2">Master multiple games with advanced features and customization</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Card className="px-4 py-2 bg-blue-50">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{playerStats.gamesPlayed}</div>
-                  <div className="text-xs text-gray-600">Games Played</div>
-                </div>
-              </Card>
-              <Card className="px-4 py-2 bg-purple-50">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{playerStats.totalScore}</div>
-                  <div className="text-xs text-gray-600">Total Score</div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Navigation */}
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-8">
-            <Button variant="ghost" className="flex items-center space-x-2 py-4">
-              <Home className="h-5 w-5" />
-              <span>Home</span>
-            </Button>
-            <Button variant="ghost" className="flex items-center space-x-2 py-4">
-              <Trophy className="h-5 w-5" />
-              <span>Achievements</span>
-            </Button>
-            <Button variant="ghost" className="flex items-center space-x-2 py-4">
-              <User className="h-5 w-5" />
-              <span>Profile</span>
-            </Button>
-            <Button variant="ghost" className="flex items-center space-x-2 py-4">
-              <Settings className="h-5 w-5" />
-              <span>Settings</span>
-            </Button>
-          </div>
-        </div>
-      </nav>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">

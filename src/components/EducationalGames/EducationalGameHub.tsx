@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Palette, Pencil, Lightbulb, Puzzle, BookOpen, FlaskConical, Brain, Star } from 'lucide-react';
 import { EnhancedSpellingPhonicGame } from './SpellingPhonics/EnhancedSpellingPhonicGame';
-import { EnhancedMazeGameApp } from './MazeGame/EnhancedMazeGameApp';
+import { EnhancedMazeGameApp } from '../GameHub/Games/MazeGame/EnhancedMazeGameApp';
 import { EnhancedMolecularChemistryLab } from './ChemistryLab/EnhancedMolecularChemistryLab';
 import { EnhancedIntellectoKidsAcademy } from './IntellectoKids/EnhancedIntellectoKidsAcademy';
 
