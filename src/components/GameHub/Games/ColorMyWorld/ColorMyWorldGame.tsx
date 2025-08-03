@@ -368,48 +368,57 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
             </div>
           </Card>
 
-          {/* Responsive Drawing Canvas */}
+          {/* Responsive Drawing Canvas - Fixed and Centered */}
           <Card className="lg:col-span-3 p-3 bg-white/90 backdrop-blur-sm shadow-xl relative overflow-hidden">
-            <div className="h-full w-full relative">
-              {gameMode === 'creative' ? (
-                <CreativeCanvas
-                  outline={currentOutline}
-                  selectedColor={selectedColor}
-                  onComplete={handleCompletion}
-                  completedSections={completedSections}
-                  onSectionFill={handleSectionFill}
-                />
-              ) : (
-                <DrawingCanvas
-                  ref={canvasRef}
-                  outline={currentOutline}
-                  selectedColor={selectedColor}
-                  onSectionFill={handleSectionFill}
-                  completedSections={completedSections}
-                  gameMode={gameMode}
-                  showHint={showHint}
-                  showOutlines={showOutlines}
-                  outlineColor={outlineColor}
-                />
-              )}
+            <div className="h-[calc(100vh-200px)] w-full relative flex items-center justify-center">
+              <div className="w-full h-full max-w-full max-h-full flex items-center justify-center">
+                {gameMode === 'creative' ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <CreativeCanvas
+                      outline={currentOutline}
+                      selectedColor={selectedColor}
+                      onComplete={handleCompletion}
+                      completedSections={completedSections}
+                      onSectionFill={handleSectionFill}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <DrawingCanvas
+                      ref={canvasRef}
+                      outline={currentOutline}
+                      selectedColor={selectedColor}
+                      onSectionFill={handleSectionFill}
+                      completedSections={completedSections}
+                      gameMode={gameMode}
+                      showHint={showHint}
+                      showOutlines={showOutlines}
+                      outlineColor={outlineColor}
+                    />
+                  </div>
+                )}
+              </div>
               
-              {/* Reference Image for Realistic Mode */}
+              {/* Reference Image for Realistic Mode - Fixed */}
               {gameMode === 'realistic' && currentOutline && (
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 z-10">
                   <Button
                     onClick={() => setShowReference(!showReference)}
                     variant="outline"
                     size="sm"
-                    className="text-xs"
+                    className="text-xs bg-white"
                   >
                     {showReference ? 'Hide' : 'Show'} Reference
                   </Button>
                   {showReference && (
-                    <div className="absolute top-8 right-0 w-32 h-32 bg-white rounded border shadow-lg p-2">
+                    <div className="absolute top-8 right-0 w-40 h-40 bg-white rounded-lg border-2 shadow-xl p-2 z-20">
                       <img 
-                        src={currentOutline.referenceImage} 
+                        src={currentOutline.referenceImage || '/placeholder.svg'} 
                         alt="Reference"
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain rounded"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
                       />
                     </div>
                   )}

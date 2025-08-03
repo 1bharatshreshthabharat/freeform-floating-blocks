@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { BalloonPopGameProvider } from './BalloonPopGameProvider';
 import { BalloonPopHeader } from './BalloonPopHeader';
 import { BalloonPopCanvas } from './BalloonPopCanvas';
@@ -9,16 +9,22 @@ import { BalloonPopInstructions } from './BalloonPopInstructions';
 import { BalloonPopSettings } from './BalloonPopSettings';
 import { BalloonPopAchievements } from './BalloonPopAchievements';
 import { BalloonPopGameStats } from './BalloonPopGameStats';
+import { BalloonPopCustomizeModal } from './BalloonPopCustomizeModal';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
+import { useBalloonPopGame } from './BalloonPopGameProvider';
 
 interface BalloonPopGameProps {
   onBack: () => void;
   onStatsUpdate: (stats: any) => void;
 }
 
-export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsUpdate }) => {
+const GameContent: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { state } = useBalloonPopGame();
+  const [showCustomize, setShowCustomize] = useState(false);
+
   return (
-    <BalloonPopGameProvider>
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 relative overflow-hidden">
         {/* Enhanced animated background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-10 left-10 w-4 h-4 bg-purple-400 rounded-full animate-bounce opacity-30"></div>
@@ -30,6 +36,21 @@ export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsU
         </div>
 
         <BalloonPopHeader onBack={onBack} />
+        
+        {/* Customize Button for Active Game */}
+        {true && (
+          <div className="absolute top-20 right-4 z-20">
+            <Button
+              onClick={() => setShowCustomize(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white/90 border-purple-300 text-purple-700 hover:bg-purple-100"
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              Customize
+            </Button>
+          </div>
+        )}
         
         <div className="max-w-7xl mx-auto p-2 lg:p-4">
           {/* Canvas */}
@@ -53,7 +74,20 @@ export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsU
         <BalloonPopInstructions />
         <BalloonPopSettings />
         <BalloonPopAchievements />
+        
+        {/* Customize Modal */}
+        <BalloonPopCustomizeModal 
+          isOpen={showCustomize} 
+          onClose={() => setShowCustomize(false)} 
+        />
       </div>
+  );
+};
+
+export const BalloonPopGame: React.FC<BalloonPopGameProps> = ({ onBack, onStatsUpdate }) => {
+  return (
+    <BalloonPopGameProvider>
+      <GameContent onBack={onBack} />
     </BalloonPopGameProvider>
   );
 };
