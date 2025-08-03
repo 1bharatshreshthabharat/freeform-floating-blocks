@@ -1,15 +1,21 @@
+// components/SpellingGameHeader.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen, Volume2, VolumeX, Heart } from 'lucide-react';
-import { useSpellingPhonicGame } from './SpellingPhonicGameProvider';
+import { ArrowLeft, BookOpen, Heart, Volume2, VolumeX } from 'lucide-react';
 
-interface SpellingGameHeaderProps {
+type Props = {
   onBack: () => void;
-}
+  lives: number;
+  soundEnabled: boolean;
+  setSoundEnabled: (enabled: boolean) => void;
+};
 
-export const SpellingGameHeader: React.FC<SpellingGameHeaderProps> = ({ onBack }) => {
-  const { state, toggleSound } = useSpellingPhonicGame();
-
+const SpellingGameHeader: React.FC<Props> = ({
+  onBack,
+  lives,
+  soundEnabled,
+  setSoundEnabled,
+}) => {
   return (
     <div className="bg-white/80 backdrop-blur-sm shadow-lg">
       <div className="container mx-auto px-4 py-4">
@@ -26,16 +32,12 @@ export const SpellingGameHeader: React.FC<SpellingGameHeaderProps> = ({ onBack }
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              {Array.from({length: 5}).map((_, i) => (
-                <Heart key={i} className={`h-5 w-5 ${i < state.lives ? 'text-red-500' : 'text-gray-300'}`} />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Heart key={i} className={`h-5 w-5 ${i < lives ? 'text-red-500' : 'text-gray-300'}`} />
               ))}
             </div>
-            <Button
-              onClick={toggleSound}
-              variant="ghost"
-              size="sm"
-            >
-              {state.soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            <Button onClick={() => setSoundEnabled(!soundEnabled)} variant="ghost" size="sm">
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -43,3 +45,5 @@ export const SpellingGameHeader: React.FC<SpellingGameHeaderProps> = ({ onBack }
     </div>
   );
 };
+
+export default SpellingGameHeader;

@@ -1,11 +1,51 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useSpellingPhonicGame } from './SpellingPhonicGameProvider';
+import { Volume2, Target } from 'lucide-react';
 
-export const SpellingGameArea: React.FC = () => {
-  const { state, checkSpelling, handleKeyPress, resetGame, speak } = useSpellingPhonicGame();
+type Props = {
+  gameMode: string;
+  currentWord: {
+    word: string;
+    definition: string;
+    example: string;
+    category: string;
+    phonics: string[];
+  };
+  userInput: string;
+  setUserInput: (value: string) => void;
+  handleKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  checkSpelling: () => void;
+  showHint: boolean;
+  setShowHint: (show: boolean) => void;
+  selectedPhonics: string[];
+  handlePhonicsSelection: (letter: string) => void;
+  availableLetters: string[];
+  feedback: string;
+  playWord: () => void;
+  playPhonics: () => void;
+  playDefinition: () => void;
+  setSelectedPhonics: (letters: string[]) => void;
+};
+
+const SpellingGameArea: React.FC<Props> = ({
+  gameMode,
+  currentWord,
+  userInput,
+  setUserInput,
+  handleKeyPress,
+  checkSpelling,
+  showHint,
+  setShowHint,
+  selectedPhonics,
+  setSelectedPhonics, // <-- add this line
+  handlePhonicsSelection,
+  availableLetters,
+  feedback,
+  playWord,
+  playPhonics,
+  playDefinition
+}) => {
 
   return (
     <Card className="lg:col-span-3 p-6">
@@ -13,7 +53,7 @@ export const SpellingGameArea: React.FC = () => {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <h3 className="text-lg font-bold text-blue-800 mb-2">📋 How to Play</h3>
         <div className="text-sm text-blue-700">
-          {state.gameMode === 'spelling' && (
+          {gameMode === 'spelling' && (
             <div>
               <p className="mb-2"><strong>Spelling Mode:</strong></p>
               <ul className="list-disc list-inside space-y-1">
@@ -25,77 +65,144 @@ export const SpellingGameArea: React.FC = () => {
               </ul>
             </div>
           )}
-          {/* ... add other mode instructions */}
+          {gameMode === 'phonics' && (
+            <div>
+              <p className="mb-2"><strong>Phonics Mode:</strong></p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Click on letters below to build the word</li>
+                <li>Letters will appear in order as you click them</li>
+                <li>Use "Hear Phonics" to listen to letter sounds</li>
+                <li>Complete the word to score points</li>
+                <li>Click "Reset" to start over</li>
+              </ul>
+            </div>
+          )}
+          {gameMode === 'listening' && (
+            <div>
+              <p className="mb-2"><strong>Listening Mode:</strong></p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Click "Hear Word" to listen to the word</li>
+                <li>The word is hidden - listen carefully!</li>
+                <li>Type what you hear in the input box</li>
+                <li>Use the definition clues to help you</li>
+                <li>You can replay the word as many times as needed</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Current Word Display */}
-      {state.currentWord && (
-        <div className="text-center mb-8">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-xl mb-4">
-            <h2 className="text-3xl font-bold mb-2">
-              {state.gameMode === 'listening' ? '🔊 Listen to the word' : state.currentWord.word.toUpperCase()}
-            </h2>
-            {state.showHint && (
-              <div className="text-sm opacity-90">
-                💡 {state.currentWord.definition}
-              </div>
-            )}
-          </div>
-          
-          {/* Audio Controls */}
-          <div className="flex justify-center gap-3 mb-6">
-            <Button onClick={() => speak(state.currentWord.word)} variant="outline">
-              🔊 Hear Word
-            </Button>
-            <Button onClick={() => speak(state.currentWord.phonics.join(' '))} variant="outline">
-              🔤 Hear Phonics
-            </Button>
-            <Button onClick={() => speak(state.currentWord.definition)} variant="outline">
-              📖 Hear Definition
-            </Button>
+      <div className="text-center mb-6">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-lg mb-4">
+          <h2 className="text-2xl font-bold mb-2">
+            {gameMode === 'spelling' ? 'Spell the Word' : 
+             gameMode === 'phonics' ? 'Build with Phonics' : 'Listen and Type'}
+          </h2>
+          <div className="text-lg">
+            Category: <span className="font-semibold">{currentWord.category}</span>
           </div>
         </div>
-      )}
 
-      {/* Input Area */}
-      <div className="text-center mb-8">
-        <div className="max-w-md mx-auto">
-          <Input
-            type="text"
-            value={state.userInput}
-            onChange={(e) => {/* handle input change */}}
-            onKeyDown={handleKeyPress}
-            placeholder="Type your answer here..."
-            className="text-xl text-center p-4 mb-4"
-            disabled={!state.currentWord}
-          />
-          
-          <div className="flex gap-3 justify-center">
-            <Button 
-              onClick={checkSpelling}
-              disabled={!state.userInput.trim() || !state.currentWord}
-              className="bg-green-500 hover:bg-green-600"
-            >
-              ✓ Check Spelling
+        {/* Word Display */}
+        <div className="mb-6">
+          {gameMode !== 'listening' && (
+            <div className="text-4xl font-bold text-gray-800 mb-2">
+              {currentWord.word.toUpperCase()}
+            </div>
+          )}
+
+          <div className="flex justify-center gap-4 mb-4">
+            <Button onClick={playWord} variant="outline" size="sm">
+              <Volume2 className="h-4 w-4 mr-2" />
+              Hear Word
             </Button>
-            <Button onClick={resetGame} variant="outline">
-              🔄 New Game
+            <Button onClick={playPhonics} variant="outline" size="sm">
+              <Volume2 className="h-4 w-4 mr-2" />
+              Hear Sounds
+            </Button>
+            <Button onClick={playDefinition} variant="outline" size="sm">
+              <Volume2 className="h-4 w-4 mr-2" />
+              Definition
             </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Feedback */}
-      {state.feedback && (
-        <div className="text-center">
-          <div className={`p-4 rounded-lg ${
-            state.feedback.includes('Excellent') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          <div className="bg-blue-50 p-3 rounded-lg mb-4">
+            <div className="font-semibold text-blue-800">Definition:</div>
+            <div className="text-blue-700">{currentWord.definition}</div>
+            <div className="text-sm text-blue-600 mt-1">
+              <strong>Example:</strong> {currentWord.example}
+            </div>
+          </div>
+        </div>
+
+        {/* Game Interface */}
+        {gameMode === 'spelling' || gameMode === 'listening' ? (
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type the word here..."
+              className="w-full max-w-md mx-auto px-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
+            <div className="flex justify-center gap-4">
+              <Button onClick={checkSpelling} className="bg-green-500 hover:bg-green-600">
+                <Target className="h-4 w-4 mr-2" />
+                Check Answer
+              </Button>
+              <Button onClick={() => setShowHint(!showHint)} variant="outline">
+                💡 {showHint ? 'Hide' : 'Show'} Hint
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-lg font-semibold">Selected: {selectedPhonics.join('')}</div>
+            <div className="grid grid-cols-6 gap-2 max-w-md mx-auto">
+              {availableLetters.map((letter, index) => (
+                <Button
+                  key={index}
+                  onClick={() => handlePhonicsSelection(letter)}
+                  variant="outline"
+                  className="aspect-square"
+                >
+                  {letter.toUpperCase()}
+                </Button>
+              ))}
+            </div>
+            <Button onClick={() => setSelectedPhonics([])} variant="outline" className="mt-4">
+              Clear Selection
+            </Button>
+          </div>
+        )}
+
+        {/* Hint */}
+        {showHint && (
+          <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg mt-4">
+            <div className="text-yellow-800">
+              <strong>Phonics:</strong> {currentWord.phonics.join(' - ')}
+            </div>
+            <div className="text-yellow-700 text-sm mt-1">
+              Word length: {currentWord.word.length} letters
+            </div>
+          </div>
+        )}
+
+        {/* Feedback */}
+        {feedback && (
+          <div className={`mt-4 p-3 rounded-lg ${
+            feedback.includes('Excellent') || feedback.includes('Perfect') 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
           }`}>
-            {state.feedback}
+            {feedback}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </Card>
   );
 };
+
+export default SpellingGameArea;
