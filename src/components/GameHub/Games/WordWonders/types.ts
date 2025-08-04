@@ -22,6 +22,7 @@ export interface FloatingLetter {
   isPlaced: boolean;
 }
 
+
 export interface GameState {
   mode: GameMode;
   theme: GameTheme;

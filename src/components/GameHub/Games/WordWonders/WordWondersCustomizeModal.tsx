@@ -42,7 +42,7 @@ export const WordWondersCustomizeModal: React.FC<WordWondersCustomizeModalProps>
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white p-6 shadow-2xl relative">
+      <Card className="max-w-3xl w-full bg-white p-6 rounded-2xl shadow-2xl relative">
         <Button
           onClick={onClose}
           variant="outline"
@@ -53,29 +53,29 @@ export const WordWondersCustomizeModal: React.FC<WordWondersCustomizeModalProps>
         </Button>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-purple-700 mb-2 flex items-center">
+          <h2 className="text-2xl font-extrabold text-purple-700 mb-1 flex items-center">
             <Settings className="mr-2" />
             Customize Game
           </h2>
-          <p className="text-gray-600">Change settings in real-time while playing!</p>
+          <p className="text-gray-500 text-sm">Adjust settings to make the game your own.</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Game Mode */}
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-purple-700">Game Mode</Label>
+          <div className="space-y-1">
+            <Label className="text-md font-semibold text-purple-700">Game Mode</Label>
             <Select value={state.mode} onValueChange={(value) => updateSetting('SET_MODE', value as GameMode)}>
-              <SelectTrigger className="bg-white border-purple-300">
-                <SelectValue />
+              <SelectTrigger className="bg-purple-50 border-purple-300 rounded-xl shadow-sm">
+                <SelectValue placeholder="Choose mode" />
               </SelectTrigger>
-              <SelectContent className="bg-white max-h-60 overflow-y-auto z-50">
+              <SelectContent className="bg-white max-h-64 overflow-y-auto z-50 rounded-xl shadow-lg">
                 {gameModes.map((mode) => (
                   <SelectItem key={mode.key} value={mode.key}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-start gap-2">
                       <span>{mode.icon}</span>
                       <div>
-                        <div className="font-medium">{mode.label}</div>
-                        <div className="text-xs text-gray-600">{mode.description}</div>
+                        <div className="font-semibold">{mode.label}</div>
+                        <div className="text-xs text-gray-500">{mode.description}</div>
                       </div>
                     </div>
                   </SelectItem>
@@ -85,16 +85,16 @@ export const WordWondersCustomizeModal: React.FC<WordWondersCustomizeModalProps>
           </div>
 
           {/* Theme */}
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-purple-700">Theme</Label>
+          <div className="space-y-1">
+            <Label className="text-md font-semibold text-purple-700">Theme</Label>
             <Select value={state.theme} onValueChange={(value) => updateSetting('SET_THEME', value)}>
-              <SelectTrigger className="bg-white border-purple-300">
-                <SelectValue />
+              <SelectTrigger className="bg-purple-50 border-purple-300 rounded-xl shadow-sm">
+                <SelectValue placeholder="Choose theme" />
               </SelectTrigger>
-              <SelectContent className="bg-white z-50">
+              <SelectContent className="bg-white rounded-xl shadow-lg">
                 {themes.map((theme) => (
                   <SelectItem key={theme.key} value={theme.key}>
-                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r ${theme.colors} text-white`}>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r ${theme.colors} text-white`}>
                       <span>{theme.icon}</span>
                       <span className="font-medium">{theme.label}</span>
                     </div>
@@ -104,50 +104,11 @@ export const WordWondersCustomizeModal: React.FC<WordWondersCustomizeModalProps>
             </Select>
           </div>
 
-          {/* Difficulty */}
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-purple-700">Difficulty Level</Label>
-            <Select value={'medium'} onValueChange={(value) => updateSetting('SET_DIFFICULTY', value)}>
-              <SelectTrigger className="bg-white border-purple-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                <SelectItem value="easy">🟢 Easy - Simple words</SelectItem>
-                <SelectItem value="medium">🟡 Medium - Balanced challenge</SelectItem>
-                <SelectItem value="hard">🔴 Hard - Complex words</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Audio Settings */}
-          <div className="space-y-4">
-            <Label className="text-lg font-semibold text-purple-700">Audio & Feedback</Label>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {state.soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-                <Label>Sound Effects</Label>
-              </div>
-              <Switch
-                checked={state.soundEnabled}
-                onCheckedChange={(checked) => updateSetting('TOGGLE_SOUND', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label>Show Hints</Label>
-              <Switch
-                checked={state.showHint}
-                onCheckedChange={(checked) => updateSetting('SHOW_HINT', checked)}
-              />
-            </div>
-          </div>
-
-          {/* Time Settings */}
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-purple-700 flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Game Timer: {state.timeLeft || 60} seconds
+          {/* Timer */}
+          <div className="space-y-1">
+            <Label className="text-md font-semibold text-purple-700 flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              Timer: {state.timeLeft || 60}s
             </Label>
             <Slider
               value={[state.timeLeft || 60]}
@@ -159,11 +120,11 @@ export const WordWondersCustomizeModal: React.FC<WordWondersCustomizeModalProps>
             />
           </div>
 
-          {/* Lives Settings */}
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-purple-700 flex items-center gap-2">
-              <Heart className="h-5 w-5" />
-              Starting Lives: {state.lives || 3}
+          {/* Lives */}
+          <div className="space-y-1">
+            <Label className="text-md font-semibold text-purple-700 flex items-center gap-1">
+              <Heart className="h-4 w-4" />
+              Lives: {state.lives || 3}
             </Label>
             <Slider
               value={[state.lives || 3]}
@@ -174,12 +135,54 @@ export const WordWondersCustomizeModal: React.FC<WordWondersCustomizeModalProps>
               className="w-full"
             />
           </div>
+
+          {/* Sound Effects */}
+          <div className="space-y-1">
+            <Label className="text-md font-semibold text-purple-700 flex items-center gap-1">
+              {state.soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              Sound Effects
+            </Label>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 text-sm">Toggle sound feedback</span>
+              <Switch
+                checked={state.soundEnabled}
+                onCheckedChange={(checked) => updateSetting('TOGGLE_SOUND', checked)}
+              />
+            </div>
+          </div>
+
+          {/* Show Hints */}
+          <div className="space-y-1">
+            <Label className="text-md font-semibold text-purple-700">Show Hints</Label>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 text-sm">Enable helpful tips</span>
+              <Switch
+                checked={state.showHint}
+                onCheckedChange={(checked) => updateSetting('SHOW_HINT', checked)}
+              />
+            </div>
+          </div>
+
+          {/* Difficulty */}
+          <div className="md:col-span-2 space-y-1">
+            <Label className="text-md font-semibold text-purple-700">Difficulty</Label>
+            <Select value={'medium'} onValueChange={(value) => updateSetting('SET_DIFFICULTY', value)}>
+              <SelectTrigger className="bg-purple-50 border-purple-300 rounded-xl shadow-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50 rounded-xl shadow-lg">
+                <SelectItem value="easy">🟢 Easy – Simple words</SelectItem>
+                <SelectItem value="medium">🟡 Medium – Balanced challenge</SelectItem>
+                <SelectItem value="hard">🔴 Hard – Complex words</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="mt-8 flex justify-center">
           <Button
             onClick={onClose}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-2 rounded-full font-bold"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-2 rounded-full font-bold shadow-lg hover:scale-105 transition-transform"
           >
             Apply Changes
           </Button>

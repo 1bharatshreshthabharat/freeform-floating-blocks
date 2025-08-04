@@ -158,7 +158,7 @@ export const EnhancedIntellectoKidsAcademy: React.FC<EnhancedIntellectoKidsAcade
                 <Shapes className="h-5 w-5 text-green-600" />
                 <h2 className="text-lg font-bold text-green-700">Shapes & Patterns</h2>
               </div>
-                 <ShapeActivity addScore={addScore} loseHeart={loseHeart} />
+                 <ShapeActivity addScore={addScore} />
             </Card>
           </TabsContent>
 

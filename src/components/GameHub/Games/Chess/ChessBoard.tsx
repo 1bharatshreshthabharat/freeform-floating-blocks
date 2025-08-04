@@ -89,6 +89,12 @@ export const ChessBoard: React.FC = () => {
               width={640}
               height={640}
               className="border-4 border-amber-300 rounded-lg shadow-lg cursor-pointer"
+              style={{
+              height: 'auto',
+              maxWidth: '100%',
+              // Add responsive minHeight overrides
+            // minHeight: '40vh', // Taller on small screens
+            }}
               onClick={inputHandler.handleCanvasClick}
               onMouseDown={inputHandler.handleMouseDown}
               onMouseUp={inputHandler.handleMouseUp}

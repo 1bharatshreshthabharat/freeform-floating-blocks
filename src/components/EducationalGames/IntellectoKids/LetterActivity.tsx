@@ -20,7 +20,7 @@ const LetterActivity = ({
 }) => {
   const [letterGame, setLetterGame] = useState(initialLetterGame);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState(5);
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(5);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -41,7 +41,7 @@ const LetterActivity = ({
   const resetLetterGame = () => {
     setLetterGame(initialLetterGame);
     setScore(0);
-    setLives(3);
+    setLives(5);
     setTimeLeft(5);
   };
 
@@ -141,8 +141,29 @@ const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
           value={((letterGame.currentIndex + 1) / 26) * 100}
           className="w-full max-w-md mx-auto mt-2"
         />
-        <div className="text-sm text-gray-500 mt-1">⏱️ Time Left: {timeLeft}s</div>
-        <div className="text-sm text-red-500">❤️ Lives Left: {lives}</div>
+
+         <div className="flex justify-center items-center gap-4 text-lg my-4">
+          {/* Timer Styled Pill */}
+          <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold shadow-sm">
+            ⏰ {timeLeft}s
+          </div>
+
+          {/* Heart Display */}
+          <div className="flex gap-1 text-2xl">
+            {Array.from({ length: lives }, (_, i) => (
+              <span key={i}>❤️</span>
+            ))}
+          </div>
+
+            {/* Sound Toggle */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="text-2xl hover:scale-110 transition-transform"
+              title={soundEnabled ? 'Sound On' : 'Sound Off'}
+            >
+              {soundEnabled ? '🔊' : '🔈'}
+            </button>
+          </div>
       </div>
 
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 text-center shadow-lg">

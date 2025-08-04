@@ -52,13 +52,20 @@ export const BalloonPopControls: React.FC = () => {
           <h3 className="font-bold text-blue-700 mb-2 text-lg text-center">🎯 Your Mission:</h3>
           <p className="text-blue-800 font-bold text-center text-xl">{state.currentQuestion.instruction}</p>
           
-          {/* Time Display */}
-          <div className="flex items-center justify-center mt-3 text-red-500">
-            <Clock className="h-5 w-5 mr-2" />
-            <span className="font-bold text-lg">
-              {formatTime(timeRemaining)}
-            </span>
-          </div>
+          
+        <div className="flex  flex-row items-center justify-center gap-10 mt-3">
+  {/* Timer */}
+  <div className="flex items-center text-red-500">
+    <Clock className="h-5 w-5 mr-2" />
+    <span className="font-bold text-lg">{formatTime(timeRemaining)}</span>
+  </div>
+
+  {/* Score */}
+  <div className="text-lg font-bold text-pink-600 text-center sm:text-right">
+    {state.gameStats.correctAnswers}/{state.gameStats.correctAnswers + state.gameStats.wrongAnswers} Correct
+  </div>
+</div>
+
         </Card>
       )}
 
@@ -117,7 +124,7 @@ export const BalloonPopControls: React.FC = () => {
             </Select>
           </div>
 
-          {/* Theme Selection */}
+          {/* Theme Selection
           <div className="space-y-2">
             <label className="text-sm font-semibold text-blue-700">🎨 Game Theme</label>
             <Select value={state.theme} onValueChange={(value: GameTheme) => changeTheme(value)}>
@@ -139,7 +146,7 @@ export const BalloonPopControls: React.FC = () => {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
 
           {/* Game Stats */}
           <div className="bg-white/90 p-3 rounded-lg border border-indigo-200 shadow-sm">

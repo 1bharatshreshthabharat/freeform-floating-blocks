@@ -119,9 +119,14 @@ export const FruitNinjaCanvas: React.FC = () => {
           <canvas
             ref={canvasRef}
             width={800}
-            height={600}
+            height={500}
             className="border-4 border-red-300 rounded-lg cursor-crosshair touch-none select-none"
-            style={{ maxWidth: '100%', height: 'auto' }}
+            style={{
+              height: 'auto',
+              maxWidth: '100%',
+              // Add responsive minHeight overrides
+             minHeight: '40vh', // Taller on small screens
+            }}
             onMouseDown={inputHandler.handleMouseDown}
             onMouseMove={inputHandler.handleMouseMove}
             onMouseUp={inputHandler.handleMouseUp}

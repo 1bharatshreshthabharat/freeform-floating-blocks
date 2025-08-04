@@ -3,6 +3,14 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
 
 type Achievement = {
   id: string;
@@ -70,22 +78,24 @@ const SpellingGameSidebar: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Difficulty */}
-      <div>
-        <h3 className="font-bold mb-2">Difficulty</h3>
-        <div className="space-y-2">
-          {[1, 2, 3].map((level) => (
-            <Button
-              key={level}
-              onClick={() => setDifficulty(level)}
-              variant={difficulty === level ? 'default' : 'outline'}
-              className="w-full"
-            >
-              {level === 1 ? '🌱 Easy' : level === 2 ? '🌳 Medium' : '🚀 Hard'}
-            </Button>
-          ))}
-        </div>
-      </div>
+{/* Difficulty Dropdown */}
+<div>
+  <label className="text-xs font-medium text-gray-600 mb-1 block">Difficulty</label>
+  <Select
+    onValueChange={(value) => setDifficulty(parseInt(value))}
+    defaultValue={difficulty.toString()}
+  >
+    <SelectTrigger className="text-sm h-9 w-full">
+      <SelectValue placeholder="Select difficulty" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="1">🌱 Easy</SelectItem>
+      <SelectItem value="2">🌳 Medium</SelectItem>
+      <SelectItem value="3">🚀 Hard</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
 
       {/* Stats */}
       <div className="bg-gray-50 p-3 rounded-lg">

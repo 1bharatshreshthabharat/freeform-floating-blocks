@@ -150,7 +150,7 @@ export const WordWondersGameArea: React.FC = () => {
     >
       
       {/* Letter Boxes */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute top-3/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <div className="flex gap-4 justify-center items-center">
           {Array.from({ length: state.targetWord.length }, (_, index) => (
             <WordWondersLetterBox

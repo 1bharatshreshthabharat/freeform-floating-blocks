@@ -147,66 +147,6 @@ export const GameHub: React.FC = () => {
             />
           ))}
         </div>
-
-        {/* Featured Sections */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Educational Games</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">📚</div>
-                  <div>
-                    <h4 className="text-xl font-bold mb-2">Word Wonders</h4>
-                    <p className="text-gray-600">Interactive wordplay with floating letters and 7 game modes</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🎈</div>
-                  <div>
-                    <h4 className="text-xl font-bold mb-2">Balloon Pop Learning</h4>
-                    <p className="text-gray-600">Interactive learning with letters, numbers, and more</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">♟️</div>
-                  <div>
-                    <h4 className="text-xl font-bold mb-2">Chess Mastery</h4>
-                    <p className="text-gray-600">Advanced AI, customization, analysis tools</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Arcade Games</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🐍</div>
-                  <div>
-                    <h4 className="text-xl font-bold mb-2">Snake Adventure</h4>
-                    <p className="text-gray-600">Classic gameplay with modern twists</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🐦</div>
-                  <div>
-                    <h4 className="text-xl font-bold mb-2">Flappy Challenge</h4>
-                    <p className="text-gray-600">Test your reflexes and precision</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
   );

@@ -4,6 +4,14 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Compass, RotateCcw, Trophy, Timer, Zap, Star, Target, Settings, Play, Pause, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
 
 interface EnhancedMazeGameAppProps {
   onBack: () => void;
@@ -552,41 +560,48 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
                 </Button>
               </div>
 
-              {/* Difficulty */}
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Difficulty</label>
-                <div className="grid grid-cols-2 gap-1">
-                  {Object.entries(MAZE_SIZES).map(([key, size]) => (
-                    <Button
-                      key={key}
-                      onClick={() => setMazeSize(key as keyof typeof MAZE_SIZES)}
-                      variant={mazeSize === key ? 'default' : 'outline'}
-                      size="sm"
-                      className="text-xs"
-                    >
-                      {size.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+            {/* Difficulty Dropdown */}
+<div>
+  <label className="text-xs font-medium text-gray-600 mb-1 block">Difficulty</label>
+  <Select
+    onValueChange={(value) => setMazeSize(value as keyof typeof MAZE_SIZES)}
+    defaultValue={mazeSize}
+  >
+    <SelectTrigger className="text-xs h-8">
+      <SelectValue placeholder="Select difficulty" />
+    </SelectTrigger>
+    <SelectContent>
+      {Object.entries(MAZE_SIZES).map(([key, size]) => (
+        <SelectItem key={key} value={key} className="text-xs">
+          {size.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
 
-              {/* Themes */}
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Theme</label>
-                <div className="grid grid-cols-2 gap-1">
-                  {THEMES.map(theme => (
-                    <Button
-                      key={theme.id}
-                      onClick={() => setSelectedTheme(theme)}
-                      variant={selectedTheme.id === theme.id ? 'default' : 'outline'}
-                      size="sm"
-                      className="text-xs"
-                    >
-                      {theme.emoji} {theme.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+{/* Theme Dropdown */}
+<div>
+  <label className="text-xs font-medium text-gray-600 mb-1 block">Theme</label>
+  <Select
+    onValueChange={(value) => {
+      const theme = THEMES.find((t) => t.id === value);
+      if (theme) setSelectedTheme(theme);
+    }}
+    defaultValue={selectedTheme.id}
+  >
+    <SelectTrigger className="text-xs h-8">
+      <SelectValue placeholder="Select theme" />
+    </SelectTrigger>
+    <SelectContent>
+      {THEMES.map((theme) => (
+        <SelectItem key={theme.id} value={theme.id} className="text-xs">
+          {theme.emoji} {theme.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
 
               <div className="border-t pt-3">
                 <Button
@@ -635,8 +650,8 @@ export const EnhancedMazeGameApp: React.FC<EnhancedMazeGameAppProps> = ({ onBack
           </Card>
 
           {/* Maze Area */}
-          <Card className="lg:col-span-3 p-4 bg-white/95 backdrop-blur-sm">
-            <div className="flex justify-center">
+          <Card className="lg:col-span-3 p-4 bg-white/95 backdrop-blur-sm ">
+            <div className="flex justify-center lg:pt-15 md:pt-10">
               <div 
                 className="grid border-2 border-gray-300 relative"
                 style={{

@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useFlappyGame } from './FlappyGameProvider';
 
 const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+const CANVAS_HEIGHT = 500;
 
 const birdTypes = {
   classic: { body: '🐦', wing: '🪶', color: '#FFD700' },
@@ -429,16 +429,23 @@ export const FlappyCanvas: React.FC = () => {
   }, [handleKeyPress, handleTouch]);
 
   return (
-    <Card className="flex-1 shadow-lg">
+    <Card className="flex-1 shadow-lg"> 
       <CardContent className="p-4">
         <div className="flex justify-center">
           <canvas
             ref={canvasRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
-            className="border-4 border-blue-300 rounded-lg cursor-pointer touch-none"
+            className="border-4 border-blue-300 rounded-lg cursor-pointer touch-none "
             onClick={handleClick}
+             style={{
+              height: 'auto',
+              maxWidth: '100%',
+              // Add responsive minHeight overrides
+             minHeight: '40vh', // Taller on small screens
+            }}
           />
+
         </div>
       </CardContent>
     </Card>

@@ -9,7 +9,6 @@ import { BalloonPopInstructions } from './BalloonPopInstructions';
 import { BalloonPopSettings } from './BalloonPopSettings';
 import { BalloonPopAchievements } from './BalloonPopAchievements';
 import { BalloonPopGameStats } from './BalloonPopGameStats';
-import { BalloonPopCustomizeModal } from './BalloonPopCustomizeModal';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { useBalloonPopGame } from './BalloonPopGameProvider';
@@ -21,7 +20,7 @@ interface BalloonPopGameProps {
 
 const GameContent: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { state } = useBalloonPopGame();
-  const [showCustomize, setShowCustomize] = useState(false);
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 relative overflow-hidden">
@@ -37,20 +36,7 @@ const GameContent: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
         <BalloonPopHeader onBack={onBack} />
         
-        {/* Customize Button for Active Game */}
-        {true && (
-          <div className="absolute top-20 right-4 z-20">
-            <Button
-              onClick={() => setShowCustomize(true)}
-              variant="outline"
-              size="sm"
-              className="bg-white/90 border-purple-300 text-purple-700 hover:bg-purple-100"
-            >
-              <Settings className="h-4 w-4 mr-1" />
-              Customize
-            </Button>
-          </div>
-        )}
+     
         
         <div className="max-w-7xl mx-auto p-2 lg:p-4">
           {/* Canvas */}
@@ -75,11 +61,7 @@ const GameContent: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <BalloonPopSettings />
         <BalloonPopAchievements />
         
-        {/* Customize Modal */}
-        <BalloonPopCustomizeModal 
-          isOpen={showCustomize} 
-          onClose={() => setShowCustomize(false)} 
-        />
+
       </div>
   );
 };

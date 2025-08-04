@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Palette, Eye, EyeOff } from 'lucide-react';
 import { ColorPalette } from './ColorPalette';
 import { DrawingCanvas } from './DrawingCanvas';
-import { CreativeCanvas } from './CreativeCanvas';
 import { GameHeader } from './GameHeader';
 import { CompletionModal } from './CompletionModal';
 import { AnimatedCompletion } from './AnimatedCompletion';
@@ -92,9 +91,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
       } else if (section && isColorSimilar(section.suggestedColor, color)) {
         sectionScore = 18; // Partial bonus for similar colors
       }
-    } else if (gameMode === 'creative') {
-      sectionScore = 15; // Creative mode bonus
-    }
+    } 
     
     // Combo bonus for consecutive correct colors
     if (gameMode === 'realistic' && sectionScore > 15) {
@@ -266,42 +263,27 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
           {/* Compact Color Palette */}
           <Card className="lg:col-span-1 p-3 bg-white/90 backdrop-blur-sm shadow-xl max-h-full overflow-y-auto">
             <div className="space-y-3">
-              {/* Mode Toggle */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setGameMode('realistic')}
-                  variant={gameMode === 'realistic' ? 'default' : 'outline'}
-                  size="sm"
-                  className="flex-1 text-xs"
-                >
-                  Realistic
-                </Button>
-                <Button
-                  onClick={() => setGameMode('creative')}
-                  variant={gameMode === 'creative' ? 'default' : 'outline'}
-                  size="sm"
-                  className="flex-1 text-xs"
-                >
-                  Creative
-                </Button>
-              </div>
 
               {/* Compact Color Grid */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-8 gap-2">
                 {[
                   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD',
                   '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA',
                   '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
                   '#800000', '#008000', '#000080', '#808000', '#800080', '#008080'
                 ].map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`w-8 h-8 rounded border-2 transition-all hover:scale-110 ${
-                      selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
+                 
+                   <button
+      key={color}
+      aria-label={`Select color ${color}`}
+      onClick={() => setSelectedColor(color)}
+      className={`w-5 h-5 rounded-full border-1 shadow-sm transition-transform duration-200 ease-in-out
+        ${selectedColor === color
+          ? 'border-gray-900 scale-110 ring-2 ring-offset-1 ring-gray-300'
+          : 'border-gray-300 hover:scale-105'}`}
+      style={{ backgroundColor: color }}
+    />
+
                 ))}
               </div>
 
@@ -372,17 +354,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
           <Card className="lg:col-span-3 p-3 bg-white/90 backdrop-blur-sm shadow-xl relative overflow-hidden">
             <div className="h-[calc(100vh-200px)] w-full relative flex items-center justify-center">
               <div className="w-full h-full max-w-full max-h-full flex items-center justify-center">
-                {gameMode === 'creative' ? (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <CreativeCanvas
-                      outline={currentOutline}
-                      selectedColor={selectedColor}
-                      onComplete={handleCompletion}
-                      completedSections={completedSections}
-                      onSectionFill={handleSectionFill}
-                    />
-                  </div>
-                ) : (
+               
                   <div className="w-full h-full flex items-center justify-center">
                     <DrawingCanvas
                       ref={canvasRef}
@@ -396,7 +368,7 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
                       outlineColor={outlineColor}
                     />
                   </div>
-                )}
+             
               </div>
               
               {/* Reference Image for Realistic Mode - Fixed */}

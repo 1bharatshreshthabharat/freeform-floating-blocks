@@ -628,6 +628,12 @@ export const SnakeCanvas: React.FC = () => {
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
             className="border-4 border-green-300 rounded-lg touch-none"
+            style={{
+              height: 'auto',
+              maxWidth: '100%',
+              // Add responsive minHeight overrides
+            // minHeight: '40vh', // Taller on small screens
+            }}
             onClick={handleTouch}
             onTouchStart={handleTouch}
           />
