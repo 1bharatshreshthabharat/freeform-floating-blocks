@@ -35,9 +35,9 @@ export const WordWondersLetterBox: React.FC<LetterBoxProps> = ({
             {/* Remove button */}
             <button
               onClick={() => onRemoveLetter(index)}
-              className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 text-xs transition-colors"
+              className="absolute -top-1 -right-1 bg-red-300 hover:bg-red-500 text-white rounded-full p-1 text-xs transition-colors"
             >
-              <X size={12} />
+              <X size={10} />
             </button>
           </>
         )}
