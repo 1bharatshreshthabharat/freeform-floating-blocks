@@ -117,7 +117,7 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
         </div>
       </div>
 
-      <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 max-w-full w-full overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 max-w-full w-full">
         <svg
           ref={ref}
           viewBox={outline.viewBox}
@@ -217,7 +217,7 @@ export const DrawingCanvas = forwardRef<SVGSVGElement, DrawingCanvasProps>(({
             {completedSections.size} / {outline.sections.length} sections
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+        <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
           <div
             className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-4 rounded-full transition-all duration-500 ease-out relative"
             style={{ width: `${progress}%` }}

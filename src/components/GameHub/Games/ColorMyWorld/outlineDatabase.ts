@@ -79,7 +79,8 @@ export const outlineDatabase: ColoringOutline[] = [
         path: 'M50,120 Q30,125 25,140 Q30,155 50,150',
         suggestedColor: '#654321'
       }
-    ]
+    ],
+    referenceImage: '/lovable-uploads/bf90b19c-07f4-4f41-a7aa-86c6b242c265.png'
   },
   {
     id: 'dinosaur-1',

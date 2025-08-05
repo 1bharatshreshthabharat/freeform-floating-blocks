@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useWordWonders } from './WordWondersProvider';
 import { WordWondersLetterBox } from './WordWondersLetterBox';
@@ -65,7 +64,7 @@ export const WordWondersGameArea: React.FC = () => {
     placeLetterInBox(letterId, emptyBoxIndex);
     playSound('correct');
     
-    // Check if word is complete
+    // Check if word is complete with beautiful validation response
     const newPlacedLetters = [...state.placedLetters];
     newPlacedLetters[emptyBoxIndex] = letter.letter;
     
@@ -73,39 +72,44 @@ export const WordWondersGameArea: React.FC = () => {
       const formedWord = newPlacedLetters.join('').toLowerCase();
       
       if (state.mode === 'make-words') {
-        // Check if it's one of the possible words
         if (state.possibleWords?.includes(formedWord)) {
+          // Beautiful success response
           dispatch({ type: 'ADD_FOUND_WORD', payload: formedWord });
           dispatch({ type: 'ADD_SCORE', payload: formedWord.length * 10 });
-          speakText(`Great! You found ${formedWord}!`);
+          speakText(`Amazing! You found ${formedWord}!`);
           playSound('complete');
           
-          // Reset for next word
+          // Show success animation
+          showSuccessValidation(true);
+          
+          setTimeout(() => {
+            dispatch({ type: 'RESET_PLACEMENT' });
+          }, 2000);
+        } else {
+          dispatch({ type: 'LOSE_LIFE' });
+          showSuccessValidation(false);
           setTimeout(() => {
             dispatch({ type: 'RESET_PLACEMENT' });
           }, 1500);
         }
       } else if (state.mode === 'fix-word') {
-        // For fix-word mode, check if the formed word matches the target
         if (formedWord === state.targetWord.toLowerCase()) {
           dispatch({ type: 'COMPLETE_WORD' });
           dispatch({ type: 'ADD_SCORE', payload: 100 });
-          speakText(`Excellent! You fixed the word ${state.targetWord}!`);
+          speakText(`Perfect! You fixed the word ${state.targetWord}!`);
           playSound('complete');
           
-          // Start next question automatically
+          showSuccessValidation(true);
+          
           setTimeout(() => {
             dispatch({ type: 'NEXT_QUESTION' });
-          }, 2000);
+          }, 2500);
         } else {
-          speakText('Not quite right! Try again!');
-          playSound('wrong');
-          dispatch({ type: 'WRONG_ANSWER' });
-          
-          // Reset placement after a delay
+          dispatch({ type: 'LOSE_LIFE' });
+          showSuccessValidation(false);
           setTimeout(() => {
             dispatch({ type: 'RESET_PLACEMENT' });
-          }, 1000);
+          }, 1500);
         }
       } else if (formedWord === state.targetWord.toLowerCase()) {
         dispatch({ type: 'COMPLETE_WORD' });
@@ -113,20 +117,48 @@ export const WordWondersGameArea: React.FC = () => {
         speakText(`Excellent! You spelled ${state.targetWord}!`);
         playSound('complete');
         
-        // Start next question automatically
+        showSuccessValidation(true);
+        
         setTimeout(() => {
           dispatch({ type: 'NEXT_QUESTION' });
-        }, 2000);
+        }, 2500);
       } else {
-        speakText('Try again!');
-        playSound('wrong');
-        dispatch({ type: 'WRONG_ANSWER' });
-        
-        // Reset placement after a delay for wrong answers
+        dispatch({ type: 'LOSE_LIFE' });
+        showSuccessValidation(false);
         setTimeout(() => {
           dispatch({ type: 'RESET_PLACEMENT' });
-        }, 1000);
+        }, 1500);
       }
+    }
+  };
+
+  const showSuccessValidation = (isCorrect: boolean) => {
+    const overlay = document.getElementById('validation-overlay');
+    if (overlay) {
+      overlay.className = `absolute inset-0 flex items-center justify-center z-50 transition-all duration-500 ${
+        isCorrect ? 'bg-green-400/90' : 'bg-red-400/90'
+      }`;
+      overlay.style.display = 'flex';
+      
+      const content = overlay.firstElementChild as HTMLElement;
+      if (content) {
+        content.innerHTML = isCorrect 
+          ? `<div class="text-center"><div class="text-6xl mb-4">🎉</div><div class="text-2xl font-bold text-white">Perfect!</div><div class="text-lg text-white">Great job!</div></div>`
+          : `<div class="text-center"><div class="text-6xl mb-4">😅</div><div class="text-2xl font-bold text-white">Try Again!</div><div class="text-lg text-white">You can do it!</div></div>`;
+        
+        // Animation
+        content.style.transform = 'scale(0.5)';
+        content.style.opacity = '0';
+        
+        setTimeout(() => {
+          content.style.transform = 'scale(1)';
+          content.style.opacity = '1';
+        }, 100);
+      }
+      
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, isCorrect ? 2000 : 1500);
     }
   };
 
@@ -142,14 +174,14 @@ export const WordWondersGameArea: React.FC = () => {
 
   return (
     <div 
-      className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-lg border-2"
+      className="relative w-full h-[450px] rounded-xl overflow-hidden shadow-lg border-2"
       style={{ 
         background: themeStyles.background,
         borderColor: themeStyles.primaryColor 
       }}
     >
       
-      {/* Letter Boxes */}
+      {/* Letter Boxes - Centered */}
       <div className="absolute top-3/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <div className="flex gap-4 justify-center items-center">
           {Array.from({ length: state.targetWord.length }, (_, index) => (
@@ -164,20 +196,31 @@ export const WordWondersGameArea: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating Letters */}
-      {state.letters.map((letter) => (
-        <WordWondersFloatingLetter
-          key={letter.id}
-          letter={letter}
-          onClick={handleLetterClick}
-          isHinted={state.showHint}
-        />
-      ))}
+      {/* Floating Letters - Properly Centered and Spaced */}
+      <div className="absolute inset-0">
+        {state.letters.map((letter) => (
+          <WordWondersFloatingLetter
+            key={letter.id}
+            letter={letter}
+            onClick={handleLetterClick}
+            isHinted={state.showHint}
+          />
+        ))}
+      </div>
+
+      {/* Beautiful Validation Overlay */}
+      <div 
+        id="validation-overlay"
+        className="absolute inset-0 flex items-center justify-center z-50 transition-all duration-500"
+        style={{ display: 'none' }}
+      >
+        <div className="transition-all duration-300 transform"></div>
+      </div>
 
       {/* Game Status Overlay */}
       {state.isPaused && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 text-center">
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-40">
+          <div className="bg-white rounded-lg p-6 text-center shadow-2xl">
             <h3 className="text-2xl font-bold text-gray-800 mb-2">⏸️ Game Paused</h3>
             <p className="text-gray-600">Click Resume to continue playing!</p>
           </div>
