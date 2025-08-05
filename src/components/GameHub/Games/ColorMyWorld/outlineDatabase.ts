@@ -1,6 +1,28 @@
 
 import { ColoringOutline } from './types';
 
+export function generateReferenceImageSVG(outline: ColoringOutline): string {
+  const { viewBox, sections } = outline;
+
+  const svgPaths = sections.map(section => `
+    <path d="${section.path}" fill="${section.suggestedColor}" stroke="black" stroke-width="1" />
+  `).join('\n');
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="300" height="300">
+      ${svgPaths}
+    </svg>
+  `.trim();
+
+  const encoded = encodeURIComponent(svg)
+    .replace(/'/g, '%27')
+    .replace(/"/g, '%22');
+
+  return `data:image/svg+xml;charset=utf-8,${encoded}`;
+}
+
+
+
 export const outlineDatabase: ColoringOutline[] = [
   {
     id: 'flower-1',
@@ -40,7 +62,7 @@ export const outlineDatabase: ColoringOutline[] = [
         suggestedColor: '#32CD32'
       }
     ],
-    referenceImage: '/lovable-uploads/bf90b19c-07f4-4f41-a7aa-86c6b242c265.png'
+    referenceImage: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop'
   },
   {
     id: 'horse-1',
@@ -80,7 +102,7 @@ export const outlineDatabase: ColoringOutline[] = [
         suggestedColor: '#654321'
       }
     ],
-    referenceImage: '/lovable-uploads/bf90b19c-07f4-4f41-a7aa-86c6b242c265.png'
+    referenceImage: 'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=300&h=300&fit=crop'
   },
   {
     id: 'dinosaur-1',
@@ -125,7 +147,8 @@ export const outlineDatabase: ColoringOutline[] = [
         path: 'M110,125 Q115,120 120,125 Q115,130 110,125 M140,130 Q145,125 150,130 Q145,135 140,130',
         suggestedColor: '#FFD700'
       }
-    ]
+    ],
+    referenceImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop'
   },
   {
     id: 'car-1',
@@ -164,7 +187,8 @@ export const outlineDatabase: ColoringOutline[] = [
         path: 'M50,55 L150,55 L150,65 L50,65 Z',
         suggestedColor: '#FFFFFF'
       }
-    ]
+    ],
+    referenceImage: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=300&h=300&fit=crop'
   },
   {
     id: 'christmas-tree',
@@ -221,6 +245,161 @@ export const outlineDatabase: ColoringOutline[] = [
         path: 'M85,95 Q90,90 95,95 Q90,100 85,95 Z',
         suggestedColor: '#FFD700'
       }
-    ]
+    ],
+    referenceImage: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=300&h=300&fit=crop'
+  },
+  {
+    id: 'cat-1',
+    name: 'Playful Cat',
+    category: 'animals',
+    difficulty: 2,
+    viewBox: '0 0 200 180',
+    sections: [
+      {
+        id: 'body',
+        name: 'Cat Body',
+        path: 'M60,100 Q100,80 140,100 Q150,130 100,140 Q50,130 60,100 Z',
+        suggestedColor: '#FF8C00'
+      },
+      {
+        id: 'head',
+        name: 'Cat Head',
+        path: 'M80,70 Q100,50 120,70 Q130,90 100,95 Q70,90 80,70 Z',
+        suggestedColor: '#FF8C00'
+      },
+      {
+        id: 'ears',
+        name: 'Cat Ears',
+        path: 'M85,65 L90,45 L95,65 M105,65 L110,45 L115,65',
+        suggestedColor: '#FF6347'
+      },
+      {
+        id: 'tail',
+        name: 'Cat Tail',
+        path: 'M140,110 Q160,100 170,120 Q165,140 145,130',
+        suggestedColor: '#FF8C00'
+      },
+      {
+        id: 'stripes',
+        name: 'Cat Stripes',
+        path: 'M70,85 L85,80 M110,80 L125,85 M75,110 L90,105 M110,105 L125,110',
+        suggestedColor: '#DC143C'
+      }
+    ],
+    referenceImage: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=300&h=300&fit=crop'
+  },
+  {
+    id: 'butterfly-1',
+    name: 'Beautiful Butterfly',
+    category: 'insects',
+    difficulty: 3,
+    viewBox: '0 0 200 160',
+    sections: [
+      {
+        id: 'body',
+        name: 'Butterfly Body',
+        path: 'M100,40 L100,120 L102,120 L102,40 Z',
+        suggestedColor: '#654321'
+      },
+      {
+        id: 'left-wing-top',
+        name: 'Left Top Wing',
+        path: 'M100,50 Q70,40 60,70 Q70,90 100,80 Z',
+        suggestedColor: '#FF69B4'
+      },
+      {
+        id: 'left-wing-bottom',
+        name: 'Left Bottom Wing',
+        path: 'M100,80 Q75,85 65,110 Q75,125 100,115 Z',
+        suggestedColor: '#9370DB'
+      },
+      {
+        id: 'right-wing-top',
+        name: 'Right Top Wing',
+        path: 'M100,50 Q130,40 140,70 Q130,90 100,80 Z',
+        suggestedColor: '#FF69B4'
+      },
+      {
+        id: 'right-wing-bottom',
+        name: 'Right Bottom Wing',
+        path: 'M100,80 Q125,85 135,110 Q125,125 100,115 Z',
+        suggestedColor: '#9370DB'
+      },
+      {
+        id: 'spots',
+        name: 'Wing Spots',
+        path: 'M75,65 Q80,60 85,65 Q80,70 75,65 M115,65 Q120,60 125,65 Q120,70 115,65',
+        suggestedColor: '#FFD700'
+      }
+    ],
+    referenceImage: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=300&h=300&fit=crop'
+  },
+  {
+    id: 'sun-1',
+    name: 'Bright Sun',
+    category: 'nature',
+    difficulty: 1,
+    viewBox: '0 0 200 200',
+    sections: [
+      {
+        id: 'center',
+        name: 'Sun Center',
+        path: 'M100,100 m-40,0 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0',
+        suggestedColor: '#FFD700'
+      },
+      {
+        id: 'rays',
+        name: 'Sun Rays',
+        path: 'M100,20 L100,40 M141,41 L129,53 M180,100 L160,100 M141,159 L129,147 M100,180 L100,160 M59,159 L71,147 M20,100 L40,100 M59,41 L71,53',
+        suggestedColor: '#FFA500'
+      },
+      {
+        id: 'face',
+        name: 'Sun Face',
+        path: 'M85,90 Q90,85 95,90 M105,90 Q110,85 115,90 M90,110 Q100,120 110,110',
+        suggestedColor: '#FF8C00'
+      }
+    ],
+    referenceImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop'
+  },
+  {
+    id: 'penguin-1',
+    name: 'Cute Penguin',
+    category: 'animals',
+    difficulty: 2,
+    viewBox: '0 0 150 200',
+    sections: [
+      {
+        id: 'body',
+        name: 'Penguin Body',
+        path: 'M75,60 Q95,50 95,100 Q95,150 75,160 Q55,150 55,100 Q55,50 75,60 Z',
+        suggestedColor: '#000000'
+      },
+      {
+        id: 'belly',
+        name: 'Penguin Belly',
+        path: 'M75,70 Q85,65 85,110 Q85,145 75,150 Q65,145 65,110 Q65,65 75,70 Z',
+        suggestedColor: '#FFFFFF'
+      },
+      {
+        id: 'head',
+        name: 'Penguin Head',
+        path: 'M75,30 Q90,25 90,50 Q90,65 75,60 Q60,65 60,50 Q60,25 75,30 Z',
+        suggestedColor: '#000000'
+      },
+      {
+        id: 'beak',
+        name: 'Penguin Beak',
+        path: 'M75,45 Q80,50 75,55 Q70,50 75,45',
+        suggestedColor: '#FFA500'
+      },
+      {
+        id: 'feet',
+        name: 'Penguin Feet',
+        path: 'M65,160 L60,170 L70,170 M80,160 L85,170 L95,170',
+        suggestedColor: '#FFA500'
+      }
+    ],
+    referenceImage: 'https://images.unsplash.com/photo-1441057206919-63d19fac2369?w=300&h=300&fit=crop'
   }
 ];

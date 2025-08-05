@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Palette, Eye, EyeOff, Download } from 'lucide-react';
@@ -6,8 +6,7 @@ import { DrawingCanvas } from './DrawingCanvas';
 import { GameHeader } from './GameHeader';
 import { CompletionModal } from './CompletionModal';
 import { AnimatedCompletion } from './AnimatedCompletion';
-import { ReferenceImage } from './ReferenceImage';
-import { outlineDatabase } from './outlineDatabase';
+import {generateReferenceImageSVG, outlineDatabase } from './outlineDatabase';
 import { GameMode, ColoringOutline, GameStats } from './types';
 
 interface ColorMyWorldGameProps {
@@ -40,6 +39,15 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
     perfectRounds: 0,
     hintsUsed: 0
   });
+
+  const dynamicOutlines = useMemo(() => {
+    return outlineDatabase.map((outline) => ({
+      ...outline,
+      referenceImage: generateReferenceImageSVG(outline),
+    }));
+  }, []);
+
+
 
   useEffect(() => {
     loadRandomOutline();
@@ -286,13 +294,15 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
                 <div className="flex gap-2">
                   {canSkip && (
                     <Button
-                      onClick={handleSkip}
+                      onClick={loadRandomOutline}
+                      // onClick={handleSkip}
                       variant="outline"
                       size="sm"
                       className="flex-1 text-xs"
                     >
                       Skip
                     </Button>
+
                   )}
                   {canNext && (
                     <Button
@@ -396,7 +406,8 @@ export const ColorMyWorldGame: React.FC<ColorMyWorldGameProps> = ({ onBack, onSt
                   {showReference && (
                     <div className="absolute top-8 right-0 w-40 h-40 bg-white rounded-lg border-2 shadow-xl p-2 z-20">
                       <img 
-                        src={currentOutline.referenceImage || '/placeholder.svg'} 
+                        //src={currentOutline.referenceImage || '/placeholder.svg'} 
+                        src={currentOutline ? generateReferenceImageSVG(currentOutline) : '/placeholder.svg'} 
                         alt="Reference"
                         className="w-full h-full object-contain rounded"
                         onError={(e) => {
