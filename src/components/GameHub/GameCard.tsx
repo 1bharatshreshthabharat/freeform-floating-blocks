@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,10 +9,11 @@ interface GameCardProps {
     id: string;
     title: string;
     description: string;
-    image: string;
+    gradient: string;
     difficulty: string;
     category: string;
     players: string;
+    icon: string;
   };
   onPlay: () => void;
 }
@@ -34,47 +34,34 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onPlay }) => {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group">
-      <div className="relative overflow-hidden">
-        <img
-          src={game.image}
-          alt={game.title}
-          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-        <div className="absolute top-4 right-4">
+    <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group border-2  bg-white/90 backdrop-blur-sm">
+      <div className={`h-2 w-full bg-gradient-to-r ${game.gradient}`} />
+      
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-3">
+          <div className={`text-2xl p-3 rounded-lg bg-gradient-to-br ${game.gradient} text-white`}>
+            {game.icon}
+          </div>
+          <CardTitle className="text-lg font-bold text-gray-800">{game.title}</CardTitle>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="pb-2">
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{game.description}</p>
+        <div className="flex flex-wrap gap-1 mb-2">
           <Badge className={getDifficultyColor(game.difficulty)}>
             {game.difficulty}
           </Badge>
-        </div>
-        <div className="absolute top-4 left-4">
-          <Badge variant="secondary" className="bg-white/90 text-gray-800">
+          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
             {game.category}
           </Badge>
         </div>
-      </div>
-      
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-gray-800">{game.title}</CardTitle>
-      </CardHeader>
-      
-      <CardContent>
-        <p className="text-gray-600 mb-4">{game.description}</p>
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center">
-            <Users className="h-4 w-4 mr-1" />
-            <span>{game.players} Players</span>
-          </div>
-          <div className="flex items-center">
-            <Star className="h-4 w-4 mr-1 text-yellow-500" />
-            <span>4.8/5</span>
-          </div>
-        </div>
       </CardContent>
       
-      <CardFooter>
+      <CardFooter className="pt-0">
         <Button 
           onClick={onPlay} 
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105"
+          className={`w-full bg-gradient-to-r ${game.gradient} hover:shadow-md text-white font-medium py-2 px-4 rounded-lg transition-all duration-300`}
         >
           <Play className="h-4 w-4 mr-2" />
           Play Now

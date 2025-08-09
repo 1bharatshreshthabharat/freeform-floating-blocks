@@ -35,7 +35,7 @@ export interface GameState {
   sentence?: string;
   options?: string[];
   letters: FloatingLetter[];
-  placedLetters: string[];
+  placedLetters: ({ letter: string; id: string } | null)[];
   isComplete: boolean;
   showHint: boolean;
   lives: number;

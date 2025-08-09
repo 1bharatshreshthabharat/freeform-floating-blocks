@@ -215,7 +215,12 @@ const GameContent: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <Button
                   key={game.mode}
                   variant="outline"
-                  onClick={() => startGame(game.mode)}
+                  onClick={() => {
+                    startGame(game.mode);
+                    if (state.isGameActive) {
+                      window.scrollBy({ top: -500, behavior: 'smooth' });
+                    }
+                  }}
                   className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-purple-50 hover:border-purple-300"
                 >
                   <span className="text-2xl">{game.icon}</span>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FloatingLetter } from './types';
+import { X } from 'lucide-react';
 
 interface FloatingLetterProps {
   letter: FloatingLetter;
@@ -92,32 +93,42 @@ export const WordWondersFloatingLetter: React.FC<FloatingLetterProps> = ({
   }, [letter.isPlaced, letter.id, velocity]);
 
   const handleClick = () => {
-    if (!letter.isPlaced) {
-      onClick(letter.id);
-    }
+    onClick(letter.id);
   };
-
-  if (letter.isPlaced) return null;
 
   return (
     <div ref={containerRef} className="absolute inset-0">
       <button
         onClick={handleClick}
         className={`absolute rounded-full border-2 transition-transform duration-300 hover:scale-110 active:scale-95 shadow-lg ${
-        isHinted && letter.isCorrect
-           ? 'bg-yellow-200 border-yellow-400 shadow-yellow-300 animate-pulse'
-            : 'bg-white border-purple-300 hover:border-purple-400 hover:shadow-purple-300'
+          letter.isPlaced 
+            ? 'bg-gray-200 border-gray-400 opacity-50 hover:opacity-75' // Dimmed style for placed letters
+            : isHinted && letter.isCorrect
+              ? 'bg-yellow-200 border-yellow-400 shadow-yellow-300 animate-pulse'
+              : 'bg-white border-purple-300 hover:border-purple-400 hover:shadow-purple-300'
         }`}
         style={{
           left: position.x,
           top: position.y,
           width: 50,
           height: 50,
-          zIndex: 10,
+          zIndex: letter.isPlaced ? 5 : 10, // Lower z-index for placed letters
         }}
       >
-        <span className="text-xl font-bold text-purple-700">{letter.letter}</span>
+        <span className={`text-xl font-bold ${letter.isPlaced ? 'text-gray-500' : 'text-purple-700'}`}>
+          {letter.letter}
+        </span>
+        { letter.isPlaced &&(
+         <button
+              className="absolute -top-1 -right-1 bg-red-300 hover:bg-red-500 text-white rounded-full p-1 text-xs transition-colors"
+            >
+              <X size={10} />
+            </button>
+      )
+      }
       </button>
+
+      
     </div>
   );
 };

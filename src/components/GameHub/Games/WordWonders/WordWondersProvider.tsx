@@ -78,7 +78,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       );
       
       const newPlacedLetters = [...state.placedLetters];
-      newPlacedLetters[action.payload.boxIndex] = letterToPlace.letter;
+      newPlacedLetters[action.payload.boxIndex] = { letter: letterToPlace.letter, id: letterToPlace.id };
       
       return { 
         ...state, 
@@ -90,13 +90,13 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       if (!letterToRemove) return state;
       
       const updatedLettersForRemove = state.letters.map(letter => 
-        letter.letter === letterToRemove && letter.isPlaced
+        letter.id === letterToRemove.id
           ? { ...letter, isPlaced: false } 
           : letter
       );
       
       const newPlacedLettersAfterRemove = [...state.placedLetters];
-      newPlacedLettersAfterRemove[action.payload] = '';
+      newPlacedLettersAfterRemove[action.payload] = null;
       
       return {
         ...state,
@@ -133,7 +133,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         sentence: (action.payload.wordData as any).sentence,
         letters: action.payload.letters,
         possibleWords: action.payload.possibleWords,
-        placedLetters: new Array(action.payload.wordData.word.length).fill(''),
+        placedLetters: new Array(action.payload.wordData.word.length).fill(null),
         isGameActive: true,
         isPaused: false,
         isComplete: false,
@@ -196,7 +196,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         sentence: (wordData as any).sentence,
         letters,
         possibleWords,
-        placedLetters: new Array(wordData.word.length).fill(''),
+        placedLetters: new Array(wordData.word.length).fill(null),
         isComplete: false,
         showHint: false,
         timeLeft: 60
@@ -204,7 +204,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     case 'RESET_PLACEMENT':
       return {
         ...state,
-        placedLetters: new Array(state.targetWord.length).fill(''),
+        placedLetters: new Array(state.targetWord.length).fill(null),
         letters: state.letters.map(letter => ({ ...letter, isPlaced: false }))
       };
     case 'GAME_OVER':
@@ -393,4 +393,4 @@ export const useWordWonders = () => {
     throw new Error('useWordWonders must be used within WordWondersProvider');
   }
   return context;
-};
+}; 

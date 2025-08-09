@@ -55,10 +55,20 @@ export const WordWondersGameArea: React.FC = () => {
 
   const handleLetterClick = (letterId: string) => {
     const letter = state.letters.find(l => l.id === letterId);
-    if (!letter || letter.isPlaced) return;
+    if (!letter) return;
 
-    // Find the first empty box
-    const emptyBoxIndex = state.placedLetters.findIndex(l => l === '');
+    // If letter is already placed, find and remove it from the box
+    if (letter.isPlaced) {
+      const placedIndex = state.placedLetters.findIndex(pl => pl?.id === letterId);
+      if (placedIndex !== -1) {
+        removeLetterFromBox(placedIndex);
+        playSound('hint');
+      }
+      return;
+    }
+
+    // Find the first empty box for placing letter
+    const emptyBoxIndex = state.placedLetters.findIndex(l => l === null);
     if (emptyBoxIndex === -1) return;
 
     placeLetterInBox(letterId, emptyBoxIndex);
@@ -66,10 +76,10 @@ export const WordWondersGameArea: React.FC = () => {
     
     // Check if word is complete with beautiful validation response
     const newPlacedLetters = [...state.placedLetters];
-    newPlacedLetters[emptyBoxIndex] = letter.letter;
+    newPlacedLetters[emptyBoxIndex] = { letter: letter.letter, id: letter.id };
     
-    if (!newPlacedLetters.includes('')) {
-      const formedWord = newPlacedLetters.join('').toLowerCase();
+    if (!newPlacedLetters.includes(null)) {
+      const formedWord = newPlacedLetters.map(l => l?.letter || '').join('').toLowerCase();
       
       if (state.mode === 'make-words') {
         if (state.possibleWords?.includes(formedWord)) {
@@ -187,7 +197,7 @@ export const WordWondersGameArea: React.FC = () => {
           {Array.from({ length: state.targetWord.length }, (_, index) => (
             <WordWondersLetterBox
               key={index}
-              letter={state.placedLetters[index]}
+              letter={state.placedLetters[index]?.letter || null}
               index={index}
               lineColor={lineColors[index % lineColors.length]}
               onRemoveLetter={handleRemoveLetter}
